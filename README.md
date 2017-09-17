@@ -1,2 +1,2 @@
-# libBAT
+# BAGuitar
 Blackaddr Audio Teensy Library
