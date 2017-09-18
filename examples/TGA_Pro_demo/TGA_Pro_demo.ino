@@ -1,7 +1,22 @@
+/*************************************************************************
+ * This demo uses the BAGuitar library to provide enhanced control of
+ * the TGA Pro board.
+ * 
+ * The latest copy of the BA Guitar library can be obtained from
+ * https://github.com/Blackaddr/BAGuitar
+ * 
+ * This demo will provide an audio passthrough, as well as exercise the
+ * MIDI interface.
+ * 
+ * It can optionally exercise the SPI MEM0 if installed on the TGA Pro board.
+ * 
+ */
 #include <Wire.h>
 #include <Audio.h>
 #include <MIDI.h>
 #include "BAGuitar.h"
+
+//#define ENABLE_MEM_TEST // uncomment this line to enable the memory test
 
 using namespace BAGuitar;
 
@@ -39,10 +54,11 @@ void setup() {
   codecControl.enable();
   delay(100);
   
-
 }
 
 void loop() {  
+
+#ifdef ENABLE_MEM_TEST
 
   //////////////////////////////////////////////////////////////////
   // Write test data to the SPI Memory
@@ -96,11 +112,15 @@ void loop() {
   }
 
   if (spiErrorCount == 0) { Serial.println("SPI TEST PASSED!!!"); }
-
+  
+#endif
 
   
   ///////////////////////////////////////////////////////////////////////
   // MIDI TESTING
+  // Connect a loopback cable between the MIDI IN and MIDI OUT on the
+  // GTA Pro.  This test code will periodically send MIDI events which
+  // will loop back and get printed in the Serial Monitor.
   ///////////////////////////////////////////////////////////////////////
   int type, note, velocity, channel, d1, d2;
 
