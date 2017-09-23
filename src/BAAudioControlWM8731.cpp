@@ -23,6 +23,65 @@
 
 namespace BAGuitar {
 
+// use const instead of define for proper scoping
+constexpr int WM8731_I2C_ADDR = 0x1A;
+
+// The WM8731 register map
+constexpr int WM8731_REG_LLINEIN   = 0;
+constexpr int WM8731_REG_RLINEIN   = 1;
+constexpr int WM8731_REG_LHEADOUT  = 2;
+constexpr int WM8731_REG_RHEADOUT  = 3;
+constexpr int WM8731_REG_ANALOG     =4;
+constexpr int WM8731_REG_DIGITAL   = 5;
+constexpr int WM8731_REG_POWERDOWN = 6;
+constexpr int WM8731_REG_INTERFACE = 7;
+constexpr int WM8731_REG_SAMPLING  = 8;
+constexpr int WM8731_REG_ACTIVE    = 9;
+constexpr int WM8731_REG_RESET    = 15;
+
+// Register Masks and Shifts
+// Register 0
+constexpr int WM8731_LEFT_INPUT_GAIN_ADDR = 0;
+constexpr int WM8731_LEFT_INPUT_GAIN_MASK = 0x1F;
+constexpr int WM8731_LEFT_INPUT_GAIN_SHIFT = 0;
+constexpr int WM8731_LEFT_INPUT_MUTE_ADDR = 0;
+constexpr int WM8731_LEFT_INPUT_MUTE_MASK = 0x80;
+constexpr int WM8731_LEFT_INPUT_MUTE_SHIFT = 7;
+constexpr int WM8731_LINK_LEFT_RIGHT_IN_ADDR = 0;
+constexpr int WM8731_LINK_LEFT_RIGHT_IN_MASK = 0x100;
+constexpr int WM8731_LINK_LEFT_RIGHT_IN_SHIFT = 8;
+// Register 1
+constexpr int WM8731_RIGHT_INPUT_GAIN_ADDR = 1;
+constexpr int WM8731_RIGHT_INPUT_GAIN_MASK = 0x1F;
+constexpr int WM8731_RIGHT_INPUT_GAIN_SHIFT = 0;
+constexpr int WM8731_RIGHT_INPUT_MUTE_ADDR = 1;
+constexpr int WM8731_RIGHT_INPUT_MUTE_MASK = 0x80;
+constexpr int WM8731_RIGHT_INPUT_MUTE_SHIFT = 7;
+constexpr int WM8731_LINK_RIGHT_LEFT_IN_ADDR = 1;
+constexpr int WM8731_LINK_RIGHT_LEFT_IN_MASK = 0x100;
+constexpr int WM8731_LINK_RIGHT_LEFT_IN_SHIFT = 8;
+// Register 4
+constexpr int WM8731_ADC_BYPASS_ADDR = 4;
+constexpr int WM8731_ADC_BYPASS_MASK = 0x8;
+constexpr int WM8731_ADC_BYPASS_SHIFT = 3;
+constexpr int WM8731_DAC_SELECT_ADDR = 4;
+constexpr int WM8731_DAC_SELECT_MASK = 0x10;
+constexpr int WM8731_DAC_SELECT_SHIFT = 4;
+// Register 5
+constexpr int WM8731_DAC_MUTE_ADDR = 5;
+constexpr int WM8731_DAC_MUTE_MASK = 0x8;
+constexpr int WM8731_DAC_MUTE_SHIFT = 3;
+constexpr int WM8731_HPF_DISABLE_ADDR = 5;
+constexpr int WM8731_HPF_DISABLE_MASK = 0x1;
+constexpr int WM8731_HPF_DISABLE_SHIFT = 0;
+
+// Register 9
+constexpr int WM8731_ACTIVATE_ADDR = 9;
+constexpr int WM8731_ACTIVATE_MASK = 0x1;
+
+
+// Reset the internal shadow register array to match
+// the reset state of the codec.
 void BAAudioControlWM8731::resetInternalReg(void) {
 	// Set to reset state
 	regArray[0] = 0x97;
@@ -47,6 +106,7 @@ BAAudioControlWM8731::~BAAudioControlWM8731()
 {
 }
 
+// Powerdown and disable the codec
 void BAAudioControlWM8731::disable(void)
 {
 
@@ -62,8 +122,8 @@ void BAAudioControlWM8731::disable(void)
 	resetCodec();
 }
 
-
-bool BAAudioControlWM8731::enable(void)
+// Powerup and unmute the codec
+void BAAudioControlWM8731::enable(void)
 {
 
 	// Sequence from WAN0111.pdf
@@ -109,18 +169,12 @@ bool BAAudioControlWM8731::enable(void)
 	regArray[WM8731_REG_POWERDOWN] = 0x02;
 	delay(500); // wait for output to power up
 
-//	// Activate the audio interface
-//	setActivate(true);
-//	delay(10);
 
-	//setDacMute(false);
 	delay(100); // wait for mute ramp
-
-	return true;
 
 }
 
-
+// Set the PGA gain on the Left channel
 void BAAudioControlWM8731::setLeftInputGain(int val)
 {
 	regArray[WM8731_LEFT_INPUT_GAIN_ADDR] &= ~WM8731_LEFT_INPUT_GAIN_MASK;
@@ -129,6 +183,7 @@ void BAAudioControlWM8731::setLeftInputGain(int val)
 	write(WM8731_LEFT_INPUT_GAIN_ADDR, regArray[WM8731_LEFT_INPUT_GAIN_ADDR]);
 }
 
+// Mute control on the ADC Left channel
 void BAAudioControlWM8731::setLeftInMute(bool val)
 {
 	if (val) {
@@ -139,6 +194,7 @@ void BAAudioControlWM8731::setLeftInMute(bool val)
 	write(WM8731_LEFT_INPUT_MUTE_ADDR, regArray[WM8731_LEFT_INPUT_MUTE_ADDR]);
 }
 
+// Link the gain/mute controls for Left and Right channels
 void BAAudioControlWM8731::setLinkLeftRightIn(bool val)
 {
 	if (val) {
@@ -152,6 +208,7 @@ void BAAudioControlWM8731::setLinkLeftRightIn(bool val)
 	write(WM8731_LINK_RIGHT_LEFT_IN_ADDR, regArray[WM8731_LINK_RIGHT_LEFT_IN_ADDR]);
 }
 
+// Set the PGA input gain on the Right channel
 void BAAudioControlWM8731::setRightInputGain(int val)
 {
 	regArray[WM8731_RIGHT_INPUT_GAIN_ADDR] &= ~WM8731_RIGHT_INPUT_GAIN_MASK;
@@ -160,6 +217,7 @@ void BAAudioControlWM8731::setRightInputGain(int val)
 	write(WM8731_RIGHT_INPUT_GAIN_ADDR, regArray[WM8731_RIGHT_INPUT_GAIN_ADDR]);
 }
 
+// Mute control on the input ADC right channel
 void BAAudioControlWM8731::setRightInMute(bool val)
 {
 	if (val) {
@@ -170,6 +228,7 @@ void BAAudioControlWM8731::setRightInMute(bool val)
 	write(WM8731_RIGHT_INPUT_MUTE_ADDR, regArray[WM8731_RIGHT_INPUT_MUTE_ADDR]);
 }
 
+// Dac output mute control
 void BAAudioControlWM8731::setDacMute(bool val)
 {
 	if (val) {
@@ -180,6 +239,7 @@ void BAAudioControlWM8731::setDacMute(bool val)
 	write(WM8731_DAC_MUTE_ADDR, regArray[WM8731_DAC_MUTE_ADDR]);
 }
 
+// Switches the DAC audio in/out of the output path
 void BAAudioControlWM8731::setDacSelect(bool val)
 {
 	if (val) {
@@ -190,6 +250,8 @@ void BAAudioControlWM8731::setDacSelect(bool val)
 	write(WM8731_DAC_SELECT_ADDR, regArray[WM8731_DAC_SELECT_ADDR]);
 }
 
+// Bypass sends the ADC input audio (analog) directly to analog output stage
+// bypassing all digital processing
 void BAAudioControlWM8731::setAdcBypass(bool val)
 {
 	if (val) {
@@ -200,6 +262,7 @@ void BAAudioControlWM8731::setAdcBypass(bool val)
 	write(WM8731_ADC_BYPASS_ADDR, regArray[WM8731_ADC_BYPASS_ADDR]);
 }
 
+// Enable/disable the dynamic HPF (recommended, it creates noise)
 void BAAudioControlWM8731::setHPFDisable(bool val)
 {
 	if (val) {
@@ -210,6 +273,7 @@ void BAAudioControlWM8731::setHPFDisable(bool val)
 	write(WM8731_HPF_DISABLE_ADDR, regArray[WM8731_HPF_DISABLE_ADDR]);
 }
 
+// Activate/deactive the I2S audio interface
 void BAAudioControlWM8731::setActivate(bool val)
 {
 	if (val) {
@@ -220,29 +284,26 @@ void BAAudioControlWM8731::setActivate(bool val)
 
 }
 
-
+// Trigger the on-chip codec reset
 void BAAudioControlWM8731::resetCodec(void)
 {
 	write(WM8731_REG_RESET, 0x0);
 	resetInternalReg();
 }
 
+// Direct write control to the codec
 void BAAudioControlWM8731::writeI2C(unsigned int addr, unsigned int val)
 {
 	write(addr, val);
 }
 
+// Low level write control for the codec via the Teensy I2C interface
 bool BAAudioControlWM8731::write(unsigned int reg, unsigned int val)
 {
 	Wire.beginTransmission(WM8731_I2C_ADDR);
 	Wire.write((reg << 1) | ((val >> 8) & 1));
 	Wire.write(val & 0xFF);
 	Wire.endTransmission();
-//        Serial.print(String("Wrote "));
-//        Serial.print((reg << 1) | ((val >> 8) & 1), HEX);
-//        Serial.print(" ");
-//        Serial.print(val & 0xFF, HEX);
-//        Serial.print("\n");
 
 	return true;
 }

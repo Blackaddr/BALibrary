@@ -25,15 +25,10 @@
 #include "BASpiMemory.h"
 #include "BAGpio.h"
 
+/**************************************************************************//**
+ * BAGuitar is a namespace/Library for Guitar processing from Blackaddr Audio.
+ *****************************************************************************/
 namespace BAGuitar {
-
-#define AUDIO_BLOCK_SIZE 128
-
-// Spi Memory
-constexpr int SPI_MAX_ADDR = 131071;
-
-// LED
-constexpr int usrLED = 16;
 
 }
 

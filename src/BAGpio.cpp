@@ -13,10 +13,6 @@ namespace BAGuitar {
 BAGpio::BAGpio()
 {
 	// Set all GPIOs to input
-//	for (auto i=0; i<NUM_GPIO; i++) {
-//		m_gpioState = 1;
-//	}
-
 	pinMode(static_cast<uint8_t>(GPIO::GPIO0), INPUT);
 	pinMode(static_cast<uint8_t>(GPIO::GPIO1), INPUT);
 	pinMode(static_cast<uint8_t>(GPIO::GPIO2), INPUT);
@@ -28,9 +24,9 @@ BAGpio::BAGpio()
 	pinMode(static_cast<uint8_t>(GPIO::TP1),   INPUT);
 	pinMode(static_cast<uint8_t>(GPIO::TP2),   INPUT);
 
+	// Set the LED ot ouput
 	pinMode(USR_LED_ID, OUTPUT);
-	m_ledState = 0;
-
+	clearLed(); // turn off the LED
 
 }
 
@@ -51,10 +47,11 @@ void BAGpio::clearGPIO(GPIO gpioId)
 	digitalWrite(static_cast<uint8_t>(gpioId), 0);
 
 }
-void BAGpio::toggleGPIO(GPIO gpioId)
+int BAGpio::toggleGPIO(GPIO gpioId)
 {
 	int data = digitalRead(static_cast<uint8_t>(gpioId));
 	digitalWrite(static_cast<uint8_t>(gpioId), ~data);
+	return ~data;
 }
 
 void BAGpio::setLed()
@@ -67,10 +64,11 @@ void BAGpio::clearLed()
 	digitalWrite(USR_LED_ID, 0);
 	m_ledState = 0;
 }
-void BAGpio::toggleLed()
+int BAGpio::toggleLed()
 {
 	m_ledState = ~m_ledState;
 	digitalWrite(USR_LED_ID, m_ledState);
+	return m_ledState;
 }
 
 

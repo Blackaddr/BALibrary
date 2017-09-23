@@ -61,6 +61,7 @@ BASpiMemory::BASpiMemory(SpiDeviceId memDeviceId, uint32_t speedHz)
 	m_Init();
 }
 
+// Intitialize the correct Arduino SPI interface
 void BASpiMemory::m_Init()
 {
 
@@ -93,9 +94,9 @@ void BASpiMemory::m_Init()
 }
 
 BASpiMemory::~BASpiMemory() {
-	// TODO Auto-generated destructor stub
 }
 
+// Single address write
 void BASpiMemory::write(int address, int data)
 {
 
@@ -131,6 +132,7 @@ void BASpiMemory::write(int address, int data)
 	digitalWrite(m_csPin, HIGH);
 }
 
+// single address read
 int BASpiMemory::read(int address)
 {
 
