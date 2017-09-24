@@ -23,6 +23,9 @@
 #include <Audio.h>
 #include <MIDI.h>
 
+MIDI_CREATE_DEFAULT_INSTANCE();
+using namespace midi;
+
 AudioInputI2S            i2sIn;
 AudioOutputI2S           i2sOut;
 
@@ -68,7 +71,7 @@ void loop() {
   // GTA Pro.  This test code will periodically send MIDI events which
   // will loop back and get printed in the Serial Monitor.
   ///////////////////////////////////////////////////////////////////////
-  int type, note, velocity, channel, d1, d2;
+  DataByte note, velocity, channel, d1, d2;
 
   // Send MIDI OUT
   int cc, val=0xA, channelSend = 1;
@@ -80,7 +83,7 @@ void loop() {
   }
   
   if (MIDI.read()) {                    // Is there a MIDI message incoming ?
-    byte type = MIDI.getType();
+    MidiType type = MIDI.getType();
     Serial.println(String("MIDI IS WORKING!!!"));
     switch (type) {
       case NoteOn:

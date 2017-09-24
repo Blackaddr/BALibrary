@@ -16,7 +16,10 @@
 #include <MIDI.h>
 #include "BAGuitar.h"
 
-//#define ENABLE_MEM_TEST // uncomment this line to enable the memory test
+MIDI_CREATE_DEFAULT_INSTANCE();
+using namespace midi;
+
+//#define ENABLE_MEM_TEST // uncomment this line and 'Save As' to a new location to test the SPI memory
 
 using namespace BAGuitar;
 
@@ -122,7 +125,7 @@ void loop() {
   // GTA Pro.  This test code will periodically send MIDI events which
   // will loop back and get printed in the Serial Monitor.
   ///////////////////////////////////////////////////////////////////////
-  int type, note, velocity, channel, d1, d2;
+  DataByte note, velocity, channel, d1, d2;
 
   // Send MIDI OUT
   int cc, val=0xA, channelSend = 1;
@@ -134,7 +137,7 @@ void loop() {
   }
   
   if (MIDI.read()) {                    // Is there a MIDI message incoming ?
-    byte type = MIDI.getType();
+    MidiType type = MIDI.getType();
     Serial.println(String("MIDI IS WORKING!!!"));
     switch (type) {
       case NoteOn:
