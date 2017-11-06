@@ -24,6 +24,7 @@
 #include "BAAudioControlWM8731.h" // Codec Control
 #include "BASpiMemory.h"
 #include "BAGpio.h"
+#include "BAAudioEffectDelayExternal.h"
 
 /**************************************************************************//**
  * BAGuitar is a namespace/Library for Guitar processing from Blackaddr Audio.

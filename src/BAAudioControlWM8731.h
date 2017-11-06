@@ -69,6 +69,9 @@ public:
 	/// affect both channels.
 	/// @param val when true, channels are linked, when false, they are controlled separately
 	void setLinkLeftRightIn(bool val);
+	/// Swaps the left and right channels in the codec.
+	///param val when true, channels are swapped, else normal.
+	void setLeftRightSwap(bool val);
 
 	/// Mute/unmute the output DAC, affects both Left and Right output channels.
 	/// @param when true, output DAC is muted, when false, unmuted.

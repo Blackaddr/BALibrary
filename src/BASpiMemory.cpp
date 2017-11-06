@@ -71,6 +71,7 @@ void BASpiMemory::m_Init()
 		SPI.setMOSI(SPI_MOSI_MEM0);
 		SPI.setMISO(SPI_MISO_MEM0);
 		SPI.setSCK(SPI_SCK_MEM0);
+		SPI.begin();
 		break;
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
@@ -79,6 +80,7 @@ void BASpiMemory::m_Init()
 		SPI1.setMOSI(SPI_MOSI_MEM1);
 		SPI1.setMISO(SPI_MISO_MEM1);
 		SPI1.setSCK(SPI_SCK_MEM1);
+		SPI1.begin();
 		break;
 #endif
 
@@ -87,7 +89,6 @@ void BASpiMemory::m_Init()
 		return;
 	}
 
-	SPI.begin();
 	pinMode(m_csPin, OUTPUT);
 	digitalWrite(m_csPin, HIGH);
 
@@ -99,12 +100,10 @@ BASpiMemory::~BASpiMemory() {
 // Single address write
 void BASpiMemory::write(int address, int data)
 {
-
-	SPI.beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
-
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
+		SPI.beginTransaction(m_settings);
+		digitalWrite(m_csPin, LOW);
 		SPI.transfer(SPI_WRITE_CMD);
 		SPI.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
 		SPI.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
@@ -115,7 +114,8 @@ void BASpiMemory::write(int address, int data)
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
-		digitalWrite(m_csPin, HIGH);
+		SPI1.beginTransaction(m_settings);
+		digitalWrite(m_csPin, LOW);
 		SPI1.transfer(SPI_WRITE_CMD);
 		SPI1.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
 		SPI1.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
@@ -137,10 +137,11 @@ int BASpiMemory::read(int address)
 {
 
 	int data = -1;
-	SPI.beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
+
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
+		SPI.beginTransaction(m_settings);
+		digitalWrite(m_csPin, LOW);
 		SPI.transfer(SPI_READ_CMD);
 		SPI.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
 		SPI.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
@@ -151,11 +152,13 @@ int BASpiMemory::read(int address)
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
+		SPI1.beginTransaction(m_settings);
+		digitalWrite(m_csPin, LOW);
 		SPI1.transfer(SPI_READ_CMD);
 		SPI1.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
 		SPI1.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
 		SPI1.transfer((address & SPI_ADDR_0_MASK));
-		data = SPI.transfer(0);
+		data = SPI1.transfer(0);
 		SPI1.endTransaction();
 		break;
 #endif

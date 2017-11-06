@@ -8,6 +8,8 @@
 
 BAAudioControlWM8731	KEYWORD1
 BASpiMemory             KEYWORD1
+BAGpio                  KEYWORD1
+BAAudioEffectDelayExternal	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)

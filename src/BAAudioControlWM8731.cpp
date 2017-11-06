@@ -74,6 +74,10 @@ constexpr int WM8731_DAC_MUTE_SHIFT = 3;
 constexpr int WM8731_HPF_DISABLE_ADDR = 5;
 constexpr int WM8731_HPF_DISABLE_MASK = 0x1;
 constexpr int WM8731_HPF_DISABLE_SHIFT = 0;
+// Register 7
+constexpr int WM8731_LRSWAP_ADDR = 5;
+constexpr int WM8731_LRSWAP_MASK = 0x20;
+constexpr int WM8731_LRSWAPE_SHIFT = 5;
 
 // Register 9
 constexpr int WM8731_ACTIVATE_ADDR = 9;
@@ -226,6 +230,17 @@ void BAAudioControlWM8731::setRightInMute(bool val)
 		regArray[WM8731_RIGHT_INPUT_MUTE_ADDR] &= ~WM8731_RIGHT_INPUT_MUTE_MASK;
 	}
 	write(WM8731_RIGHT_INPUT_MUTE_ADDR, regArray[WM8731_RIGHT_INPUT_MUTE_ADDR]);
+}
+
+// Left/right swap control
+void BAAudioControlWM8731::setLeftRightSwap(bool val)
+{
+	if (val) {
+		regArray[WM8731_LRSWAP_ADDR] |= WM8731_LRSWAP_MASK;
+	} else {
+		regArray[WM8731_LRSWAP_ADDR] &= ~WM8731_LRSWAP_MASK;
+	}
+	write(WM8731_LRSWAP_ADDR, regArray[WM8731_LRSWAP_ADDR]);
 }
 
 // Dac output mute control
