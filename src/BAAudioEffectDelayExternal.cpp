@@ -22,62 +22,53 @@
 
 namespace BAGuitar {
 
-/* Audio Library for Teensy 3.X
- * Copyright (c) 2014, Paul Stoffregen, paul@pjrc.com
- *
- * Development of this audio library was funded by PJRC.COM, LLC by sales of
- * Teensy and Audio Adaptor boards.  Please support PJRC's efforts to develop
- * open source software by purchasing Teensy or other PJRC products.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice, development funding notice, and this permission
- * notice shall be included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 
-//#include "effect_delay_ext.h"
-
-//#define INTERNAL_TEST
-
-// While 20 MHz (Teensy actually uses 16 MHz in most cases) and even 24 MHz
-// have worked well in testing at room temperature with 3.3V power, to fully
-// meet all the worst case timing specs, the SPI clock low time would need
-// to be 40ns (12.5 MHz clock) for the single chip case and 51ns (9.8 MHz
-// clock) for the 6-chip memoryboard with 74LCX126 buffers.
-//
-// Timing analysis and info is here:
-// https://forum.pjrc.com/threads/29276-Limits-of-delay-effect-in-audio-library?p=97506&viewfull=1#post97506
 #define SPISETTING SPISettings(20000000, MSBFIRST, SPI_MODE0)
 
-// Use these with the audio adaptor board  (should be adjustable by the user...)
-//#define SPIRAM_MOSI_PIN  7
-//#define SPIRAM_MISO_PIN  12
-//#define SPIRAM_SCK_PIN   14
-//
-//#define SPIRAM_CS_PIN    6
+struct MemSpiConfig {
+	unsigned mosiPin;
+	unsigned misoPin;
+	unsigned sckPin;
+	unsigned csPin;
+	unsigned memSize;
+};
 
-// Use with TGA Pro
-#define SPIRAM_MOSI_PIN  7
-#define SPIRAM_MISO_PIN  8
-#define SPIRAM_SCK_PIN   14
-#define SPIRAM_CS_PIN    15
+constexpr MemSpiConfig Mem0Config = {7,  8, 14, 15, 65536 };
+constexpr MemSpiConfig Mem1Config = {21, 5, 20, 31, 65536 };
 
-#define MEMBOARD_CS0_PIN 2
-#define MEMBOARD_CS1_PIN 3
-#define MEMBOARD_CS2_PIN 4
+BAAudioEffectDelayExternal::BAAudioEffectDelayExternal()
+: AudioStream(1, inputQueueArray)
+{
+	initialize(MemSelect::MEM0, Mem0Config.memSize);
+}
+
+BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(MemSelect mem, float milliseconds)
+: AudioStream(1, inputQueueArray)
+{
+	uint32_t n = (milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f;
+	initialize(mem, n);
+}
+
+void BAAudioEffectDelayExternal::delay(uint8_t channel, float milliseconds) {
+
+	if (channel >= 8) return;
+	if (milliseconds < 0.0) milliseconds = 0.0;
+	uint32_t n = (milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f;
+	n += AUDIO_BLOCK_SAMPLES;
+	if (n > memory_length - AUDIO_BLOCK_SAMPLES)
+		n = memory_length - AUDIO_BLOCK_SAMPLES;
+	delay_length[channel] = n;
+	uint8_t mask = activemask;
+	if (activemask == 0) AudioStartUsingSPI();
+	activemask = mask | (1<<channel);
+}
+
+void BAAudioEffectDelayExternal::disable(uint8_t channel) {
+	if (channel >= 8) return;
+	uint8_t mask = activemask & ~(1<<channel);
+	activemask = mask;
+	if (mask == 0) AudioStopUsingSPI();
+}
 
 void BAAudioEffectDelayExternal::update(void)
 {
@@ -86,11 +77,7 @@ void BAAudioEffectDelayExternal::update(void)
 
 	// grab incoming data and put it into the memory
 	block = receiveReadOnly();
-	if (memory_type >= BA_AUDIO_MEMORY_UNDEFINED) {
-		// ignore input and do nothing if undefined memory type
-		release(block);
-		return;
-	}
+
 	if (block) {
 		if (head_offset + AUDIO_BLOCK_SAMPLES <= memory_length) {
 			// a single write is enough
@@ -145,123 +132,101 @@ void BAAudioEffectDelayExternal::update(void)
 
 uint32_t BAAudioEffectDelayExternal::allocated[2] = {0, 0};
 
-void BAAudioEffectDelayExternal::initialize(BAAudioEffectDelayMemoryType_t type, uint32_t samples)
+void BAAudioEffectDelayExternal::initialize(MemSelect mem, uint32_t samples)
 {
 	uint32_t memsize, avail;
 
 	activemask = 0;
 	head_offset = 0;
-	memory_type = type;
+	memsize = 65536;
+	m_mem = mem;
 
-	SPI.setMOSI(SPIRAM_MOSI_PIN);
-	SPI.setMISO(SPIRAM_MISO_PIN);
-	SPI.setSCK(SPIRAM_SCK_PIN);
+	switch (mem) {
+	case MemSelect::MEM0 :
+	{
+		m_misoPin = Mem0Config.misoPin;
+		m_mosiPin = Mem0Config.mosiPin;
+		m_sckPin =  Mem0Config.sckPin;
+		m_csPin = Mem0Config.csPin;
 
-	SPI.begin();	
-	
-	if (type == BA_AUDIO_MEMORY_23LC1024) {
-#ifdef INTERNAL_TEST
-		memsize = 8000;
-#else
-		memsize = 65536;
-#endif
-		pinMode(SPIRAM_CS_PIN, OUTPUT);
-		digitalWriteFast(SPIRAM_CS_PIN, HIGH);
-	} else if (type == BA_AUDIO_MEMORY_MEMORYBOARD) {
-		memsize = 393216;
-		pinMode(MEMBOARD_CS0_PIN, OUTPUT);
-		pinMode(MEMBOARD_CS1_PIN, OUTPUT);
-		pinMode(MEMBOARD_CS2_PIN, OUTPUT);
-		digitalWriteFast(MEMBOARD_CS0_PIN, LOW);
-		digitalWriteFast(MEMBOARD_CS1_PIN, LOW);
-		digitalWriteFast(MEMBOARD_CS2_PIN, LOW);		
-	} else if (type == BA_AUDIO_MEMORY_CY15B104) {
-#ifdef INTERNAL_TEST
-		memsize = 8000;
-#else		
-		memsize = 262144;
-#endif	
-		pinMode(SPIRAM_CS_PIN, OUTPUT);
-		digitalWriteFast(SPIRAM_CS_PIN, HIGH);
-			
-	} else {
-		return;
+		SPI.setMOSI(m_mosiPin);
+		SPI.setMISO(m_misoPin);
+		SPI.setSCK(m_sckPin);
+		SPI.begin();
+		break;
 	}
-	avail = memsize - allocated[type];
-	if (avail < AUDIO_BLOCK_SAMPLES*2+1) {
-		memory_type = BA_AUDIO_MEMORY_UNDEFINED;
-		return;
+	case MemSelect::MEM1 :
+		m_misoPin = Mem1Config.misoPin;
+		m_mosiPin = Mem1Config.mosiPin;
+		m_sckPin =  Mem1Config.sckPin;
+		m_csPin = Mem1Config.csPin;
+
+		SPI1.setMOSI(m_mosiPin);
+		SPI1.setMISO(m_misoPin);
+		SPI1.setSCK(m_sckPin);
+		SPI1.begin();
+		break;
 	}
+
+	pinMode(m_csPin, OUTPUT);
+	digitalWriteFast(m_csPin, HIGH);
+
+	avail = memsize - allocated[mem];
+
 	if (samples > avail) samples = avail;
-	memory_begin = allocated[type];
-	allocated[type] += samples;
+	memory_begin = allocated[mem];
+	allocated[mem] += samples;
 	memory_length = samples;
 
 	zero(0, memory_length);
 }
 
 
-#ifdef INTERNAL_TEST
-static int16_t testmem[8000]; // testing only
-#endif
-
 void BAAudioEffectDelayExternal::read(uint32_t offset, uint32_t count, int16_t *data)
 {
 	uint32_t addr = memory_begin + offset;
+	addr *= 2;
 
-#ifdef INTERNAL_TEST
-	while (count) { *data++ = testmem[addr++]; count--; } // testing only
-#else
-	if (memory_type == BA_AUDIO_MEMORY_23LC1024 ||
-		memory_type == BA_AUDIO_MEMORY_CY15B104) {
-		addr *= 2;
+	switch(m_mem) {
+	case MemSelect::MEM0 :
 		SPI.beginTransaction(SPISETTING);
-		digitalWriteFast(SPIRAM_CS_PIN, LOW);
+		digitalWriteFast(m_csPin, LOW);
 		SPI.transfer16((0x03 << 8) | (addr >> 16));
 		SPI.transfer16(addr & 0xFFFF);
+
 		while (count) {
 			*data++ = (int16_t)(SPI.transfer16(0));
 			count--;
 		}
-		digitalWriteFast(SPIRAM_CS_PIN, HIGH);
+		digitalWriteFast(m_csPin, HIGH);
 		SPI.endTransaction();
-	} else if (memory_type == BA_AUDIO_MEMORY_MEMORYBOARD) {
-		SPI.beginTransaction(SPISETTING);
+		break;
+	case MemSelect::MEM1 :
+		SPI1.beginTransaction(SPISETTING);
+		digitalWriteFast(m_csPin, LOW);
+		SPI1.transfer16((0x03 << 8) | (addr >> 16));
+		SPI1.transfer16(addr & 0xFFFF);
+
 		while (count) {
-			uint32_t chip = (addr >> 16) + 1;
-			digitalWriteFast(MEMBOARD_CS0_PIN, chip & 1);
-			digitalWriteFast(MEMBOARD_CS1_PIN, chip & 2);
-			digitalWriteFast(MEMBOARD_CS2_PIN, chip & 4);
-			uint32_t chipaddr = (addr & 0xFFFF) << 1;
-			SPI.transfer16((0x03 << 8) | (chipaddr >> 16));
-			SPI.transfer16(chipaddr & 0xFFFF);
-			uint32_t num = 0x10000 - (addr & 0xFFFF);
-			if (num > count) num = count;
-			count -= num;
-			addr += num;
-			do {
-				*data++ = (int16_t)(SPI.transfer16(0));
-			} while (--num > 0);
+			*data++ = (int16_t)(SPI1.transfer16(0));
+			count--;
 		}
-		digitalWriteFast(MEMBOARD_CS0_PIN, LOW);
-		digitalWriteFast(MEMBOARD_CS1_PIN, LOW);
-		digitalWriteFast(MEMBOARD_CS2_PIN, LOW);
-		SPI.endTransaction();
+		digitalWriteFast(m_csPin, HIGH);
+		SPI1.endTransaction();
+		break;
 	}
-#endif
+
 }
 
 void BAAudioEffectDelayExternal::write(uint32_t offset, uint32_t count, const int16_t *data)
 {
 	uint32_t addr = memory_begin + offset;
 
-#ifdef INTERNAL_TEST
-	while (count) { testmem[addr++] = *data++; count--; } // testing only
-#else
-	if (memory_type == BA_AUDIO_MEMORY_23LC1024) {
+	switch(m_mem) {
+	case MemSelect::MEM0 :
 		addr *= 2;
 		SPI.beginTransaction(SPISETTING);
-		digitalWriteFast(SPIRAM_CS_PIN, LOW);
+		digitalWriteFast(m_csPin, LOW);
 		SPI.transfer16((0x02 << 8) | (addr >> 16));
 		SPI.transfer16(addr & 0xFFFF);
 		while (count) {
@@ -270,53 +235,34 @@ void BAAudioEffectDelayExternal::write(uint32_t offset, uint32_t count, const in
 			SPI.transfer16(w);
 			count--;
 		}
-		digitalWriteFast(SPIRAM_CS_PIN, HIGH);
+		digitalWriteFast(m_csPin, HIGH);
 		SPI.endTransaction();
-	} else if (memory_type == BA_AUDIO_MEMORY_CY15B104) {
+		break;
+	case MemSelect::MEM1 :
 		addr *= 2;
-
-		SPI.beginTransaction(SPISETTING);
-		digitalWriteFast(SPIRAM_CS_PIN, LOW);
-		SPI.transfer(0x06); //write-enable before every write
-		digitalWriteFast(SPIRAM_CS_PIN, HIGH);
-		asm volatile ("NOP\n NOP\n NOP\n NOP\n NOP\n NOP\n");
-		digitalWriteFast(SPIRAM_CS_PIN, LOW);
-		SPI.transfer16((0x02 << 8) | (addr >> 16));
-		SPI.transfer16(addr & 0xFFFF);
+		SPI1.beginTransaction(SPISETTING);
+		digitalWriteFast(m_csPin, LOW);
+		SPI1.transfer16((0x02 << 8) | (addr >> 16));
+		SPI1.transfer16(addr & 0xFFFF);
 		while (count) {
 			int16_t w = 0;
 			if (data) w = *data++;
-			SPI.transfer16(w);
+			SPI1.transfer16(w);
 			count--;
 		}
-		digitalWriteFast(SPIRAM_CS_PIN, HIGH);
-		SPI.endTransaction();	
-	} else if (memory_type == BA_AUDIO_MEMORY_MEMORYBOARD) {
-		SPI.beginTransaction(SPISETTING);
-		while (count) {
-			uint32_t chip = (addr >> 16) + 1;
-			digitalWriteFast(MEMBOARD_CS0_PIN, chip & 1);
-			digitalWriteFast(MEMBOARD_CS1_PIN, chip & 2);
-			digitalWriteFast(MEMBOARD_CS2_PIN, chip & 4);
-			uint32_t chipaddr = (addr & 0xFFFF) << 1;
-			SPI.transfer16((0x02 << 8) | (chipaddr >> 16));
-			SPI.transfer16(chipaddr & 0xFFFF);
-			uint32_t num = 0x10000 - (addr & 0xFFFF);
-			if (num > count) num = count;
-			count -= num;
-			addr += num;
-			do {
-				int16_t w = 0;
-				if (data) w = *data++;
-				SPI.transfer16(w);
-			} while (--num > 0);
-		}
-		digitalWriteFast(MEMBOARD_CS0_PIN, LOW);
-		digitalWriteFast(MEMBOARD_CS1_PIN, LOW);
-		digitalWriteFast(MEMBOARD_CS2_PIN, LOW);
-		SPI.endTransaction();
+		digitalWriteFast(m_csPin, HIGH);
+		SPI1.endTransaction();
+		break;
 	}
-#endif
+
+
 }
+
+///////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+///////////////////////////////////////////////////////////////////
+void BAAudioEffectDelayExternal::zero(uint32_t address, uint32_t count) {
+		write(address, count, NULL);
+	}
 
 } /* namespace BAGuitar */
