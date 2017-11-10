@@ -26,14 +26,16 @@ class BAAudioEffectDelayExternal : public AudioStream
 public:
 
 	BAAudioEffectDelayExternal();
-	BAAudioEffectDelayExternal(MemSelect type, float milliseconds=1e6);
+	BAAudioEffectDelayExternal(MemSelect type);
 
 	void delay(uint8_t channel, float milliseconds);
 	void disable(uint8_t channel);
 	virtual void update(void);
 
+	static unsigned m_usingSPICount[2];
+
 private:
-	void initialize(MemSelect mem, uint32_t samples);
+	void initialize(MemSelect mem);
 	void read(uint32_t address, uint32_t count, int16_t *data);
 	void write(uint32_t address, uint32_t count, const int16_t *data);
 	void zero(uint32_t address, uint32_t count);
@@ -46,11 +48,17 @@ private:
 	static uint32_t allocated[2];
 	audio_block_t *inputQueueArray[1];
 
+
+
 	MemSelect m_mem;
-	int m_misoPin;
-	int m_mosiPin;
-	int m_sckPin;
-	int m_csPin;
+	int m_spiChannel = 0;
+	int m_misoPin = 0;
+	int m_mosiPin = 0;
+	int m_sckPin = 0;
+	int m_csPin = 0;
+
+	void m_startUsingSPI(int spiBus);
+	void m_stopUsingSPI(int spiBus);
 };
 
 
