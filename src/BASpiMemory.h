@@ -60,10 +60,13 @@ public:
 	/// @param data the value to write
 	void write(int address, int data);
 
+	void write16(int address, uint16_t data);
+
 	/// read a single data word from the specified address
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
 	int  read(int address);
+	uint16_t  read16(int address);
 
 private:
 	SpiDeviceId m_memDeviceId; // the MEM device being control with this instance
