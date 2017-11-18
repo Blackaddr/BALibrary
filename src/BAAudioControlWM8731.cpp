@@ -103,7 +103,6 @@ void BAAudioControlWM8731::resetInternalReg(void) {
 BAAudioControlWM8731::BAAudioControlWM8731()
 {
 	resetInternalReg();
-	Wire.begin(); // start the I2C service
 }
 
 BAAudioControlWM8731::~BAAudioControlWM8731()
@@ -113,6 +112,9 @@ BAAudioControlWM8731::~BAAudioControlWM8731()
 // Powerdown and disable the codec
 void BAAudioControlWM8731::disable(void)
 {
+
+	Serial.println("Disabling codec");
+	if (m_wireStarted == false) { Wire.begin(); m_wireStarted = true; }
 
 	// set OUTPD to '1' (powerdown), which is bit 4
 	regArray[WM8731_REG_POWERDOWN] |= 0x10;
@@ -130,6 +132,8 @@ void BAAudioControlWM8731::disable(void)
 void BAAudioControlWM8731::enable(void)
 {
 
+	Serial.println("Enabling codec");
+	if (m_wireStarted == false) { Wire.begin(); m_wireStarted = true; }
 	// Sequence from WAN0111.pdf
 
 	// Begin configuring the codec
@@ -172,6 +176,8 @@ void BAAudioControlWM8731::enable(void)
 	write(WM8731_REG_POWERDOWN, 0x02); // power up outputs
 	regArray[WM8731_REG_POWERDOWN] = 0x02;
 	delay(500); // wait for output to power up
+
+	Serial.println("Done codec config");
 
 
 	delay(100); // wait for mute ramp
@@ -315,10 +321,19 @@ void BAAudioControlWM8731::writeI2C(unsigned int addr, unsigned int val)
 // Low level write control for the codec via the Teensy I2C interface
 bool BAAudioControlWM8731::write(unsigned int reg, unsigned int val)
 {
-	Wire.beginTransmission(WM8731_I2C_ADDR);
-	Wire.write((reg << 1) | ((val >> 8) & 1));
-	Wire.write(val & 0xFF);
-	Wire.endTransmission();
+	bool done = false;
+
+	while (!done) {
+		Wire.beginTransmission(WM8731_I2C_ADDR);
+		Wire.write((reg << 1) | ((val >> 8) & 1));
+		Wire.write(val & 0xFF);
+		if (byte error = Wire.endTransmission() ) {
+			//Serial.println(String("Wire::Error: ") + error + String(" retrying..."));
+		} else {
+			done = true;
+			//Serial.println("Wire::SUCCESS!");
+		}
+	}
 
 	return true;
 }

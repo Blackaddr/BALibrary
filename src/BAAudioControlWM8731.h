@@ -24,8 +24,6 @@
 #ifndef INC_BAAUDIOCONTROLWM8731_H_
 #define INC_BAAUDIOCONTROLWM8731_H_
 
-#include <Audio.h>
-
 namespace BAGuitar {
 
 constexpr int WM8731_NUM_REGS = 10; // Number of registers in the internal shadow array
@@ -122,6 +120,8 @@ private:
 	bool write(unsigned int reg, unsigned int val);
 	// resets the internal shadow register array
 	void resetInternalReg(void);
+
+	bool m_wireStarted = false;
 
 };
 
