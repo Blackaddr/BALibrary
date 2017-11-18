@@ -113,7 +113,7 @@ BAAudioControlWM8731::~BAAudioControlWM8731()
 void BAAudioControlWM8731::disable(void)
 {
 
-	Serial.println("Disabling codec");
+	//Serial.println("Disabling codec");
 	if (m_wireStarted == false) { Wire.begin(); m_wireStarted = true; }
 
 	// set OUTPD to '1' (powerdown), which is bit 4
@@ -132,7 +132,7 @@ void BAAudioControlWM8731::disable(void)
 void BAAudioControlWM8731::enable(void)
 {
 
-	Serial.println("Enabling codec");
+	//Serial.println("Enabling codec");
 	if (m_wireStarted == false) { Wire.begin(); m_wireStarted = true; }
 	// Sequence from WAN0111.pdf
 
@@ -177,7 +177,7 @@ void BAAudioControlWM8731::enable(void)
 	regArray[WM8731_REG_POWERDOWN] = 0x02;
 	delay(500); // wait for output to power up
 
-	Serial.println("Done codec config");
+	//Serial.println("Done codec config");
 
 
 	delay(100); // wait for mute ramp
@@ -328,6 +328,7 @@ bool BAAudioControlWM8731::write(unsigned int reg, unsigned int val)
 		Wire.write((reg << 1) | ((val >> 8) & 1));
 		Wire.write(val & 0xFF);
 		if (byte error = Wire.endTransmission() ) {
+			(void)error; // supress warning about unused variable
 			//Serial.println(String("Wire::Error: ") + error + String(" retrying..."));
 		} else {
 			done = true;
