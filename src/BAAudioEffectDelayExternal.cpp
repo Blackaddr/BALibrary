@@ -22,7 +22,6 @@
 
 namespace BAGuitar {
 
-
 #define SPISETTING SPISettings(20000000, MSBFIRST, SPI_MODE0)
 
 struct MemSpiConfig {
@@ -39,15 +38,27 @@ constexpr MemSpiConfig Mem1Config = {21, 5, 20, 31, 65536 };
 unsigned BAAudioEffectDelayExternal::m_usingSPICount[2] = {0,0};
 
 BAAudioEffectDelayExternal::BAAudioEffectDelayExternal()
-: AudioStream(1, inputQueueArray)
+: AudioStream(1, m_inputQueueArray)
 {
 	initialize(MemSelect::MEM0);
 }
 
 BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(MemSelect mem)
-: AudioStream(1, inputQueueArray)
+: AudioStream(1, m_inputQueueArray)
 {
 	initialize(mem);
+}
+
+BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(BAGuitar::MemSelect type, float delayLengthMs)
+: AudioStream(1, m_inputQueueArray)
+{
+	unsigned delayLengthInt = (delayLengthMs*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f;
+	initialize(type, delayLengthInt);
+}
+
+BAAudioEffectDelayExternal::~BAAudioEffectDelayExternal()
+{
+	if (m_spi) delete m_spi;
 }
 
 void BAAudioEffectDelayExternal::delay(uint8_t channel, float milliseconds) {
@@ -56,18 +67,18 @@ void BAAudioEffectDelayExternal::delay(uint8_t channel, float milliseconds) {
 	if (milliseconds < 0.0) milliseconds = 0.0;
 	uint32_t n = (milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f;
 	n += AUDIO_BLOCK_SAMPLES;
-	if (n > memory_length - AUDIO_BLOCK_SAMPLES)
-		n = memory_length - AUDIO_BLOCK_SAMPLES;
-	delay_length[channel] = n;
-	uint8_t mask = activemask;
-	if (activemask == 0) m_startUsingSPI(m_spiChannel);
-	activemask = mask | (1<<channel);
+	if (n > m_memoryLength - AUDIO_BLOCK_SAMPLES)
+		n = m_memoryLength - AUDIO_BLOCK_SAMPLES;
+	m_channelDelayLength[channel] = n;
+	unsigned mask = m_activeMask;
+	if (m_activeMask == 0) m_startUsingSPI(m_spiChannel);
+	m_activeMask = mask | (1<<channel);
 }
 
 void BAAudioEffectDelayExternal::disable(uint8_t channel) {
 	if (channel >= 8) return;
-	uint8_t mask = activemask & ~(1<<channel);
-	activemask = mask;
+	uint8_t mask = m_activeMask & ~(1<<channel);
+	m_activeMask = mask;
 	if (mask == 0) m_stopUsingSPI(m_spiChannel);
 }
 
@@ -80,49 +91,49 @@ void BAAudioEffectDelayExternal::update(void)
 	block = receiveReadOnly();
 
 	if (block) {
-		if (head_offset + AUDIO_BLOCK_SAMPLES <= memory_length) {
+		if (m_headOffset + AUDIO_BLOCK_SAMPLES <= m_memoryLength) {
 			// a single write is enough
-			write(head_offset, AUDIO_BLOCK_SAMPLES, block->data);
-			head_offset += AUDIO_BLOCK_SAMPLES;
+			write(m_headOffset, AUDIO_BLOCK_SAMPLES, block->data);
+			m_headOffset += AUDIO_BLOCK_SAMPLES;
 		} else {
 			// write wraps across end-of-memory
-			n = memory_length - head_offset;
-			write(head_offset, n, block->data);
-			head_offset = AUDIO_BLOCK_SAMPLES - n;
-			write(0, head_offset, block->data + n);
+			n = m_memoryLength - m_headOffset;
+			write(m_headOffset, n, block->data);
+			m_headOffset = AUDIO_BLOCK_SAMPLES - n;
+			write(0, m_headOffset, block->data + n);
 		}
 		release(block);
 	} else {
 		// if no input, store zeros, so later playback will
 		// not be random garbage previously stored in memory
-		if (head_offset + AUDIO_BLOCK_SAMPLES <= memory_length) {
-			zero(head_offset, AUDIO_BLOCK_SAMPLES);
-			head_offset += AUDIO_BLOCK_SAMPLES;
+		if (m_headOffset + AUDIO_BLOCK_SAMPLES <= m_memoryLength) {
+			zero(m_headOffset, AUDIO_BLOCK_SAMPLES);
+			m_headOffset += AUDIO_BLOCK_SAMPLES;
 		} else {
-			n = memory_length - head_offset;
-			zero(head_offset, n);
-			head_offset = AUDIO_BLOCK_SAMPLES - n;
-			zero(0, head_offset);
+			n = m_memoryLength - m_headOffset;
+			zero(m_headOffset, n);
+			m_headOffset = AUDIO_BLOCK_SAMPLES - n;
+			zero(0, m_headOffset);
 		}
 	}
 
 	// transmit the delayed outputs
 	for (channel = 0; channel < 8; channel++) {
-		if (!(activemask & (1<<channel))) continue;
+		if (!(m_activeMask & (1<<channel))) continue;
 		block = allocate();
 		if (!block) continue;
 		// compute the delayed location where we read
-		if (delay_length[channel] <= head_offset) {
-			read_offset = head_offset - delay_length[channel];
+		if (m_channelDelayLength[channel] <= m_headOffset) {
+			read_offset = m_headOffset - m_channelDelayLength[channel];
 		} else {
-			read_offset = memory_length + head_offset - delay_length[channel];
+			read_offset = m_memoryLength + m_headOffset - m_channelDelayLength[channel];
 		}
-		if (read_offset + AUDIO_BLOCK_SAMPLES <= memory_length) {
+		if (read_offset + AUDIO_BLOCK_SAMPLES <= m_memoryLength) {
 			// a single read will do it
 			read(read_offset, AUDIO_BLOCK_SAMPLES, block->data);
 		} else {
 			// read wraps across end-of-memory
-			n = memory_length - read_offset;
+			n = m_memoryLength - read_offset;
 			read(read_offset, n, block->data);
 			read(0, AUDIO_BLOCK_SAMPLES - n, block->data + n);
 		}
@@ -131,138 +142,106 @@ void BAAudioEffectDelayExternal::update(void)
 	}
 }
 
-uint32_t BAAudioEffectDelayExternal::allocated[2] = {0, 0};
+unsigned BAAudioEffectDelayExternal::m_allocated[2] = {0, 0};
 
-void BAAudioEffectDelayExternal::initialize(MemSelect mem)
+void BAAudioEffectDelayExternal::initialize(MemSelect mem, unsigned delayLength)
 {
-	uint32_t samples = 0;
-	uint32_t memsize, avail;
+	unsigned samples = 0;
+	unsigned memsize, avail;
 
-	activemask = 0;
-	head_offset = 0;
-	memsize = 65536;
+	m_activeMask = 0;
+	m_headOffset = 0;
 	m_mem = mem;
 
 	switch (mem) {
 	case MemSelect::MEM0 :
 	{
-		samples = Mem0Config.memSize;
+		memsize = Mem0Config.memSize;
+		m_spi = &SPI;
 		m_spiChannel = 0;
 		m_misoPin = Mem0Config.misoPin;
 		m_mosiPin = Mem0Config.mosiPin;
 		m_sckPin =  Mem0Config.sckPin;
 		m_csPin = Mem0Config.csPin;
 
-		SPI.setMOSI(m_mosiPin);
-		SPI.setMISO(m_misoPin);
-		SPI.setSCK(m_sckPin);
-		SPI.begin();
+		m_spi->setMOSI(m_mosiPin);
+		m_spi->setMISO(m_misoPin);
+		m_spi->setSCK(m_sckPin);
+		m_spi->begin();
 		break;
 	}
 	case MemSelect::MEM1 :
 	{
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+		memsize = Mem1Config.memSize;
+		m_spi = &SPI1;
 		m_spiChannel = 1;
-		samples = Mem1Config.memSize;
 		m_misoPin = Mem1Config.misoPin;
 		m_mosiPin = Mem1Config.mosiPin;
 		m_sckPin =  Mem1Config.sckPin;
 		m_csPin = Mem1Config.csPin;
 
-		SPI1.setMOSI(m_mosiPin);
-		SPI1.setMISO(m_misoPin);
-		SPI1.setSCK(m_sckPin);
-		SPI1.begin();
+		m_spi->setMOSI(m_mosiPin);
+		m_spi->setMISO(m_misoPin);
+		m_spi->setSCK(m_sckPin);
+		m_spi->begin();
+#endif
 		break;
 	}
+
 	}
 
 	pinMode(m_csPin, OUTPUT);
 	digitalWriteFast(m_csPin, HIGH);
 
-	avail = memsize - allocated[mem];
+	avail = memsize - m_allocated[mem];
 
-	if (samples > avail) samples = avail;
-	memory_begin = allocated[mem];
-	allocated[mem] += samples;
-	memory_length = samples;
+	if (delayLength > avail) samples = avail;
+	m_memoryStart = m_allocated[mem];
+	m_allocated[mem] += samples;
+	m_memoryLength = samples;
 
-	zero(0, memory_length);
+	zero(0, m_memoryLength);
+
 }
 
 
 void BAAudioEffectDelayExternal::read(uint32_t offset, uint32_t count, int16_t *data)
 {
-	uint32_t addr = memory_begin + offset;
+	uint32_t addr = m_memoryStart + offset;
 	addr *= 2;
 
-	switch(m_mem) {
-	case MemSelect::MEM0 :
-		SPI.beginTransaction(SPISETTING);
-		digitalWriteFast(m_csPin, LOW);
-		SPI.transfer16((0x03 << 8) | (addr >> 16));
-		SPI.transfer16(addr & 0xFFFF);
+	m_spi->beginTransaction(SPISETTING);
+	digitalWriteFast(m_csPin, LOW);
+	m_spi->transfer16((0x03 << 8) | (addr >> 16));
+	m_spi->transfer16(addr & 0xFFFF);
 
-		while (count) {
-			*data++ = (int16_t)(SPI.transfer16(0));
-			count--;
-		}
-		digitalWriteFast(m_csPin, HIGH);
-		SPI.endTransaction();
-		break;
-	case MemSelect::MEM1 :
-		SPI1.beginTransaction(SPISETTING);
-		digitalWriteFast(m_csPin, LOW);
-		SPI1.transfer16((0x03 << 8) | (addr >> 16));
-		SPI1.transfer16(addr & 0xFFFF);
-
-		while (count) {
-			*data++ = (int16_t)(SPI1.transfer16(0));
-			count--;
-		}
-		digitalWriteFast(m_csPin, HIGH);
-		SPI1.endTransaction();
-		break;
+	while (count) {
+		*data++ = (int16_t)(m_spi->transfer16(0));
+		count--;
 	}
+	digitalWriteFast(m_csPin, HIGH);
+	m_spi->endTransaction();
 
 }
 
 void BAAudioEffectDelayExternal::write(uint32_t offset, uint32_t count, const int16_t *data)
 {
-	uint32_t addr = memory_begin + offset;
+	uint32_t addr = m_memoryStart + offset;
 
-	switch(m_mem) {
-	case MemSelect::MEM0 :
-		addr *= 2;
-		SPI.beginTransaction(SPISETTING);
-		digitalWriteFast(m_csPin, LOW);
-		SPI.transfer16((0x02 << 8) | (addr >> 16));
-		SPI.transfer16(addr & 0xFFFF);
-		while (count) {
-			int16_t w = 0;
-			if (data) w = *data++;
-			SPI.transfer16(w);
-			count--;
-		}
-		digitalWriteFast(m_csPin, HIGH);
-		SPI.endTransaction();
-		break;
-	case MemSelect::MEM1 :
-		addr *= 2;
-		SPI1.beginTransaction(SPISETTING);
-		digitalWriteFast(m_csPin, LOW);
-		SPI1.transfer16((0x02 << 8) | (addr >> 16));
-		SPI1.transfer16(addr & 0xFFFF);
-		while (count) {
-			int16_t w = 0;
-			if (data) w = *data++;
-			SPI1.transfer16(w);
-			count--;
-		}
-		digitalWriteFast(m_csPin, HIGH);
-		SPI1.endTransaction();
-		break;
+	addr *= 2;
+	m_spi->beginTransaction(SPISETTING);
+	digitalWriteFast(m_csPin, LOW);
+	m_spi->transfer16((0x02 << 8) | (addr >> 16));
+	m_spi->transfer16(addr & 0xFFFF);
+	while (count) {
+		int16_t w = 0;
+		if (data) w = *data++;
+		m_spi->transfer16(w);
+		count--;
 	}
-
+	digitalWriteFast(m_csPin, HIGH);
+	m_spi->endTransaction();
 
 }
 
@@ -276,9 +255,9 @@ void BAAudioEffectDelayExternal::zero(uint32_t address, uint32_t count) {
 #ifdef SPI_HAS_NOTUSINGINTERRUPT
 inline void BAAudioEffectDelayExternal::m_startUsingSPI(int spiBus) {
 	if (spiBus == 0) {
-		SPI.usingInterrupt(IRQ_SOFTWARE);
+		m_spi->usingInterrupt(IRQ_SOFTWARE);
 	} else if (spiBus == 1) {
-		SPI1.usingInterrupt(IRQ_SOFTWARE);
+		m_spi->usingInterrupt(IRQ_SOFTWARE);
 	}
 	m_usingSPICount[spiBus]++;
 }
@@ -287,9 +266,9 @@ inline void BAAudioEffectDelayExternal::m_stopUsingSPI(int spiBus) {
 	if (m_usingSPICount[spiBus] == 0 || --m_usingSPICount[spiBus] == 0)
 	{
 		if (spiBus == 0) {
-			SPI.notUsingInterrupt(IRQ_SOFTWARE);
+			m_spi->notUsingInterrupt(IRQ_SOFTWARE);
 		} else if (spiBus == 1) {
-			SPI1.notUsingInterrupt(IRQ_SOFTWARE);
+			m_spi->notUsingInterrupt(IRQ_SOFTWARE);
 		}
 
 	}
@@ -298,9 +277,9 @@ inline void BAAudioEffectDelayExternal::m_stopUsingSPI(int spiBus) {
 #else
 inline void BAAudioEffectDelayExternal::m_startUsingSPI(int spiBus) {
 	if (spiBus == 0) {
-		SPI.usingInterrupt(IRQ_SOFTWARE);
+		m_spi->usingInterrupt(IRQ_SOFTWARE);
 	} else if (spiBus == 1) {
-		SPI1.usingInterrupt(IRQ_SOFTWARE);
+		m_spi->usingInterrupt(IRQ_SOFTWARE);
 	}
 
 }

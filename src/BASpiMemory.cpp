@@ -45,42 +45,40 @@ constexpr int SPI_ADDR_1_SHIFT = 8;
 constexpr int SPI_ADDR_0_MASK = 0x0000FF;
 
 
-
-
 BASpiMemory::BASpiMemory(SpiDeviceId memDeviceId)
 {
 	m_memDeviceId = memDeviceId;
 	m_settings = {20000000, MSBFIRST, SPI_MODE0};
-	m_Init();
 }
 
 BASpiMemory::BASpiMemory(SpiDeviceId memDeviceId, uint32_t speedHz)
 {
 	m_memDeviceId = memDeviceId;
 	m_settings = {speedHz, MSBFIRST, SPI_MODE0};
-	m_Init();
 }
 
 // Intitialize the correct Arduino SPI interface
-void BASpiMemory::m_Init()
+void BASpiMemory::begin()
 {
 
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
 		m_csPin = SPI_CS_MEM0;
-		SPI.setMOSI(SPI_MOSI_MEM0);
-		SPI.setMISO(SPI_MISO_MEM0);
-		SPI.setSCK(SPI_SCK_MEM0);
-		SPI.begin();
+		m_spi = &SPI;
+		m_spi->setMOSI(SPI_MOSI_MEM0);
+		m_spi->setMISO(SPI_MISO_MEM0);
+		m_spi->setSCK(SPI_SCK_MEM0);
+		m_spi->begin();
 		break;
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
 		m_csPin = SPI_CS_MEM1;
-		SPI1.setMOSI(SPI_MOSI_MEM1);
-		SPI1.setMISO(SPI_MISO_MEM1);
-		SPI1.setSCK(SPI_SCK_MEM1);
-		SPI1.begin();
+		m_spi = &SPI1;
+		m_spi->setMOSI(SPI_MOSI_MEM1);
+		m_spi->setMISO(SPI_MISO_MEM1);
+		m_spi->setSCK(SPI_SCK_MEM1);
+		m_spi->begin();
 		break;
 #endif
 
@@ -100,104 +98,41 @@ BASpiMemory::~BASpiMemory() {
 // Single address write
 void BASpiMemory::write(int address, int data)
 {
-	switch (m_memDeviceId) {
-	case SpiDeviceId::SPI_DEVICE0 :
-		SPI.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI.transfer(SPI_WRITE_CMD);
-		SPI.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
-		SPI.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
-		SPI.transfer((address & SPI_ADDR_0_MASK));
-		SPI.transfer(data);
-		SPI.endTransaction();
-		break;
-
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-	case SpiDeviceId::SPI_DEVICE1 :
-		SPI1.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI1.transfer(SPI_WRITE_CMD);
-		SPI1.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
-		SPI1.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
-		SPI1.transfer((address & SPI_ADDR_0_MASK));
-		SPI1.transfer(data);
-		SPI1.endTransaction();
-		break;
-#endif
-
-	default :
-		break;
-		// unreachable
-	}
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer(SPI_WRITE_CMD);
+	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_0_MASK));
+	m_spi->transfer(data);
+	m_spi->endTransaction();
 	digitalWrite(m_csPin, HIGH);
 }
 
 void BASpiMemory::write16(int address, uint16_t data)
 {
-	switch (m_memDeviceId) {
-	case SpiDeviceId::SPI_DEVICE0 :
-		SPI.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI.transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
-		SPI.transfer16(address & 0xFFFF);
-		SPI.transfer16(data);
-		SPI.endTransaction();
-		break;
-
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-	case SpiDeviceId::SPI_DEVICE1 :
-		SPI1.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI1.transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
-		SPI1.transfer16(address & 0xFFFF);
-		SPI1.transfer16(data);
-		SPI1.endTransaction();
-		break;
-#endif
-
-	default :
-		break;
-		// unreachable
-	}
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
+	m_spi->transfer16(address & 0xFFFF);
+	m_spi->transfer16(data);
+	m_spi->endTransaction();
 	digitalWrite(m_csPin, HIGH);
 }
 
 // single address read
 int BASpiMemory::read(int address)
 {
+	int data;
 
-	int data = -1;
-
-	switch (m_memDeviceId) {
-	case SpiDeviceId::SPI_DEVICE0 :
-		SPI.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI.transfer(SPI_READ_CMD);
-		SPI.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
-		SPI.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
-		SPI.transfer((address & SPI_ADDR_0_MASK));
-		data = SPI.transfer(0);
-		SPI.endTransaction();
-		break;
-
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-	case SpiDeviceId::SPI_DEVICE1 :
-		SPI1.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI1.transfer(SPI_READ_CMD);
-		SPI1.transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
-		SPI1.transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
-		SPI1.transfer((address & SPI_ADDR_0_MASK));
-		data = SPI1.transfer(0);
-		SPI1.endTransaction();
-		break;
-#endif
-
-	default:
-		break;
-		// unreachable
-	}
-
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer(SPI_READ_CMD);
+	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_0_MASK));
+	data = m_spi->transfer(0);
+	m_spi->endTransaction();
 	digitalWrite(m_csPin, HIGH);
 	return data;
 }
@@ -205,33 +140,13 @@ int BASpiMemory::read(int address)
 uint16_t BASpiMemory::read16(int address)
 {
 
-	uint16_t data=0;
-
-	switch (m_memDeviceId) {
-	case SpiDeviceId::SPI_DEVICE0 :
-		SPI.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI.transfer16((SPI_READ_CMD << 8) | (address >> 16) );
-		SPI.transfer16(address & 0xFFFF);
-		data = SPI.transfer16(0);
-		SPI.endTransaction();
-		break;
-
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-	case SpiDeviceId::SPI_DEVICE1 :
-		SPI1.beginTransaction(m_settings);
-		digitalWrite(m_csPin, LOW);
-		SPI1.transfer16((SPI_READ_CMD << 8) | (address >> 16) );
-		SPI1.transfer16(address & 0xFFFF);
-		data = SPI1.transfer16(0);
-		SPI1.endTransaction();
-		break;
-#endif
-
-	default:
-		break;
-		// unreachable
-	}
+	uint16_t data;
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer16((SPI_READ_CMD << 8) | (address >> 16) );
+	m_spi->transfer16(address & 0xFFFF);
+	data = m_spi->transfer16(0);
+	m_spi->endTransaction();
 
 	digitalWrite(m_csPin, HIGH);
 	return data;

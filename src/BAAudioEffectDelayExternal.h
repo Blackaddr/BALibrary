@@ -9,16 +9,17 @@
 #define __BAGUITAR_BAAUDIOEFFECTDELAYEXTERNAL_H
 
 #include <Audio.h>
-
-namespace BAGuitar {
-
 #include "Arduino.h"
 #include "AudioStream.h"
 #include "spi_interrupt.h"
 
-enum MemSelect {
-	MEM0,
-	MEM1,
+#include "BACommon.h"
+
+namespace BAGuitar {
+
+enum MemSelect : unsigned {
+	MEM0 = 0,
+	MEM1 = 1
 };
 
 class BAAudioEffectDelayExternal : public AudioStream
@@ -26,7 +27,9 @@ class BAAudioEffectDelayExternal : public AudioStream
 public:
 
 	BAAudioEffectDelayExternal();
-	BAAudioEffectDelayExternal(MemSelect type);
+	BAAudioEffectDelayExternal(BAGuitar::MemSelect type);
+	BAAudioEffectDelayExternal(BAGuitar::MemSelect type, float delayLengthMs);
+	virtual ~BAAudioEffectDelayExternal();
 
 	void delay(uint8_t channel, float milliseconds);
 	void disable(uint8_t channel);
@@ -35,22 +38,22 @@ public:
 	static unsigned m_usingSPICount[2];
 
 private:
-	void initialize(MemSelect mem);
+	void initialize(BAGuitar::MemSelect mem, unsigned delayLength = 1e6);
 	void read(uint32_t address, uint32_t count, int16_t *data);
 	void write(uint32_t address, uint32_t count, const int16_t *data);
 	void zero(uint32_t address, uint32_t count);
-	uint32_t memory_begin;    // the first address in the memory we're using
-	uint32_t memory_length;   // the amount of memory we're using
-	uint32_t head_offset;     // head index (incoming) data into external memory
-	uint32_t delay_length[8]; // # of sample delay for each channel (128 = no delay)
-	uint8_t  activemask;      // which output channels are active
-	//uint8_t  memory_type;     // 0=23LC1024, 1=Frank's Memoryboard
-	static uint32_t allocated[2];
-	audio_block_t *inputQueueArray[1];
+	unsigned m_memoryStart;    // the first address in the memory we're using
+	unsigned m_memoryLength;   // the amount of memory we're using
+	unsigned m_headOffset;     // head index (incoming) data into external memory
+	unsigned m_channelDelayLength[8]; // # of sample delay for each channel (128 = no delay)
+	unsigned  m_activeMask;      // which output channels are active
+	static unsigned m_allocated[2];
+	audio_block_t *m_inputQueueArray[1];
 
 
 
-	MemSelect m_mem;
+	BAGuitar::MemSelect m_mem;
+	SPIClass *m_spi = nullptr;
 	int m_spiChannel = 0;
 	int m_misoPin = 0;
 	int m_mosiPin = 0;

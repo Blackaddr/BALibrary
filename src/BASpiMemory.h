@@ -55,6 +55,8 @@ public:
 	BASpiMemory(SpiDeviceId memDeviceId, uint32_t speedHz);
 	virtual ~BASpiMemory();
 
+	void begin(void);
+
 	/// write a single data word to the specified address
 	/// @param address the address in the SPI RAM to write to
 	/// @param data the value to write
@@ -69,10 +71,10 @@ public:
 	uint16_t  read16(int address);
 
 private:
+	SPIClass *m_spi = nullptr;
 	SpiDeviceId m_memDeviceId; // the MEM device being control with this instance
 	uint8_t m_csPin; // the IO pin number for the CS on the controlled SPI device
 	SPISettings m_settings; // the Wire settings for this SPI port
-	void m_Init();
 
 };
 
