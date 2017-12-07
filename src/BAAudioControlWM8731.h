@@ -1,12 +1,13 @@
 /**************************************************************************//**
+ *  @file
+ *  @author Steve Lascos
+ *  @company Blackaddr Audio
+ *
  *  BAAudioContromWM8731 is a class for controlling a WM8731 Codec via I2C.
  *  @details The Codec power ups in a silent state, with non-optimal
  *  configuration. This class will enable codec and set some initial gain levels.
  *  The user can than use the API to changing settings for their specific needs.
  *
- *  @file
- *  @author Steve Lascos
- *  @company Blackaddr Audio
  *  @copyright This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
@@ -21,8 +22,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef INC_BAAUDIOCONTROLWM8731_H_
-#define INC_BAAUDIOCONTROLWM8731_H_
+#ifndef __INC_BAAUDIOCONTROLWM8731_H
+#define __INC_BAAUDIOCONTROLWM8731_H
 
 namespace BAGuitar {
 
@@ -127,4 +128,4 @@ private:
 
 } /* namespace BAGuitar */
 
-#endif /* INC_BAAUDIOCONTROLWM8731_H_ */
+#endif /* __INC_BAAUDIOCONTROLWM8731_H */

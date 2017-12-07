@@ -1,41 +1,70 @@
-/*
- * BAAudioEffectDelayExternal.h
+/**************************************************************************//**
+ *  @file
+ *  @author Steve Lascos
+ *  @company Blackaddr Audio
  *
- *  Created on: Nov 5, 2017
- *      Author: slascos
- */
+ *  BAAudioEffectDelayExternal is a class for using an external SPI SRAM chip
+ *  as an audio delay line. The external memory can be shared among several
+ *  different instances of BAAudioEffectDelayExternal by specifying the max delay
+ *  length during construction.
+ *
+ *  @copyright This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.*
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *****************************************************************************/
 
 #ifndef __BAGUITAR_BAAUDIOEFFECTDELAYEXTERNAL_H
 #define __BAGUITAR_BAAUDIOEFFECTDELAYEXTERNAL_H
 
 #include <Audio.h>
-#include "Arduino.h"
 #include "AudioStream.h"
-#include "spi_interrupt.h"
 
-#include "BACommon.h"
+#include "BAHardware.h"
 
 namespace BAGuitar {
 
-enum MemSelect : unsigned {
-	MEM0 = 0,
-	MEM1 = 1
-};
-
+/**************************************************************************//**
+ * BAAudioEffectDelayExternal can use external SPI RAM for delay rather than
+ * the limited RAM available on the Teensy itself.
+ *****************************************************************************/
 class BAAudioEffectDelayExternal : public AudioStream
 {
 public:
 
+	/// Default constructor will use all memory available in MEM0
 	BAAudioEffectDelayExternal();
+
+	/// Specifiy which external memory to use
+	/// @param type specify which memory to use
 	BAAudioEffectDelayExternal(BAGuitar::MemSelect type);
+
+	/// Specify external memory, and how much of the memory to use
+	/// @param type specify which memory to use
+	/// @param delayLengthMs maximum delay length in milliseconds
 	BAAudioEffectDelayExternal(BAGuitar::MemSelect type, float delayLengthMs);
 	virtual ~BAAudioEffectDelayExternal();
 
+	/// set the actual amount of delay on a given delay tap
+	/// @param channel specify channel tap 1-8
+	/// @param milliseconds specify how much delay for the specified tap
 	void delay(uint8_t channel, float milliseconds);
+
+	/// Disable a delay channel tap
+	/// @param channel specify channel tap 1-8
 	void disable(uint8_t channel);
+
 	virtual void update(void);
 
-	static unsigned m_usingSPICount[2];
+	static unsigned m_usingSPICount[2]; // internal use for all instances
 
 private:
 	void initialize(BAGuitar::MemSelect mem, unsigned delayLength = 1e6);
@@ -49,8 +78,6 @@ private:
 	unsigned  m_activeMask;      // which output channels are active
 	static unsigned m_allocated[2];
 	audio_block_t *m_inputQueueArray[1];
-
-
 
 	BAGuitar::MemSelect m_mem;
 	SPIClass *m_spi = nullptr;

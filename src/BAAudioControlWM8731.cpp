@@ -1,5 +1,5 @@
 /*
- * BAAudioControlWM8731.h
+ * BAAudioControlWM8731.cpp
  *
  *  Created on: May 22, 2017
  *      Author: slascos
@@ -131,6 +131,8 @@ void BAAudioControlWM8731::disable(void)
 // Powerup and unmute the codec
 void BAAudioControlWM8731::enable(void)
 {
+
+	disable(); // disable first in case it was already powered up
 
 	//Serial.println("Enabling codec");
 	if (m_wireStarted == false) { Wire.begin(); m_wireStarted = true; }

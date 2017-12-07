@@ -1,10 +1,11 @@
 /**************************************************************************//**
- *  BASpiMemory is convenience class for accessing the optional SPI RAMs on
- *  the GTA Series boards.
- *
  *  @file
  *  @author Steve Lascos
  *  @company Blackaddr Audio
+ *
+ *  BASpiMemory is convenience class for accessing the optional SPI RAMs on
+ *  the GTA Series boards.
+ *
  *  @copyright This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
@@ -18,23 +19,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
-#ifndef SRC_BASPIMEMORY_H_
-#define SRC_BASPIMEMORY_H_
+#ifndef __SRC_BASPIMEMORY_H
+#define __SRC_BASPIMEMORY_H
 
 #include <SPI.h>
 
+#include "BAHardware.h"
+
 namespace BAGuitar {
-
-constexpr int SPI_MAX_ADDR = 131071; ///< Max address size per chip
-
-/**************************************************************************//**
- *  This class enumerates access to the two potential SPI RAMs.
- *****************************************************************************/
-
-enum class SpiDeviceId {
-	SPI_DEVICE0,
-	SPI_DEVICE1
-};
 
 /**************************************************************************//**
  *  This wrapper class uses the Arduino SPI (Wire) library to access the SPI ram.
@@ -64,10 +56,14 @@ public:
 
 	void write16(int address, uint16_t data);
 
-	/// read a single data word from the specified address
+	/// read a single 8-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
 	int  read(int address);
+
+	/// read a single 16-bit data word from the specified address
+	/// @param address the address in the SPI RAM to read from
+	/// @return the data that was read
 	uint16_t  read16(int address);
 
 private:
@@ -82,4 +78,4 @@ class BASpiMemoryException {};
 
 } /* namespace BAGuitar */
 
-#endif /* SRC_BASPIMEMORY_H_ */
+#endif /* __SRC_BASPIMEMORY_H */

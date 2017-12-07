@@ -18,20 +18,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SRC_BATGUITAR_H_
-#define SRC_BATGUITAR_H_
+#ifndef __SRC_BATGUITAR_H
+#define __SRC_BATGUITAR_H
+
+#include "BAHardware.h" // contains the Blackaddr hardware board definitions
 
 #include "BAAudioControlWM8731.h" // Codec Control
 #include "BASpiMemory.h"
 #include "BAGpio.h"
 #include "BAAudioEffectDelayExternal.h"
 
-/**************************************************************************//**
- * BAGuitar is a namespace/Library for Guitar processing from Blackaddr Audio.
- *****************************************************************************/
-namespace BAGuitar {
-
-
-}
-
-#endif /* SRC_BATGUITAR_H_ */
+#endif /* __SRC_BATGUITAR_H */

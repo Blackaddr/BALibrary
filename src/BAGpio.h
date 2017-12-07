@@ -1,10 +1,11 @@
 /**************************************************************************//**
- *  BAGPio is convenience class for accessing the the various GPIOs available
- *  on the Teensy Guitar Audio series boards.
- *
  *  @file
  *  @author Steve Lascos
  *  @company Blackaddr Audio
+ *
+ *  BAGPio is convenience class for accessing the the various GPIOs available
+ *  on the Teensy Guitar Audio series boards.
+ *
  *  @copyright This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
@@ -19,30 +20,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef SRC_BAGPIO_H_
-#define SRC_BAGPIO_H_
+#ifndef __SRC_BAGPIO_H
+#define __SRC_BAGPIO_H
+
+#include "BAHardware.h"
 
 namespace BAGuitar {
-
-constexpr uint8_t USR_LED_ID = 16; ///< Teensy IO number for the user LED.
-
-/**************************************************************************//**
- * GPIOs and Testpoints are accessed via enumerated class constants.
- *****************************************************************************/
-enum class GPIO : uint8_t {
-	GPIO0 = 2,
-	GPIO1 = 3,
-	GPIO2 = 4,
-	GPIO3 = 6,
-
-	GPIO4 = 12,
-	GPIO5 = 32,
-	GPIO6 = 27,
-	GPIO7 = 28,
-
-	TP1 = 34,
-	TP2 = 33
-};
 
 /**************************************************************************//**
  * BAGpio provides a convince class to easily control the direction and state
@@ -89,4 +72,4 @@ private:
 
 } /* namespace BAGuitar */
 
-#endif /* SRC_BAGPIO_H_ */
+#endif /* __SRC_BAGPIO_H */
