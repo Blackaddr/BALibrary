@@ -110,7 +110,7 @@ public:
 	/// @details See WM8731 datasheet for register map details.
 	/// @param addr The register address you wish to write to, range 0 to 15.
 	/// @param val the 9-bit data value you wish to write at the address specifed.
-	void writeI2C(unsigned int addr, unsigned int val);
+	bool writeI2C(unsigned int addr, unsigned int val);
 
 protected:
 	// A shadow array for the registers on the codec since the interface is write-only.

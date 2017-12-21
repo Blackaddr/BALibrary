@@ -315,9 +315,9 @@ void BAAudioControlWM8731::resetCodec(void)
 }
 
 // Direct write control to the codec
-void BAAudioControlWM8731::writeI2C(unsigned int addr, unsigned int val)
+bool BAAudioControlWM8731::writeI2C(unsigned int addr, unsigned int val)
 {
-	write(addr, val);
+	return write(addr, val);
 }
 
 // Low level write control for the codec via the Teensy I2C interface
