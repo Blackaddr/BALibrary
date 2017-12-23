@@ -39,10 +39,10 @@ public:
 	BASpiMemory() = delete;
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2).
 	/// @details default is 20 Mhz
-	/// @param memDeviceId specify which MEM to controlw with SpiDeviceId.
+	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
 	BASpiMemory(SpiDeviceId memDeviceId);
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2)
-	/// @param memDeviceId specify which MEM to controlw with SpiDeviceId.
+	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
 	/// @param speedHz specify the desired speed in Hz.
 	BASpiMemory(SpiDeviceId memDeviceId, uint32_t speedHz);
 	virtual ~BASpiMemory();
@@ -52,19 +52,27 @@ public:
 	/// write a single data word to the specified address
 	/// @param address the address in the SPI RAM to write to
 	/// @param data the value to write
-	void write(int address, int data);
+	void write(size_t address, uint8_t data);
+	void write(size_t address, uint8_t *data, size_t numBytes);
+	void zero(size_t address, size_t numBytes);
 
-	void write16(int address, uint16_t data);
+	void write16(size_t address, uint16_t data);
+	void write16(size_t address, uint16_t *data, size_t numBytes);
+
+	void zero16(size_t address, size_t numBytes);
 
 	/// read a single 8-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
-	int  read(int address);
+	uint8_t read(size_t address);
+	void    read(size_t address, uint8_t *data, size_t numBytes);
 
 	/// read a single 16-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
-	uint16_t  read16(int address);
+	uint16_t read16(size_t address);
+	void     read16(size_t address, uint16_t *data, size_t numBytes);
+
 
 private:
 	SPIClass *m_spi = nullptr;

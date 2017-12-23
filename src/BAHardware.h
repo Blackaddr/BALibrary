@@ -57,6 +57,7 @@ enum class GPIO : uint8_t {
 /**************************************************************************//**
  * Optionally installed SPI RAM
  *****************************************************************************/
+constexpr unsigned NUM_MEM_SLOTS = 2;
 enum MemSelect : unsigned {
 	MEM0 = 0, ///< SPI RAM MEM0
 	MEM1 = 1  ///< SPI RAM MEM1

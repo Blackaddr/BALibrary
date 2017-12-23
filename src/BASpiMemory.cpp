@@ -96,7 +96,7 @@ BASpiMemory::~BASpiMemory() {
 }
 
 // Single address write
-void BASpiMemory::write(int address, int data)
+void BASpiMemory::write(size_t address, uint8_t data)
 {
 	m_spi->beginTransaction(m_settings);
 	digitalWrite(m_csPin, LOW);
@@ -109,7 +109,42 @@ void BASpiMemory::write(int address, int data)
 	digitalWrite(m_csPin, HIGH);
 }
 
-void BASpiMemory::write16(int address, uint16_t data)
+// Single address write
+void BASpiMemory::write(size_t address, uint8_t *data, size_t numBytes)
+{
+	uint8_t *dataPtr = data;
+
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer(SPI_WRITE_CMD);
+	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_0_MASK));
+
+	for (size_t i=0; i < numBytes; i++) {
+		m_spi->transfer(*dataPtr++);
+	}
+	m_spi->endTransaction();
+	digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::zero(size_t address, size_t numBytes)
+{
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer(SPI_WRITE_CMD);
+	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_0_MASK));
+
+	for (size_t i=0; i < numBytes; i++) {
+		m_spi->transfer(0);
+	}
+	m_spi->endTransaction();
+	digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::write16(size_t address, uint16_t data)
 {
 	m_spi->beginTransaction(m_settings);
 	digitalWrite(m_csPin, LOW);
@@ -120,8 +155,40 @@ void BASpiMemory::write16(int address, uint16_t data)
 	digitalWrite(m_csPin, HIGH);
 }
 
+void BASpiMemory::write16(size_t address, uint16_t *data, size_t numWords)
+{
+	uint16_t *dataPtr = data;
+
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
+	m_spi->transfer16(address & 0xFFFF);
+
+	for (size_t i=0; i<numWords; i++) {
+		m_spi->transfer16(*dataPtr++);
+	}
+
+	m_spi->endTransaction();
+	digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::zero16(size_t address, size_t numWords)
+{
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
+	m_spi->transfer16(address & 0xFFFF);
+
+	for (size_t i=0; i<numWords; i++) {
+		m_spi->transfer16(0);
+	}
+
+	m_spi->endTransaction();
+	digitalWrite(m_csPin, HIGH);
+}
+
 // single address read
-int BASpiMemory::read(int address)
+uint8_t BASpiMemory::read(size_t address)
 {
 	int data;
 
@@ -137,7 +204,27 @@ int BASpiMemory::read(int address)
 	return data;
 }
 
-uint16_t BASpiMemory::read16(int address)
+
+void BASpiMemory::read(size_t address, uint8_t *data, size_t numBytes)
+{
+	uint8_t *dataPtr = data;
+
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer(SPI_READ_CMD);
+	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+	m_spi->transfer((address & SPI_ADDR_0_MASK));
+
+	for (size_t i=0; i<numBytes; i++) {
+		*dataPtr++ = m_spi->transfer(0);
+	}
+
+	m_spi->endTransaction();
+	digitalWrite(m_csPin, HIGH);
+}
+
+uint16_t BASpiMemory::read16(size_t address)
 {
 
 	uint16_t data;
@@ -150,6 +237,23 @@ uint16_t BASpiMemory::read16(int address)
 
 	digitalWrite(m_csPin, HIGH);
 	return data;
+}
+
+void BASpiMemory::read16(size_t address, uint16_t *data, size_t numWords)
+{
+
+	uint16_t *dataPtr = data;
+	m_spi->beginTransaction(m_settings);
+	digitalWrite(m_csPin, LOW);
+	m_spi->transfer16((SPI_READ_CMD << 8) | (address >> 16) );
+	m_spi->transfer16(address & 0xFFFF);
+
+	for (size_t i=0; i<numWords; i++) {
+		*dataPtr++ = m_spi->transfer16(0);
+	}
+
+	m_spi->endTransaction();
+	digitalWrite(m_csPin, HIGH);
 }
 
 } /* namespace BAGuitar */
