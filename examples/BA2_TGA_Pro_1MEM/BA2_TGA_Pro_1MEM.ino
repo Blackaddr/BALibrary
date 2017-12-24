@@ -8,9 +8,13 @@
  * This demo will provide an audio passthrough, as well as exercise the
  * MIDI interface.
  * 
- * It will also perform a sweeo of the SPI MEM0 external RAM.
+ * It will also peform a sweep of SPI MEM0.
+ * 
+ * NOTE: SPI MEM0 can be used by a Teensy 3.1/3.2/3.5/3.6.
+ * pins.
  * 
  */
+//#include <i2c_t3.h>
 #include <Wire.h>
 #include <Audio.h>
 #include <MIDI.h>
@@ -18,7 +22,6 @@
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 using namespace midi;
-
 
 using namespace BAGuitar;
 
@@ -32,23 +35,25 @@ AudioConnection      patch1(i2sIn,1, i2sOut, 1);
 BAAudioControlWM8731      codecControl;
 BAGpio                    gpio;  // access to User LED
 BASpiMemory               spiMem0(SpiDeviceId::SPI_DEVICE0);
-BASpiMemory               spiMem1(SpiDeviceId::SPI_DEVICE1);
 
 unsigned long t=0;
 
 // SPI stuff
 int spiAddress0 = 0;
-int spiData0 = 0xff;
+uint16_t spiData0 = 0xABCD;
 int spiErrorCount0 = 0;
-int spiAddress1 = 0;
-int spiData1 = 0xff;
-int spiErrorCount1 = 0;
 
+constexpr int mask0 = 0x5555;
+constexpr int mask1 = 0xaaaa;
+
+int maskPhase = 0;
+int loopPhase = 0;
 
 void setup() {
 
   MIDI.begin(MIDI_CHANNEL_OMNI);
   Serial.begin(57600);
+  while (!Serial) {}
   delay(5);
 
   // If the codec was already powered up (due to reboot) power itd own first
@@ -56,26 +61,53 @@ void setup() {
   delay(100);
   AudioMemory(24);
 
-  Serial.println("Enabling codec...\n");
+  Serial.println("Sketch: Enabling codec...\n");
   codecControl.enable();
   delay(100);
+
+  Serial.println("Enabling SPI");
+  spiMem0.begin();
   
 }
 
-void loop() {  
+int calcData(int spiAddress, int loopPhase, int maskPhase)
+{
+  int data;
+
+  int phase = ((loopPhase << 1) + maskPhase) & 0x3;
+  switch(phase)
+  {
+    case 0 :
+    data = spiAddress ^ mask0;
+    break;
+    case 1:
+    data = spiAddress ^ mask1;
+    break;
+    case 2:
+    data = ~spiAddress ^ mask0;
+    break;
+    case 3:
+    data = ~spiAddress ^ mask1;
+    
+  }
+  return (data & 0xffff);
+}
+
+void loop() {
 
   //////////////////////////////////////////////////////////////////
   // Write test data to the SPI Memory 0
   //////////////////////////////////////////////////////////////////
-  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0++) {
+  maskPhase = 0;
+  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0=spiAddress0+2) {
     if ((spiAddress0 % 32768) == 0) {
       //Serial.print("Writing to ");
       //Serial.println(spiAddress0, HEX);
     }
 
-    //mem0Write(spiAddress0, spiData0);
-    spiMem0.write(spiAddress0, spiData0);
-    spiData0 = (spiData0-1) & 0xff;
+    spiData0 = calcData(spiAddress0, loopPhase, maskPhase);
+    spiMem0.write16(spiAddress0, spiData0);
+    maskPhase = (maskPhase+1) % 2;
   }
   Serial.println("SPI0 writing DONE!");
 
@@ -84,31 +116,32 @@ void loop() {
   ///////////////////////////////////////////////////////////////////
   spiErrorCount0 = 0;
   spiAddress0 = 0;
-  spiData0 = 0xff;
+  maskPhase = 0;
 
-  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0++) {
+  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0=spiAddress0+2) {
     if ((spiAddress0 % 32768) == 0) {
-      //Serial.print("Reading ");
-      //Serial.print(spiAddress0, HEX);
+//      Serial.print("Reading ");
+//      Serial.print(spiAddress0, HEX);
     }
 
-    //int data = mem0Read(spiAddress0);
-    int data = spiMem0.read(spiAddress0);
+    spiData0 = calcData(spiAddress0, loopPhase, maskPhase);
+    int data = spiMem0.read16(spiAddress0);
     if (data != spiData0) {
       spiErrorCount0++;
       Serial.println("");
       Serial.print("ERROR MEM0: (expected) (actual):");
       Serial.print(spiData0, HEX); Serial.print(":");
-      Serial.println(data, HEX);
+      Serial.print(data, HEX);
+      
       delay(100);
     }
+    maskPhase = (maskPhase+1) % 2;
 
     if ((spiAddress0 % 32768) == 0) {
-      //Serial.print(", data = ");
-      //Serial.println(data, HEX);
+//      Serial.print(", data = ");
+//      Serial.println(data, HEX);
+//      Serial.println(String(" loopPhase: ") + loopPhase + String(" maskPhase: ") + maskPhase);
     }
-
-    spiData0 = (spiData0-1) & 0xff;
 
     // Break out of test once the error count reaches 10
     if (spiErrorCount0 > 10) { break; }
@@ -116,7 +149,8 @@ void loop() {
   }
 
   if (spiErrorCount0 == 0) { Serial.println("SPI0 TEST PASSED!!!"); }
-  
+
+  loopPhase = (loopPhase+1) % 2;
   
   ///////////////////////////////////////////////////////////////////////
   // MIDI TESTING
