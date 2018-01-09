@@ -23,6 +23,8 @@
 #ifndef SRC_BAHARDWARE_H_
 #define SRC_BAHARDWARE_H_
 
+#include <cstdint>
+
 /**************************************************************************//**
  * BAGuitar is a namespace/Library for Guitar processing from Blackaddr Audio.
  *****************************************************************************/
@@ -62,15 +64,16 @@ enum MemSelect : unsigned {
 	MEM0 = 0, ///< SPI RAM MEM0
 	MEM1 = 1  ///< SPI RAM MEM1
 };
-constexpr int MEM0_MAX_ADDR = 131071; ///< Max address size per chip
-constexpr int MEM1_MAX_ADDR = 131071; ///< Max address size per chip
+constexpr size_t MEM_MAX_ADDR[NUM_MEM_SLOTS] = { 131071, 131071 };
+//constexpr int MEM0_MAX_ADDR = 131071; ///< Max address size per chip
+//constexpr int MEM1_MAX_ADDR = 131071; ///< Max address size per chip
 
 /**************************************************************************//**
  * General Purpose SPI Interfaces
  *****************************************************************************/
-enum class SpiDeviceId {
-	SPI_DEVICE0, ///< Arduino SPI device
-	SPI_DEVICE1  ///< Arduino SPI1 device
+enum SpiDeviceId : unsigned {
+	SPI_DEVICE0 = 0, ///< Arduino SPI device
+	SPI_DEVICE1 = 1  ///< Arduino SPI1 device
 };
 constexpr int SPI_MAX_ADDR = 131071; ///< Max address size per chip
 

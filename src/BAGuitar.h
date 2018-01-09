@@ -28,4 +28,6 @@
 #include "BAGpio.h"
 #include "BAAudioEffectDelayExternal.h"
 
+#include "AudioEffectAnalogDelay.h"
+
 #endif /* __SRC_BATGUITAR_H */

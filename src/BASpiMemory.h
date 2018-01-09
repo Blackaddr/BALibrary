@@ -57,7 +57,7 @@ public:
 	void zero(size_t address, size_t numBytes);
 
 	void write16(size_t address, uint16_t data);
-	void write16(size_t address, uint16_t *data, size_t numBytes);
+	void write16(size_t address, uint16_t *data, size_t numWords);
 
 	void zero16(size_t address, size_t numBytes);
 
@@ -71,7 +71,7 @@ public:
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
 	uint16_t read16(size_t address);
-	void     read16(size_t address, uint16_t *data, size_t numBytes);
+	void     read16(size_t address, uint16_t *data, size_t numWords);
 
 
 private:
