@@ -9,14 +9,38 @@
 #include <new>
 
 #include "Arduino.h"
+#include "Audio.H"
+#include "LibMemoryManagement.h"
 
 #ifndef SRC_LIBBASICFUNCTIONS_H_
 #define SRC_LIBBASICFUNCTIONS_H_
 
 namespace BAGuitar {
 
+class RingBuffer; // forward declare
+
+enum MemType : unsigned {
+    INTERNAL,
+    EXTERNAL
+};
+
 struct INTERNAL_MEMORY {};
 struct EXTERNAL_MEMORY {};
+
+class AudioDelay {
+
+    AudioDelay() = delete;
+    AudioDelay(MemType type, size_t maxSamples);
+    AudioDelay(MemType type, float delayTimeMs);
+    ~AudioDelay();
+
+    void addBlock(audio_block_t *block);
+
+    void getSamples(size_t offset, size_t numSamples);
+private:
+    MemType m_type;
+    RingBuffer *m_ringBuffer = nullptr;
+};
 
 template <class T>
 class RingBuffer {
@@ -72,6 +96,10 @@ public:
 		else if (m_head > m_tail) { size =  (m_head - m_tail); }
 		else                      { size = (m_tail - m_head + 1); }
 		return size;
+	}
+
+	size_t max_size() const {
+	    return m_maxSize;
 	}
 
     T& operator[] (size_t index) {

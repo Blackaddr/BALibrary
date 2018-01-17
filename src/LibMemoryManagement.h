@@ -15,7 +15,7 @@
 
 #include "BAHardware.h"
 #include "BASpiMemory.h"
-#include "LibBasicFunctions.h"
+//#include "LibBasicFunctions.h"
 
 namespace BAGuitar {
 
