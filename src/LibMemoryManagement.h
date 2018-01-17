@@ -62,8 +62,9 @@ public:
 
 	bool push(audio_block_t *block);
 	audio_block_t *pop();
-	audio_block_t *getQueue(size_t index) { return m_queues[index]; }
+	audio_block_t *getQueueBack(size_t offset=0);
 	size_t getNumQueues() const { return m_queues.size(); }
+	size_t getMaxSize() const { return m_queues.getMaxSize(); }
 	bool clear() override;
 	bool write16(size_t offset, int16_t *dataPtr, size_t numData) override;
 	bool zero16(size_t offset, size_t numSamples) override;

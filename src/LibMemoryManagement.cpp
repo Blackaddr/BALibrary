@@ -6,12 +6,10 @@
 
 namespace BAGuitar {
 
-
-
 bool ExternalSramManager::m_configured = false;
 MemConfig ExternalSramManager::m_memConfig[BAGuitar::NUM_MEM_SLOTS];
 
-inline size_t calcAudioSamples(float milliseconds)
+size_t calcAudioSamples(float milliseconds)
 {
 	return (size_t)((milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f);
 }
@@ -42,7 +40,7 @@ size_t calcOffset(QueuePosition position)
 // MEM VIRTUAL
 /////////////////////////////////////////////////////////////////////////////
 MemAudioBlock::MemAudioBlock(size_t numSamples)
-: m_queues((numSamples + AUDIO_BLOCK_SAMPLES - 1)/AUDIO_BLOCK_SAMPLES)
+: m_queues(((numSamples + AUDIO_BLOCK_SAMPLES - 1)/AUDIO_BLOCK_SAMPLES) +1)
 {
 //	// round up to an integer multiple of AUDIO_BLOCK_SAMPLES
 //	int numQueues = (numSamples + AUDIO_BLOCK_SAMPLES - 1)/AUDIO_BLOCK_SAMPLES;
@@ -63,14 +61,28 @@ MemAudioBlock::~MemAudioBlock()
 
 }
 
+// the index is referenced from the head
+audio_block_t *MemAudioBlock::getQueueBack(size_t offset)
+{
+
+//	for (int i=0; i<m_queues.getMaxSize(); i++) {
+//		Serial.println(i + String(":") + (uint32_t)m_queues[i]->data);
+//	}
+//	Serial.println(String("Returning ") + (uint32_t)m_queues[m_queues.getBackIndex(offset)]);
+	return m_queues[m_queues.getBackIndex(offset)];
+}
+
 bool MemAudioBlock::push(audio_block_t *block)
 {
+	//Serial.println("MemAudioBlock::push()");
 	m_queues.push_back(block);
+	//Serial.println("MemAudioBlock::push() done");
 	return true;
 }
 
 audio_block_t* MemAudioBlock::pop()
 {
+	//Serial.println("MemAudioBlock::pop()");
 	audio_block_t* block = m_queues.front();
 	m_queues.pop_front();
 	return block;
@@ -86,7 +98,7 @@ bool MemAudioBlock::clear()
 	return true;
 }
 
-bool MemAudioBlock::write16(size_t offset, int16_t *dataPtr, size_t numData)
+bool MemAudioBlock::write16(size_t offset, int16_t *srcDataPtr, size_t numData)
 {
 	// Calculate the queue position
 	auto position = calcQueuePosition(offset);
@@ -98,33 +110,38 @@ bool MemAudioBlock::write16(size_t offset, int16_t *dataPtr, size_t numData)
 	// loop over a series of memcpys until all data is transferred.
 	size_t samplesRemaining = numData;
 
+	int16_t *srcStart  = srcDataPtr; // this will increment during each loop iteration
+
 	while (samplesRemaining > 0) {
 		size_t numSamplesToWrite;
 
-		void *start = static_cast<void*>(m_queues[index]->data + writeOffset);
+		void *destStart = static_cast<void*>(m_queues[index]->data + writeOffset);
 
 		// determine if the transfer will complete or will hit the end of a block first
 		if ( (writeOffset + samplesRemaining) > AUDIO_BLOCK_SAMPLES ) {
 			// goes past end of the queue
 			numSamplesToWrite = (AUDIO_BLOCK_SAMPLES - writeOffset);
-			writeOffset = 0;
-			index++;
+			//writeOffset = 0;
+			//index++;
 		} else {
 			// transfer ends in this audio block
 			numSamplesToWrite = samplesRemaining;
-			writeOffset += numSamplesToWrite;
+			//writeOffset += numSamplesToWrite;
 		}
 
 		// perform the transfer
 		if (!m_queues[index]) {
 			// no allocated audio block, skip the copy
 		} else {
-			if (dataPtr) {
-				memcpy(start, dataPtr, numSamplesToWrite * sizeof(int16_t));
+			if (srcDataPtr) {
+				memcpy(destStart, static_cast<const void*>(srcStart), numSamplesToWrite * sizeof(int16_t));
 			} else {
-				memset(start, 0, numSamplesToWrite * sizeof(int16_t));
+				memset(destStart, 0, numSamplesToWrite * sizeof(int16_t));
 			}
 		}
+		writeOffset = 0;
+		index++;
+		srcStart += numSamplesToWrite;
 		samplesRemaining -= numSamplesToWrite;
 	}
 	m_currentPosition.offset = writeOffset;
@@ -140,44 +157,43 @@ inline bool MemAudioBlock::zero16(size_t offset, size_t numData)
 bool MemAudioBlock::read16(int16_t *dest, size_t destOffset, size_t srcOffset, size_t numSamples)
 {
 	if (!dest) return false; // destination is not valid
+	(void)destOffset; // not supported with audio_block_t;
+	//Serial.println("*************************************************************************");
+	//Serial.println(String("read16():") + (uint32_t)dest + String(":") + destOffset + String(":") + srcOffset + String(":") + numSamples);
 
 	// Calculate the queue position
 	auto position = calcQueuePosition(srcOffset);
-	int readOffset = position.offset;
 	size_t index  = position.index;
 
-	if ( (index+1) > m_queues.size()) return false; // out of range
+	// Break the transfer in two. Note that the audio is stored first sample (in time) last (in memory).
 
-	// loop over a series of memcpys until all data is transferred.
-	size_t samplesRemaining = numSamples;
+	int16_t *destStart = dest;
+	audio_block_t *currentQueue;
+	int16_t *srcStart;
 
-	while (samplesRemaining > 0) {
-		size_t numSamplesToRead;
+	// Break the transfer into two. Note that the audio
+	//Serial.println("Calling getQueue");
+	currentQueue = getQueueBack(index+1); // buffer indexes go backwards from the back
+	//Serial.println(String("Q. Address: ") + (uint32_t)currentQueue + String(" Data: ") + (uint32_t)currentQueue->data);
+	srcStart  = (currentQueue->data + AUDIO_BLOCK_SAMPLES - position.offset);
+	size_t numData = position.offset;
+	//Serial.println(String("Source Start1: ") + (uint32_t)currentQueue->data + String(" Dest start1: ") + (uint32_t)dest);
+	//Serial.println(String("copying to ") + (uint32_t)destStart + String(" from ") + (uint32_t)srcStart + String(" numData= ") + numData);
+	memcpy(static_cast<void*>(destStart), static_cast<void*>(srcStart), numData * sizeof(int16_t));
 
-		void *srcStart  = static_cast<void*>(m_queues[index]->data + readOffset);
-		void *destStart = static_cast<void *>(dest + destOffset);
 
-		// determine if the transfer will complete or will hit the end of a block first
-		if ( (readOffset + samplesRemaining) > AUDIO_BLOCK_SAMPLES ) {
-			// goes past end of the queue
-			numSamplesToRead = (AUDIO_BLOCK_SAMPLES - readOffset);
-			readOffset = 0;
-			index++;
-		} else {
-			// transfer ends in this audio block
-			numSamplesToRead = samplesRemaining;
-			readOffset += numSamplesToRead;
-		}
+	currentQueue = getQueueBack(index); // buffer indexes go backwards from the back
+	//Serial.println(String("Q. Address: ") + (uint32_t)currentQueue + String(" Data: ") + (uint32_t)currentQueue->data);
+	destStart += numData;
+	srcStart  = (currentQueue->data);
+	numData = AUDIO_BLOCK_SAMPLES - numData;
+	//Serial.println(String("Source Start2: ") + (uint32_t)currentQueue->data + String(" Dest start2: ") + (uint32_t)dest);
+	//Serial.println(String("copying to ") + (uint32_t)destStart + String(" from ") + (uint32_t)srcStart + String(" numData= ") + numData);
+	memcpy(static_cast<void*>(destStart), static_cast<void*>(srcStart), numData * sizeof(int16_t));
 
-		// perform the transfer
-		if (!m_queues[index]) {
-			// no allocated audio block, copy zeros
-			memset(destStart, 0, numSamplesToRead * sizeof(int16_t));
-		} else {
-			memcpy(srcStart, destStart, numSamplesToRead * sizeof(int16_t));
-		}
-		samplesRemaining -= numSamplesToRead;
-	}
+	//m_queues.print();
+	//Serial.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
 	return true;
 }
 
