@@ -9,7 +9,8 @@
 #include <new>
 
 #include "Arduino.h"
-#include "Audio.H"
+#include "Audio.h"
+
 #include "LibMemoryManagement.h"
 
 #ifndef SRC_LIBBASICFUNCTIONS_H_
@@ -17,29 +18,46 @@
 
 namespace BAGuitar {
 
+struct QueuePosition {
+	int offset;
+	int index;
+};
+QueuePosition calcQueuePosition(float milliseconds);
+QueuePosition calcQueuePosition(size_t numSamples);
+size_t        calcAudioSamples(float milliseconds);
+size_t calcOffset(QueuePosition position);
+
+template <class T>
 class RingBuffer; // forward declare
 
-enum MemType : unsigned {
-    INTERNAL,
-    EXTERNAL
+enum class MemType : unsigned {
+    MEM_INTERNAL = 0,
+    MEM_EXTERNAL
 };
 
 struct INTERNAL_MEMORY {};
 struct EXTERNAL_MEMORY {};
 
 class AudioDelay {
-
+public:
     AudioDelay() = delete;
-    AudioDelay(MemType type, size_t maxSamples);
-    AudioDelay(MemType type, float delayTimeMs);
+    AudioDelay(size_t maxSamples);
+    AudioDelay(float maxDelayTimeMs);
+    AudioDelay(ExtMemSlot &slot);
     ~AudioDelay();
 
-    void addBlock(audio_block_t *block);
+    // Internal memory member functions
+    audio_block_t *addBlock(audio_block_t *blockIn);
+    audio_block_t *getBlock(size_t index);
+    bool getSamples(audio_block_t *dest, size_t offset, size_t numSamples = AUDIO_BLOCK_SAMPLES);
 
-    void getSamples(size_t offset, size_t numSamples);
+    // External memory member functions
+    //bool writeBlock(audio_blocK_t *blockIn);
+
 private:
     MemType m_type;
-    RingBuffer *m_ringBuffer = nullptr;
+    RingBuffer<audio_block_t *> *m_ringBuffer = nullptr;
+    ExtMemSlot &m_slot;
 };
 
 template <class T>
@@ -101,7 +119,7 @@ public:
 		return m_buffer[m_head-1];
 	}
 
-	size_t getBackIndex(size_t offset = 0) const {
+	size_t get_index_from_back(size_t offset = 0) const {
 		// the target at m_head - 1 - offset or m_maxSize + m_head -1 - offset;
 		size_t idx = (m_maxSize + m_head -1 - offset);
 
@@ -127,6 +145,10 @@ public:
 
     T& operator[] (size_t index) {
         return m_buffer[index];
+    }
+
+    T at(size_t index) const {
+    	return m_buffer[index];
     }
 
     void print() const {

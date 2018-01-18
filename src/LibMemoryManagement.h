@@ -11,21 +11,13 @@
 #include <cstddef>
 
 
-#include "Audio.h"
+//#include "Audio.h"
 
 #include "BAHardware.h"
 #include "BASpiMemory.h"
 //#include "LibBasicFunctions.h"
 
 namespace BAGuitar {
-
-struct QueuePosition {
-	int offset;
-	int index;
-};
-QueuePosition calcQueuePosition(float milliseconds);
-QueuePosition calcQueuePosition(size_t numSamples);
-size_t        calcAudioSamples(float milliseconds);
 
 struct MemConfig {
 	size_t size;
@@ -34,66 +26,27 @@ struct MemConfig {
 	BASpiMemory *m_spi = nullptr;
 };
 
-class ExternalSramManager; // forward declare so MemSlot can setup friendship
+class ExternalSramManager; // forward declare so ExtMemSlot can setup friendship
 
-class MemBufferIF {
-public:
-	size_t getSize() const { return m_size; }
-	virtual bool clear() = 0;
-	virtual bool write16(size_t offset, int16_t *dataPtr, size_t numData) = 0;
-	virtual bool zero16(size_t offset, size_t numData) = 0;
-	virtual bool read16(int16_t *dest, size_t destOffset, size_t srcOffset, size_t numData) = 0;
-	virtual bool writeAdvance16(int16_t *dataPtr, size_t numData) = 0;
-	virtual bool zeroAdvance16(size_t numData) = 0;
-	virtual ~MemBufferIF() {}
-protected:
-	bool m_valid = false;
-	size_t m_size = 0;
-};
-
-class MemAudioBlock : public MemBufferIF {
-public:
-	//MemAudioBlock();
-	MemAudioBlock() = delete;
-	MemAudioBlock(size_t numSamples);
-	MemAudioBlock(float milliseconds);
-
-	virtual ~MemAudioBlock();
-
-	bool push(audio_block_t *block);
-	audio_block_t *pop();
-	audio_block_t *getQueueBack(size_t offset=0);
-	size_t getNumQueues() const { return m_queues.size(); }
-	size_t getMaxSize() const { return m_queues.getMaxSize(); }
-	bool clear() override;
-	bool write16(size_t offset, int16_t *dataPtr, size_t numData) override;
-	bool zero16(size_t offset, size_t numSamples) override;
-	bool read16(int16_t *dest, size_t destOffset, size_t srcOffset, size_t numSamples);
-	bool writeAdvance16(int16_t *dataPtr, size_t numData) override;
-	bool zeroAdvance16(size_t numData) override;
-private:
-	//size_t m_numQueues;
-	BAGuitar::RingBuffer <audio_block_t*> m_queues;
-	QueuePosition m_currentPosition = {0,0};
-
-};
-
-
-class MemSlot : public MemBufferIF {
+class ExtMemSlot {
 public:
 
-	bool clear() override;
-	bool write16(size_t offset, int16_t *dataPtr, size_t numData) override;
-	bool zero16(size_t offset, size_t numData) override;
-	bool read16(int16_t *dest, size_t destOffset, size_t srcOffset, size_t numData);
-	bool writeAdvance16(int16_t *dataPtr, size_t numData) override;
-	bool zeroAdvance16(size_t numData) override;
+	bool clear();
+	bool write16(size_t offset, int16_t *dataPtr, size_t numData);
+	bool zero16(size_t offset, size_t numData);
+	bool read16(int16_t *dest, size_t srcOffset, size_t numData);
+	bool writeAdvance16(int16_t *dataPtr, size_t numData);
+	bool zeroAdvance16(size_t numData);
+	size_t read16FromCurrent(int16_t *dest, size_t Offset, size_t numData);
+	size_t size() const { return m_size; }
 
 private:
 	friend ExternalSramManager;
-	size_t m_start;
-	size_t m_end;
-	size_t m_currentPosition;
+	bool   m_valid = false;
+	size_t m_start = 0;
+	size_t m_end = 0;
+	size_t m_currentPosition = 0;
+	size_t m_size = 0;
 	BASpiMemory *m_spi = nullptr;
 };
 
@@ -105,8 +58,8 @@ public:
 	virtual ~ExternalSramManager();
 
 	size_t availableMemory(BAGuitar::MemSelect mem);
-	bool requestMemory(MemSlot &slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0);
-	bool requestMemory(MemSlot &slot, size_t sizeBytes,        BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0);
+	bool requestMemory(ExtMemSlot &slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0);
+	bool requestMemory(ExtMemSlot &slot, size_t sizeBytes,        BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0);
 
 private:
 	static bool m_configured;

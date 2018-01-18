@@ -8,10 +8,10 @@
 #ifndef SRC_AUDIOEFFECTANALOGDELAY_H_
 #define SRC_AUDIOEFFECTANALOGDELAY_H_
 
-#include <vector>
+//#include <vector>
 
 #include <Audio.h>
-#include "LibMemoryManagement.h"
+#include "LibBasicFunctions.h"
 
 namespace BAGuitar {
 
@@ -22,9 +22,10 @@ public:
 	static constexpr int MAX_DELAY_CHANNELS = 8;
 
 	AudioEffectAnalogDelay() = delete;
-	AudioEffectAnalogDelay(INTERNAL_MEMORY, float maxDelay);
-	AudioEffectAnalogDelay(INTERNAL_MEMORY, size_t numSamples);
-	AudioEffectAnalogDelay(EXTERNAL_MEMORY, MemSlot &slot); // requires sufficiently sized pre-allocated memory
+	AudioEffectAnalogDelay(float maxDelay);
+	AudioEffectAnalogDelay(size_t numSamples);
+
+	AudioEffectAnalogDelay(ExtMemSlot &slot); // requires sufficiently sized pre-allocated memory
 	virtual ~AudioEffectAnalogDelay() {}
 
 	virtual void update(void);
@@ -36,9 +37,9 @@ private:
 	audio_block_t *m_inputQueueArray[1];
 	unsigned m_activeChannels = 0;
 	bool m_externalMemory = false;
-	MemBufferIF *m_memory = nullptr;
+	AudioDelay *m_memory = nullptr;
 
-	size_t m_numQueues = 0;
+	//size_t m_numQueues = 0;
 	size_t m_channelOffsets[MAX_DELAY_CHANNELS];
 
 	size_t m_callCount = 0;

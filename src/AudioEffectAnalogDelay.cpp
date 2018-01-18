@@ -9,38 +9,38 @@
 
 namespace BAGuitar {
 
-AudioEffectAnalogDelay::AudioEffectAnalogDelay(INTERNAL_MEMORY, float maxDelay)
+AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelay)
 : AudioStream(1, m_inputQueueArray)
 {
-	m_memory = new MemAudioBlock(maxDelay);
+	m_memory = new AudioDelay(maxDelay);
 	for (int i=0; i<MAX_DELAY_CHANNELS; i++) {
 		m_channelOffsets[i] = 0;
 	}
 }
 
-AudioEffectAnalogDelay::AudioEffectAnalogDelay(INTERNAL_MEMORY, size_t numSamples)
+AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
 : AudioStream(1, m_inputQueueArray)
 {
-	m_memory = new MemAudioBlock(numSamples);
+	m_memory = new AudioDelay(numSamples);
 	for (int i=0; i<MAX_DELAY_CHANNELS; i++) {
 		m_channelOffsets[i] = 0;
 	}
 }
 
 // requires preallocated memory large enough
-AudioEffectAnalogDelay::AudioEffectAnalogDelay(EXTERNAL_MEMORY, MemSlot &slot)
+AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot &slot)
 : AudioStream(1, m_inputQueueArray)
 {
-	m_memory = &slot;
-	for (int i=0; i<MAX_DELAY_CHANNELS; i++) {
-		m_channelOffsets[i] = 0;
-	}
-	m_memory->clear();
+//	m_memory = &slot;
+//	for (int i=0; i<MAX_DELAY_CHANNELS; i++) {
+//		m_channelOffsets[i] = 0;
+//	}
+//	m_memory->clear();
 }
 
 void AudioEffectAnalogDelay::update(void)
 {
-	audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samplestransmit(inputAudioBlock, 0);
+	audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
 	if (!inputAudioBlock) {
 		return;
@@ -66,39 +66,8 @@ void AudioEffectAnalogDelay::update(void)
 	m_callCount++;
 	Serial.println(String("AudioEffectAnalgDelay::update: ") + m_callCount);
 
-
-	if (m_externalMemory) {
-		// external mem requires an actual write to memory with the new data block
-		if (inputAudioBlock) {
-			// valid block
-			m_memory->writeAdvance16(inputAudioBlock->data, AUDIO_BLOCK_SAMPLES);
-		} else {
-			// write zeros instead
-			m_memory->zeroAdvance16(AUDIO_BLOCK_SAMPLES);
-		}
-	} else {
-		// internal memory only requires updating the queue of audio block pointers.
-		MemAudioBlock *memory = reinterpret_cast<MemAudioBlock*>(m_memory);
-
-		// check to see if the queue has reached full size yet
-		//Serial.println(String("memory queues:") + memory->getNumQueues() + String(" m_numQueues:") + m_numQueues);
-		if (memory->getNumQueues() >= m_numQueues) {
-			release(memory->pop());
-		}
-
-		// now push in the newest audio block
-		//Serial.println(String("push ") + (uint32_t)inputAudioBlock);
-		memory->push(inputAudioBlock); // MemAudioBlock supports nullptrs, no need to check
-		//Serial.println("done memory->push()");
-
-//		audio_block_t *output = memory->getQueueBack();
-//		Serial.println("got the output");
-//		if (output) {
-//			transmit(output, 0);
-//		}
-//		Serial.println("Done transmit");
-	}
-//	return;
+	audio_block_t *blockToRelease = m_memory->addBlock(inputAudioBlock);
+	if (blockToRelease) release(blockToRelease);
 
 
 	//Serial.print("Active channels: "); Serial.print(m_activeChannels, HEX); Serial.println("");
@@ -111,13 +80,12 @@ void AudioEffectAnalogDelay::update(void)
 
 		if (!m_externalMemory) {
 			// internal memory
-			MemAudioBlock *memory = reinterpret_cast<MemAudioBlock*>(m_memory);
 			QueuePosition queuePosition = calcQueuePosition(m_channelOffsets[channel]);
 			Serial.println(String("Position info: ") + queuePosition.index + " : " + queuePosition.offset);
 			if (queuePosition.offset == 0) {
 				// only one queue needs to be read out
 				//Serial.println(String("Directly sending queue offset ") + queuePosition.index);
-				blockToOutput= memory->getQueueBack(queuePosition.index); // could be nullptr!
+				blockToOutput= m_memory->getBlock(queuePosition.index); // could be nullptr!
 				if (blockToOutput) transmit(blockToOutput);
 				continue;
 			} else {
@@ -130,7 +98,8 @@ void AudioEffectAnalogDelay::update(void)
 		// copy the output data
 		if (!blockToOutput) continue; // skip this channel due to failure
 		// copy over data
-		m_memory->read16(blockToOutput->data, 0, m_channelOffsets[channel], AUDIO_BLOCK_SAMPLES);
+		m_memory->getSamples(blockToOutput, m_channelOffsets[channel]);
+		//m_memory->read16(blockToOutput->data, 0, m_channelOffsets[channel], AUDIO_BLOCK_SAMPLES);
 		transmit(blockToOutput);
 		release(blockToOutput);
 	}
@@ -143,25 +112,26 @@ bool AudioEffectAnalogDelay::delay(unsigned channel, float milliseconds)
 
 	size_t delaySamples = calcAudioSamples(milliseconds);
 
-	if (!m_externalMemory) {
-		// Internal memory (AudioStream buffers)
-		MemAudioBlock *memory = reinterpret_cast<MemAudioBlock*>(m_memory);
+//	if (!m_externalMemory) {
+//		// Internal memory (AudioStream buffers)
+//
+//		QueuePosition queuePosition = calcQueuePosition(milliseconds);
+//		Serial.println(String("CONFIG(") + m_memory->getMaxSize() + String("): delay: queue position ") + queuePosition.index + String(":") + queuePosition.offset);
+//		// we have to take the queue position and add 1 to get the number of queues. But we need to add one more since this
+//		// is the start of the audio buffer, and the AUDIO_BLOCK_SAMPLES will then flow into the next one, so add 2 overall.
+//		size_t numQueues = queuePosition.index+2;
+//		if (numQueues > m_numQueues)
+//			m_numQueues = numQueues;
+//	} else {
+////		// External memory
+////		if (delaySamples > m_memory->getSize()) {
+////			// error, the external memory is not large enough
+////			return false;
+////		}
+//	}
 
-		QueuePosition queuePosition = calcQueuePosition(milliseconds);
-		Serial.println(String("CONFIG(") + memory->getMaxSize() + String("): delay: queue position ") + queuePosition.index + String(":") + queuePosition.offset);
-		// we have to take the queue position and add 1 to get the number of queues. But we need to add one more since this
-		// is the start of the audio buffer, and the AUDIO_BLOCK_SAMPLES will then flow into the next one, so add 2 overall.
-		size_t numQueues = queuePosition.index+2;
-		if (numQueues > m_numQueues)
-			m_numQueues = numQueues;
-	} else {
-		// External memory
-		if (delaySamples > m_memory->getSize()) {
-			// error, the external memory is not large enough
-			return false;
-		}
-	}
-
+	QueuePosition queuePosition = calcQueuePosition(milliseconds);
+	Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	m_channelOffsets[channel] = delaySamples;
 	m_activeChannels |= 1<<channel;
 	return true;
@@ -172,26 +142,28 @@ bool AudioEffectAnalogDelay::delay(unsigned channel,  size_t delaySamples)
 	if (channel > MAX_DELAY_CHANNELS-1) // channel id too high
 		return false;
 
-	if (!m_externalMemory) {
-		// Internal memory (AudioStream buffers)
-		MemAudioBlock *memory = reinterpret_cast<MemAudioBlock*>(m_memory);
+//	if (!m_externalMemory) {
+//		// Internal memory (AudioStream buffers)
+//		MemAudioBlock *memory = reinterpret_cast<MemAudioBlock*>(m_memory);
+//
+//		//QueuePosition queuePosition = calcQueuePosition(milliseconds);
+//		QueuePosition queuePosition = calcQueuePosition(delaySamples);
+//		Serial.println(String("CONFIG(") + memory->getMaxSize() + String("): delay: queue position ") + queuePosition.index + String(":") + queuePosition.offset);
+//		// we have to take the queue position and add 1 to get the number of queues. But we need to add one more since this
+//		// is the start of the audio buffer, and the AUDIO_BLOCK_SAMPLES will then flow into the next one, so add 2 overall.
+//		size_t numQueues = queuePosition.index+2;
+//		if (numQueues > m_numQueues)
+//			m_numQueues = numQueues;
+//	} else {
+////		// External memory
+////		if (delaySamples > m_memory->getSize()) {
+////			// error, the external memory is not large enough
+////			return false;
+////		}
+//	}
 
-		//QueuePosition queuePosition = calcQueuePosition(milliseconds);
-		QueuePosition queuePosition = calcQueuePosition(delaySamples);
-		Serial.println(String("CONFIG(") + memory->getMaxSize() + String("): delay: queue position ") + queuePosition.index + String(":") + queuePosition.offset);
-		// we have to take the queue position and add 1 to get the number of queues. But we need to add one more since this
-		// is the start of the audio buffer, and the AUDIO_BLOCK_SAMPLES will then flow into the next one, so add 2 overall.
-		size_t numQueues = queuePosition.index+2;
-		if (numQueues > m_numQueues)
-			m_numQueues = numQueues;
-	} else {
-		// External memory
-		if (delaySamples > m_memory->getSize()) {
-			// error, the external memory is not large enough
-			return false;
-		}
-	}
-
+	QueuePosition queuePosition = calcQueuePosition(delaySamples);
+	Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	m_channelOffsets[channel] = delaySamples;
 	m_activeChannels |= 1<<channel;
 	return true;
