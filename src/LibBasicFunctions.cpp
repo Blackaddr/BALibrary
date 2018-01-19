@@ -36,7 +36,7 @@ size_t calcOffset(QueuePosition position)
 AudioDelay::AudioDelay(size_t maxSamples)
 : m_slot(nullptr)
 {
-    m_type = MemType::MEM_INTERNAL;
+    m_type = (MemType::MEM_INTERNAL);
 
 	// INTERNAL memory consisting of audio_block_t data structures.
 	QueuePosition pos = calcQueuePosition(maxSamples);
@@ -50,9 +50,8 @@ AudioDelay::AudioDelay(float maxDelayTimeMs)
 }
 
 AudioDelay::AudioDelay(ExtMemSlot *slot)
-//: m_slot(slot)
 {
-	m_type = MemType::MEM_EXTERNAL;
+	m_type = (MemType::MEM_EXTERNAL);
 	m_slot = slot;
 }
 
@@ -63,9 +62,11 @@ AudioDelay::~AudioDelay()
 
 audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 {
-	if (m_type == MemType::MEM_INTERNAL) {
+	audio_block_t *blockToRelease = nullptr;
+
+	if (m_type == (MemType::MEM_INTERNAL)) {
 		// INTERNAL memory
-		audio_block_t *blockToRelease = nullptr;
+
 		// purposefully don't check if block is valid, the ringBuffer can support nullptrs
 		if ( m_ringBuffer->size() >= m_ringBuffer->max_size() ) {
 			// pop before adding
@@ -97,26 +98,25 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 			}
 
 		}
-		return block;
-
+		blockToRelease =  block;
 	}
-
+	return blockToRelease;
 }
 
 audio_block_t* AudioDelay::getBlock(size_t index)
 {
-	if (m_type == MemType::MEM_INTERNAL) {
-		return m_ringBuffer->at(m_ringBuffer->get_index_from_back(index));
-	} else {
-		return nullptr;
+	audio_block_t *ret = nullptr;
+	if (m_type == (MemType::MEM_INTERNAL)) {
+		ret =  m_ringBuffer->at(m_ringBuffer->get_index_from_back(index));
 	}
+	return ret;
 }
 
 bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSamples)
 {
 	if (!dest) return false;
 
-	if (m_type == MemType::MEM_INTERNAL) {
+	if (m_type == (MemType::MEM_INTERNAL)) {
 		QueuePosition position = calcQueuePosition(offset);
 		size_t index = position.index;
 

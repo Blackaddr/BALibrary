@@ -47,15 +47,6 @@ void AudioEffectAnalogDelay::update(void)
 {
 	audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
-	if (!inputAudioBlock) {
-		return;
-	}
-//	else {
-//		transmit(inputAudioBlock, 0);
-//		release(inputAudioBlock);
-//		return;
-//	}
-
 	if (m_callCount < 1024) {
 		if (inputAudioBlock) {
 			transmit(inputAudioBlock, 0);
@@ -64,27 +55,20 @@ void AudioEffectAnalogDelay::update(void)
 		m_callCount++; return;
 	}
 
-//	else if (m_callCount > 1400) {
-//		if (inputAudioBlock) release(inputAudioBlock);
-//		return;
-//	}
+
 	m_callCount++;
 	Serial.println(String("AudioEffectAnalgDelay::update: ") + m_callCount);
 
-	//m_memory->getSlot()->printStatus();
 	audio_block_t *blockToRelease = m_memory->addBlock(inputAudioBlock);
+	if (blockToRelease) release(blockToRelease);
+
+	Serial.print("Active channels: "); Serial.print(m_activeChannels, HEX); Serial.println("");
 
 //	if (inputAudioBlock) {
 //		transmit(inputAudioBlock, 0);
 //		release(inputAudioBlock);
 //	}
 //	return;
-
-	if (blockToRelease) release(blockToRelease);
-
-
-	Serial.print("Active channels: "); Serial.print(m_activeChannels, HEX); Serial.println("");
-
 
 	// For each active channel, output the delayed audio
 	audio_block_t *blockToOutput = nullptr;
