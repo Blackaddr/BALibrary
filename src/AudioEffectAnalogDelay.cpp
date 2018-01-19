@@ -71,7 +71,7 @@ void AudioEffectAnalogDelay::update(void)
 	m_callCount++;
 	Serial.println(String("AudioEffectAnalgDelay::update: ") + m_callCount);
 
-	m_memory->getSlot()->printStatus();
+	//m_memory->getSlot()->printStatus();
 	audio_block_t *blockToRelease = m_memory->addBlock(inputAudioBlock);
 
 //	if (inputAudioBlock) {
@@ -113,7 +113,7 @@ void AudioEffectAnalogDelay::update(void)
 		if (!blockToOutput) continue; // skip this channel due to failure
 		// copy over data
 		m_memory->getSamples(blockToOutput, m_channelOffsets[channel]);
-		//m_memory->read16(blockToOutput->data, 0, m_channelOffsets[channel], AUDIO_BLOCK_SAMPLES);
+
 		transmit(blockToOutput);
 		release(blockToOutput);
 	}
@@ -126,6 +126,8 @@ bool AudioEffectAnalogDelay::delay(unsigned channel, float milliseconds)
 
 	size_t delaySamples = calcAudioSamples(milliseconds);
 
+	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
+
 	if (!m_externalMemory) {
 		// internal memory
 		QueuePosition queuePosition = calcQueuePosition(milliseconds);
@@ -134,10 +136,11 @@ bool AudioEffectAnalogDelay::delay(unsigned channel, float milliseconds)
 		// external memory
 		Serial.println(String("CONFIG: delay:") + delaySamples);
 		ExtMemSlot *slot = m_memory->getSlot();
+
+		if (!slot) { Serial.println("ERROR: slot ptr is not valid"); }
 		if (!slot->isEnabled()) {
 			slot->enable();
-		} else {
-			Serial.println("ERROR: slot ptr is not valid");
+			Serial.println("WEIRD: slot was not enabled");
 		}
 	}
 
@@ -151,12 +154,15 @@ bool AudioEffectAnalogDelay::delay(unsigned channel,  size_t delaySamples)
 	if (channel > MAX_DELAY_CHANNELS-1) // channel id too high
 		return false;
 
+	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
+
 	if (!m_externalMemory) {
 		// internal memory
 		QueuePosition queuePosition = calcQueuePosition(delaySamples);
 		Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	} else {
 		// external memory
+		Serial.println(String("CONFIG: delay:") + delaySamples);
 		ExtMemSlot *slot = m_memory->getSlot();
 		if (!slot->isEnabled()) {
 			slot->enable();

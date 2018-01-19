@@ -59,7 +59,7 @@ public:
 	void write16(size_t address, uint16_t data);
 	void write16(size_t address, uint16_t *data, size_t numWords);
 
-	void zero16(size_t address, size_t numBytes);
+	void zero16(size_t address, size_t numWords);
 
 	/// read a single 8-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from

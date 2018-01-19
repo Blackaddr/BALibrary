@@ -50,9 +50,10 @@ AudioDelay::AudioDelay(float maxDelayTimeMs)
 }
 
 AudioDelay::AudioDelay(ExtMemSlot *slot)
-: m_slot(slot)
+//: m_slot(slot)
 {
 	m_type = MemType::MEM_EXTERNAL;
+	m_slot = slot;
 }
 
 AudioDelay::~AudioDelay()
@@ -77,15 +78,24 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 		return blockToRelease;
 	} else {
 		// EXTERNAL memory
+		if (!m_slot) { Serial.println("addBlock(): m_slot is not valid"); }
 
-		//m_slot->writeAdvance16(block->data, AUDIO_BLOCK_SAMPLES);
+		if (block) {
 
-		// Audio is stored in reverse in block so we need to write it backwards to external memory
-		// to maintain temporal coherency.
-		int16_t *srcPtr = block->data + AUDIO_BLOCK_SAMPLES - 1;
-		for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
-			m_slot->writeAdvance16(*srcPtr);
-			srcPtr--;
+			// Audio is stored in reverse in block so we need to write it backwards to external memory
+			// to maintain temporal coherency.
+//			int16_t *srcPtr = block->data + AUDIO_BLOCK_SAMPLES - 1;
+//			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+//				m_slot->writeAdvance16(*srcPtr);
+//				srcPtr--;
+//			}
+
+			int16_t *srcPtr = block->data;
+			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+				m_slot->writeAdvance16(*srcPtr);
+				srcPtr++;
+			}
+
 		}
 		return block;
 
@@ -140,25 +150,36 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 
 	} else {
 		// EXTERNAL Memory
-		if (numSamples <= m_slot->size() ) {
-			int currentPosition = (int)m_slot->getWritePosition() - (int)AUDIO_BLOCK_SAMPLES;
+		if (numSamples*sizeof(int16_t) <= m_slot->size() ) {
+			int currentPositionBytes = (int)m_slot->getWritePosition() - (int)(AUDIO_BLOCK_SAMPLES*sizeof(int16_t));
+			size_t offsetBytes = offset * sizeof(int16_t);
 
-			if ((int)offset <= currentPosition) {
-				m_slot->setReadPosition(currentPosition - offset);
+			if ((int)offsetBytes <= currentPositionBytes) {
+				m_slot->setReadPosition(currentPositionBytes - offsetBytes);
 			} else {
 				// It's going to wrap around to the end of the slot
-				int readPosition = (int)m_slot->size() + currentPosition - offset;
+				int readPosition = (int)m_slot->size() + currentPositionBytes - offsetBytes;
 				m_slot->setReadPosition((size_t)readPosition);
 			}
 
+			m_slot->printStatus();
+
 			// write the data to the destination block in reverse
-			int16_t *destPtr = dest->data + AUDIO_BLOCK_SAMPLES-1;
+//			int16_t *destPtr = dest->data + AUDIO_BLOCK_SAMPLES-1;
+//			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+//				*destPtr = m_slot->readAdvance16();
+//				destPtr--;
+//			}
+
+			int16_t *destPtr = dest->data;
 			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
 				*destPtr = m_slot->readAdvance16();
+				destPtr++;
 			}
 			return true;
 		} else {
 			// numSampmles is > than total slot size
+			Serial.println("getSamples(): ERROR numSamples > total slot size");
 			return false;
 		}
 	}
