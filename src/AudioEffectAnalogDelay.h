@@ -24,9 +24,8 @@ public:
 	AudioEffectAnalogDelay() = delete;
 	AudioEffectAnalogDelay(float maxDelay);
 	AudioEffectAnalogDelay(size_t numSamples);
-
-	AudioEffectAnalogDelay(ExtMemSlot &slot); // requires sufficiently sized pre-allocated memory
-	virtual ~AudioEffectAnalogDelay() {}
+	AudioEffectAnalogDelay(ExtMemSlot *slot); // requires sufficiently sized pre-allocated memory
+	virtual ~AudioEffectAnalogDelay();
 
 	virtual void update(void);
 	bool delay(unsigned channel, float milliseconds);

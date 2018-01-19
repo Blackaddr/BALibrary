@@ -43,7 +43,7 @@ public:
     AudioDelay() = delete;
     AudioDelay(size_t maxSamples);
     AudioDelay(float maxDelayTimeMs);
-    AudioDelay(ExtMemSlot &slot);
+    AudioDelay(ExtMemSlot *slot);
     ~AudioDelay();
 
     // Internal memory member functions
@@ -52,12 +52,12 @@ public:
     bool getSamples(audio_block_t *dest, size_t offset, size_t numSamples = AUDIO_BLOCK_SAMPLES);
 
     // External memory member functions
-    //bool writeBlock(audio_blocK_t *blockIn);
+    ExtMemSlot *getSlot() const { return m_slot; }
 
 private:
     MemType m_type;
     RingBuffer<audio_block_t *> *m_ringBuffer = nullptr;
-    ExtMemSlot &m_slot;
+    ExtMemSlot *m_slot = nullptr;
 };
 
 template <class T>

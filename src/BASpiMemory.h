@@ -71,14 +71,21 @@ public:
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
 	uint16_t read16(size_t address);
-	void     read16(size_t address, uint16_t *data, size_t numWords);
 
+	/// read a block 16-bit data word from the specified address
+	/// @param address the address in the SPI RAM to read from
+	/// @param dest the pointer to the destination
+	/// @param numWords the number of 16-bit words to transfer
+	void read16(size_t address, uint16_t *dest, size_t numWords);
+
+    bool isStarted() const { return m_started; }
 
 private:
 	SPIClass *m_spi = nullptr;
 	SpiDeviceId m_memDeviceId; // the MEM device being control with this instance
 	uint8_t m_csPin; // the IO pin number for the CS on the controlled SPI device
 	SPISettings m_settings; // the Wire settings for this SPI port
+	bool m_started = false;
 
 };
 

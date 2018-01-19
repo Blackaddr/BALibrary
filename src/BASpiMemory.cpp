@@ -60,7 +60,6 @@ BASpiMemory::BASpiMemory(SpiDeviceId memDeviceId, uint32_t speedHz)
 // Intitialize the correct Arduino SPI interface
 void BASpiMemory::begin()
 {
-
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
 		m_csPin = SPI_CS_MEM0;
@@ -89,6 +88,7 @@ void BASpiMemory::begin()
 
 	pinMode(m_csPin, OUTPUT);
 	digitalWrite(m_csPin, HIGH);
+	m_started = true;
 
 }
 
@@ -185,6 +185,7 @@ void BASpiMemory::zero16(size_t address, size_t numWords)
 
 	m_spi->endTransaction();
 	digitalWrite(m_csPin, HIGH);
+	Serial.println("DONE!");
 }
 
 // single address read
@@ -239,10 +240,10 @@ uint16_t BASpiMemory::read16(size_t address)
 	return data;
 }
 
-void BASpiMemory::read16(size_t address, uint16_t *data, size_t numWords)
+void BASpiMemory::read16(size_t address, uint16_t *dest, size_t numWords)
 {
 
-	uint16_t *dataPtr = data;
+	uint16_t *dataPtr = dest;
 	m_spi->beginTransaction(m_settings);
 	digitalWrite(m_csPin, LOW);
 	m_spi->transfer16((SPI_READ_CMD << 8) | (address >> 16) );
