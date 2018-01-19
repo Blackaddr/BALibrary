@@ -13,18 +13,12 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelay)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(maxDelay);
-	for (int i=0; i<MAX_DELAY_CHANNELS; i++) {
-		m_channelOffsets[i] = 0;
-	}
 }
 
 AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(numSamples);
-	for (int i=0; i<MAX_DELAY_CHANNELS; i++) {
-		m_channelOffsets[i] = 0;
-	}
 }
 
 // requires preallocated memory large enough
@@ -33,9 +27,6 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
 {
 	m_memory = new AudioDelay(slot);
 	m_externalMemory = true;
-	for (int i=0; i<MAX_DELAY_CHANNELS; i++) {
-		m_channelOffsets[i] = 0;
-	}
 }
 
 AudioEffectAnalogDelay::~AudioEffectAnalogDelay()
@@ -46,6 +37,32 @@ AudioEffectAnalogDelay::~AudioEffectAnalogDelay()
 void AudioEffectAnalogDelay::update(void)
 {
 	audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
+
+	if (!inputAudioBlock) {
+		// create silence
+		inputAudioBlock = allocate();
+		if (!inputAudioBlock) { return; } // failed to allocate
+		else {
+			clearAudioBlock(inputAudioBlock);
+		}
+	}
+
+	if (m_enable == false) {
+		// release all held memory resources
+		transmit(inputAudioBlock);
+		release(inputAudioBlock); inputAudioBlock = nullptr;
+
+		if (m_previousBlock) {
+			release(m_previousBlock); m_previousBlock = nullptr;
+		}
+		if (!m_externalMemory) {
+			while (m_memory->getRingBuffer()->size() > 0) {
+				audio_block_t *releaseBlock = m_memory->getRingBuffer()->front();
+				m_memory->getRingBuffer()->pop_front();
+				if (releaseBlock) release(releaseBlock);
+			}
+		}
+	}
 
 	if (m_callCount < 1024) {
 		if (inputAudioBlock) {
@@ -59,10 +76,12 @@ void AudioEffectAnalogDelay::update(void)
 	m_callCount++;
 	Serial.println(String("AudioEffectAnalgDelay::update: ") + m_callCount);
 
-	audio_block_t *blockToRelease = m_memory->addBlock(inputAudioBlock);
-	if (blockToRelease) release(blockToRelease);
+	// Preprocessing
+	audio_block_t *preProcessed = allocate();
+	m_preProcessing(preProcessed, inputAudioBlock, m_previousBlock);
 
-	Serial.print("Active channels: "); Serial.print(m_activeChannels, HEX); Serial.println("");
+	audio_block_t *blockToRelease = m_memory->addBlock(preProcessed);
+	if (blockToRelease) release(blockToRelease);
 
 //	if (inputAudioBlock) {
 //		transmit(inputAudioBlock, 0);
@@ -70,44 +89,25 @@ void AudioEffectAnalogDelay::update(void)
 //	}
 //	return;
 
-	// For each active channel, output the delayed audio
+	// OUTPUT PROCESSING
 	audio_block_t *blockToOutput = nullptr;
-	for (int channel=0; channel<MAX_DELAY_CHANNELS; channel++) {
-		if (!(m_activeChannels & (1<<channel))) continue; // If this channel is disable, skip to the next;
+	blockToOutput = allocate();
 
-		if (!m_externalMemory) {
-			// internal memory
-			QueuePosition queuePosition = calcQueuePosition(m_channelOffsets[channel]);
-			Serial.println(String("Position info: ") + queuePosition.index + " : " + queuePosition.offset);
-			if (queuePosition.offset == 0) {
-				// only one queue needs to be read out
-				//Serial.println(String("Directly sending queue offset ") + queuePosition.index);
-				blockToOutput= m_memory->getBlock(queuePosition.index); // could be nullptr!
-				if (blockToOutput) transmit(blockToOutput);
-				continue;
-			} else {
-				blockToOutput = allocate(); // allocate if spanning 2 queues
-			}
-		} else {
-			// external memory
-			blockToOutput = allocate(); // allocate always for external memory
-		}
+	// copy the output data
+	if (!blockToOutput) return; // skip this time due to failure
+	// copy over data
+	m_memory->getSamples(blockToOutput, m_delaySamples);
+	// perform the mix
+	m_postProcessing(blockToOutput, inputAudioBlock, blockToOutput);
+	transmit(blockToOutput);
 
-		// copy the output data
-		if (!blockToOutput) continue; // skip this channel due to failure
-		// copy over data
-		m_memory->getSamples(blockToOutput, m_channelOffsets[channel]);
-
-		transmit(blockToOutput);
-		release(blockToOutput);
-	}
+	release(inputAudioBlock);
+	release(m_previousBlock);
+	m_previousBlock = blockToOutput;
 }
 
-bool AudioEffectAnalogDelay::delay(unsigned channel, float milliseconds)
+void AudioEffectAnalogDelay::delay(float milliseconds)
 {
-	if (channel > MAX_DELAY_CHANNELS-1) // channel id too high
-		return false;
-
 	size_t delaySamples = calcAudioSamples(milliseconds);
 
 	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
@@ -128,16 +128,11 @@ bool AudioEffectAnalogDelay::delay(unsigned channel, float milliseconds)
 		}
 	}
 
-	m_channelOffsets[channel] = delaySamples;
-	m_activeChannels |= 1<<channel;
-	return true;
+	m_delaySamples = delaySamples;
 }
 
-bool AudioEffectAnalogDelay::delay(unsigned channel,  size_t delaySamples)
+void AudioEffectAnalogDelay::delay(size_t delaySamples)
 {
-	if (channel > MAX_DELAY_CHANNELS-1) // channel id too high
-		return false;
-
 	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
 
 	if (!m_externalMemory) {
@@ -152,14 +147,26 @@ bool AudioEffectAnalogDelay::delay(unsigned channel,  size_t delaySamples)
 			slot->enable();
 		}
 	}
-	m_channelOffsets[channel] = delaySamples;
-	m_activeChannels |= 1<<channel;
-	return true;
+	m_delaySamples= delaySamples;
 }
 
-void AudioEffectAnalogDelay::disable(unsigned channel)
+
+void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
 {
-	m_activeChannels &= ~(1<<channel);
+	if ( out && dry && wet) {
+		alphaBlend(out, dry, wet, m_feedback);
+	} else if (dry) {
+		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
+	}
+}
+
+void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
+{
+	if ( out && dry && wet) {
+		alphaBlend(out, dry, wet, m_mix);
+	} else if (dry) {
+		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
+	}
 }
 
 }

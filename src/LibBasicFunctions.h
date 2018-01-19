@@ -68,6 +68,11 @@ size_t        calcAudioSamples(float milliseconds);
 /// specified position.
 size_t calcOffset(QueuePosition position);
 
+void clearAudioBlock(audio_block_t *block);
+
+
+audio_block_t alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix);
+
 
 template <class T>
 class RingBuffer; // forward declare so AudioDelay can use it.
@@ -132,6 +137,8 @@ public:
     /// with the buffer.
     /// @returns pointer to the underlying ExtMemSlot.
     ExtMemSlot *getSlot() const { return m_slot; }
+
+    RingBuffer<audio_block_t*> *getRingBuffer() const { return m_ringBuffer; }
 
 private:
 

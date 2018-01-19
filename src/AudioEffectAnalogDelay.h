@@ -15,8 +15,6 @@
 
 namespace BAGuitar {
 
-
-
 class AudioEffectAnalogDelay : public AudioStream {
 public:
 	static constexpr int MAX_DELAY_CHANNELS = 8;
@@ -28,20 +26,28 @@ public:
 	virtual ~AudioEffectAnalogDelay();
 
 	virtual void update(void);
-	bool delay(unsigned channel, float milliseconds);
-	bool delay(unsigned channel, size_t delaySamples);
-	void disable(unsigned channel);
+	void delay(float milliseconds);
+	void delay(size_t delaySamples);
+	void feedback(float feedback) { m_feedback = feedback; }
+	void mix(float mix) { m_mix = mix; }
+	void enable() { m_enable = true; }
+	void disable() { m_enable = false; }
 
 private:
 	audio_block_t *m_inputQueueArray[1];
-	unsigned m_activeChannels = 0;
+	bool m_enable = false;
 	bool m_externalMemory = false;
 	AudioDelay *m_memory = nullptr;
 
-	//size_t m_numQueues = 0;
-	size_t m_channelOffsets[MAX_DELAY_CHANNELS];
+	size_t m_delaySamples = 0;
+	float m_feedback = 0.0f;
+	float m_mix = 0.0f;
 
 	size_t m_callCount = 0;
+
+	audio_block_t *m_previousBlock = nullptr;
+	void m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
+	void m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
 };
 
 }

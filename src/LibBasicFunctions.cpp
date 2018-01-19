@@ -32,6 +32,18 @@ size_t calcOffset(QueuePosition position)
 	return (position.index*AUDIO_BLOCK_SAMPLES) + position.offset;
 }
 
+audio_block_t alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix)
+{
+	for (int i=0; i< AUDIO_BLOCK_SAMPLES; i++) {
+		out->data[i] = (dry->data[i] * (1 - mix)) + (wet->data[i] * mix);
+	}
+}
+
+void clearAudioBlock(audio_block_t *block)
+{
+	memset(block->data, 0, sizeof(int16_t)*AUDIO_BLOCK_SAMPLES);
+}
+
 
 AudioDelay::AudioDelay(size_t maxSamples)
 : m_slot(nullptr)
