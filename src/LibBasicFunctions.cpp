@@ -174,7 +174,7 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 				m_slot->setReadPosition((size_t)readPosition);
 			}
 
-			m_slot->printStatus();
+			//m_slot->printStatus();
 
 			// write the data to the destination block in reverse
 //			int16_t *destPtr = dest->data + AUDIO_BLOCK_SAMPLES-1;

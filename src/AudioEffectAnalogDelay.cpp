@@ -9,16 +9,28 @@
 
 namespace BAGuitar {
 
+constexpr int MIDI_NUM_PARAMS = 4;
+constexpr int MIDI_CHANNEL = 0;
+constexpr int MIDI_CONTROL = 1;
+
+constexpr int MIDI_ENABLE = 0;
+constexpr int MIDI_DELAY = 1;
+constexpr int MIDI_FEEDBACK = 2;
+constexpr int MIDI_MIX = 3;
+
+
 AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelay)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(maxDelay);
+	m_maxDelaySamples = calcAudioSamples(maxDelay);
 }
 
 AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(numSamples);
+	m_maxDelaySamples = numSamples;
 }
 
 // requires preallocated memory large enough
@@ -26,6 +38,7 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(slot);
+	m_maxDelaySamples = slot->size();
 	m_externalMemory = true;
 }
 
@@ -74,7 +87,7 @@ void AudioEffectAnalogDelay::update(void)
 
 
 	m_callCount++;
-	Serial.println(String("AudioEffectAnalgDelay::update: ") + m_callCount);
+	//Serial.println(String("AudioEffectAnalgDelay::update: ") + m_callCount);
 
 	// Preprocessing
 	audio_block_t *preProcessed = allocate();
@@ -148,6 +161,68 @@ void AudioEffectAnalogDelay::delay(size_t delaySamples)
 		}
 	}
 	m_delaySamples= delaySamples;
+}
+
+
+void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
+{
+	float val = (float)value / 127.0f;
+
+	if ((m_midiConfig[MIDI_DELAY][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[MIDI_DELAY][MIDI_CONTROL] == control)) {
+		// Delay
+		Serial.println(String("AudioEffectAnalogDelay::delay: ") + val);
+		delay((size_t)(val * m_maxDelaySamples));
+		return;
+	}
+
+	if ((m_midiConfig[MIDI_ENABLE][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[MIDI_ENABLE][MIDI_CONTROL] == control)) {
+		// Enable
+		if (val >= 65) { enable(); Serial.println(String("AudioEffectAnalogDelay::enable: ON") + value); }
+		else { disable(); Serial.println(String("AudioEffectAnalogDelay::enable: OFF") + value); }
+		return;
+	}
+
+	if ((m_midiConfig[MIDI_FEEDBACK][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[MIDI_FEEDBACK][MIDI_CONTROL] == control)) {
+		// Feedback
+		Serial.println(String("AudioEffectAnalogDelay::feedback: ") + val);
+		feedback(val);
+		return;
+	}
+
+	if ((m_midiConfig[MIDI_MIX][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[MIDI_MIX][MIDI_CONTROL] == control)) {
+		// Mix
+		Serial.println(String("AudioEffectAnalogDelay::mix: ") + val);
+		mix(val);
+		return;
+	}
+
+}
+void AudioEffectAnalogDelay::mapMidiDelay(int control, int channel)
+{
+	m_midiConfig[MIDI_DELAY][MIDI_CHANNEL] = channel;
+	m_midiConfig[MIDI_DELAY][MIDI_CONTROL] = control;
+}
+
+void AudioEffectAnalogDelay::mapMidiEnable(int control, int channel)
+{
+	m_midiConfig[MIDI_ENABLE][MIDI_CHANNEL] = channel;
+	m_midiConfig[MIDI_ENABLE][MIDI_CONTROL] = control;
+}
+
+void AudioEffectAnalogDelay::mapMidiFeedback(int control, int channel)
+{
+	m_midiConfig[MIDI_FEEDBACK][MIDI_CHANNEL] = channel;
+	m_midiConfig[MIDI_FEEDBACK][MIDI_CONTROL] = control;
+}
+
+void AudioEffectAnalogDelay::mapMidiMix(int control, int channel)
+{
+	m_midiConfig[MIDI_MIX][MIDI_CHANNEL] = channel;
+	m_midiConfig[MIDI_MIX][MIDI_CONTROL] = control;
 }
 
 
