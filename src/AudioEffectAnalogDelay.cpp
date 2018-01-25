@@ -171,8 +171,9 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[MIDI_DELAY][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[MIDI_DELAY][MIDI_CONTROL] == control)) {
 		// Delay
-		Serial.println(String("AudioEffectAnalogDelay::delay: ") + val);
-		delay((size_t)(val * m_maxDelaySamples));
+		m_maxDelaySamples = m_memory->getSlot()->size();
+		Serial.println(String("AudioEffectAnalogDelay::delay: ") + val + String(" out of ") + m_maxDelaySamples);
+		delay((size_t)(val * (float)m_maxDelaySamples));
 		return;
 	}
 
