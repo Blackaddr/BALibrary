@@ -179,7 +179,7 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[MIDI_ENABLE][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[MIDI_ENABLE][MIDI_CONTROL] == control)) {
 		// Enable
-		if (val >= 65) { enable(); Serial.println(String("AudioEffectAnalogDelay::enable: ON") + value); }
+		if (value >= 65) { enable(); Serial.println(String("AudioEffectAnalogDelay::enable: ON") + value); }
 		else { disable(); Serial.println(String("AudioEffectAnalogDelay::enable: OFF") + value); }
 		return;
 	}

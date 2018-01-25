@@ -71,7 +71,7 @@ size_t calcOffset(QueuePosition position);
 void clearAudioBlock(audio_block_t *block);
 
 
-audio_block_t alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix);
+void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix);
 
 
 template <class T>
@@ -164,7 +164,7 @@ public:
 	/// Construct a RingBuffer of specified max size
 	/// @param maxSize number of entries in ring buffer
 	RingBuffer(const size_t maxSize) : m_maxSize(maxSize) {
-		m_buffer = new T[maxSize];
+		m_buffer = new T[maxSize]();
 	}
 	virtual ~RingBuffer(){
 		if (m_buffer) delete [] m_buffer;
@@ -199,7 +199,7 @@ public:
 
 		if (m_size == 0) {
 			// buffer is empty
-			Serial.println("RingBuffer::pop_front: buffer is empty\n");
+			//Serial.println("RingBuffer::pop_front: buffer is empty\n");
 			return -1;
 		}
 		if (m_tail < m_maxSize-1) {
@@ -208,7 +208,7 @@ public:
 			m_tail = 0;
 		}
 		m_size--;
-		Serial.println(String("RingBuffer::pop_front: ") + m_head + String(":") + m_tail + String(":") + m_size);
+		//Serial.println(String("RingBuffer::pop_front: ") + m_head + String(":") + m_tail + String(":") + m_size);
 		return 0;
 	}
 
@@ -264,10 +264,11 @@ public:
     	return m_buffer[index];
     }
 
-    /// DEBUG: Prints the status of the Ringbuffer
+    /// DEBUG: Prints the status of the Ringbuffer. NOte using this much printing will usually cause audio glitches
     void print() const {
     	for (int idx=0; idx<m_maxSize; idx++) {
-    		Serial.println(idx + String(" address: ") + (uint32_t)m_buffer[idx] + String(" data: ") + (uint32_t)m_buffer[idx]->data);
+    		Serial.print(idx + String(" address: ")); Serial.print((uint32_t)m_buffer[idx], HEX);
+    		Serial.print(" data: "); Serial.println((uint32_t)m_buffer[idx]->data, HEX);
     	}
     }
 private:

@@ -32,7 +32,7 @@ size_t calcOffset(QueuePosition position)
 	return (position.index*AUDIO_BLOCK_SAMPLES) + position.offset;
 }
 
-audio_block_t alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix)
+void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix)
 {
 	for (int i=0; i< AUDIO_BLOCK_SAMPLES; i++) {
 		out->data[i] = (dry->data[i] * (1 - mix)) + (wet->data[i] * mix);
@@ -89,6 +89,7 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 		// add the new buffer
 		m_ringBuffer->push_back(block);
 		return blockToRelease;
+
 	} else {
 		// EXTERNAL memory
 		if (!m_slot) { Serial.println("addBlock(): m_slot is not valid"); }
@@ -126,35 +127,46 @@ audio_block_t* AudioDelay::getBlock(size_t index)
 
 bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSamples)
 {
-	if (!dest) return false;
+	if (!dest) {
+		Serial.println("getSamples(): dest is invalid");
+		return false;
+	}
 
 	if (m_type == (MemType::MEM_INTERNAL)) {
 		QueuePosition position = calcQueuePosition(offset);
 		size_t index = position.index;
 
+		audio_block_t *currentQueue0 = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index));
+		// The latest buffer is at the back. We need index+1 counting from the back.
+		audio_block_t *currentQueue1 = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index+1));
+
+		// check if either queue is invalid, if so just zero the destination buffer
+		if ( (!currentQueue0) || (!currentQueue0) ) {
+			// a valid entry is not in all queue positions while it is filling, use zeros
+			memset(static_cast<void*>(dest->data), 0, numSamples * sizeof(int16_t));
+			return true;
+		}
+
 		if (position.offset == 0) {
 			// single transfer
-			audio_block_t *currentQueue = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index));
-			memcpy(static_cast<void*>(dest->data), static_cast<void*>(currentQueue->data), numSamples * sizeof(int16_t));
+			memcpy(static_cast<void*>(dest->data), static_cast<void*>(currentQueue0->data), numSamples * sizeof(int16_t));
 			return true;
 		}
 
 		// Otherwise we need to break the transfer into two memcpy because it will go across two source queues.
 		// Audio is stored in reverse order. That means the first sample (in time) goes in the last location in the audio block.
 		int16_t *destStart = dest->data;
-		audio_block_t *currentQueue;
 		int16_t *srcStart;
 
 		// Break the transfer into two. Copy the 'older' data first then the 'newer' data with respect to current time.
-		currentQueue = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index+1)); // The latest buffer is at the back. We need index+1 counting from the back.
-		srcStart  = (currentQueue->data + AUDIO_BLOCK_SAMPLES - position.offset);
+		//currentQueue = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index+1)); // The latest buffer is at the back. We need index+1 counting from the back.
+		srcStart  = (currentQueue1->data + AUDIO_BLOCK_SAMPLES - position.offset);
 		size_t numData = position.offset;
 		memcpy(static_cast<void*>(destStart), static_cast<void*>(srcStart), numData * sizeof(int16_t));
 
-
-		currentQueue = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index)); // now grab the queue where the 'first' data sample was
+		//currentQueue = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index)); // now grab the queue where the 'first' data sample was
 		destStart += numData; // we already wrote numData so advance by this much.
-		srcStart  = (currentQueue->data);
+		srcStart  = (currentQueue0->data);
 		numData = AUDIO_BLOCK_SAMPLES - numData;
 		memcpy(static_cast<void*>(destStart), static_cast<void*>(srcStart), numData * sizeof(int16_t));
 
