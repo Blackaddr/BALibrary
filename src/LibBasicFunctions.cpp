@@ -34,9 +34,21 @@ size_t calcOffset(QueuePosition position)
 
 void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix)
 {
-	for (int i=0; i< AUDIO_BLOCK_SAMPLES; i++) {
-		out->data[i] = (dry->data[i] * (1 - mix)) + (wet->data[i] * mix);
-	}
+	 //Non-optimized version for illustrative purposes
+//		for (int i=0; i< AUDIO_BLOCK_SAMPLES; i++) {
+//			out->data[i] = (dry->data[i] * (1 - mix)) + (wet->data[i] * mix);
+//		}
+//		return;
+
+	// ARM DSP optimized
+	int16_t wetBuffer[AUDIO_BLOCK_SAMPLES];
+	int16_t dryBuffer[AUDIO_BLOCK_SAMPLES];
+	int16_t scaleFractWet = (int16_t)(mix * 32767.0f);
+	int16_t scaleFractDry = 32767-scaleFractWet;
+
+	arm_scale_q15(dry->data, scaleFractDry, 0, dryBuffer, AUDIO_BLOCK_SAMPLES);
+	arm_scale_q15(wet->data, scaleFractWet, 0, wetBuffer, AUDIO_BLOCK_SAMPLES);
+	arm_add_q15(wetBuffer, dryBuffer, out->data, AUDIO_BLOCK_SAMPLES);
 }
 
 void clearAudioBlock(audio_block_t *block)
@@ -45,6 +57,9 @@ void clearAudioBlock(audio_block_t *block)
 }
 
 
+////////////////////////////////////////////////////
+// AudioDelay
+////////////////////////////////////////////////////
 AudioDelay::AudioDelay(size_t maxSamples)
 : m_slot(nullptr)
 {
@@ -208,6 +223,124 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 		}
 	}
 
+}
+
+////////////////////////////////////////////////////
+// IirBiQuadFilter
+////////////////////////////////////////////////////
+IirBiQuadFilter::IirBiQuadFilter(unsigned numStages, const int32_t *coeffs, int coeffShift)
+: NUM_STAGES(numStages)
+{
+	m_coeffs = new int32_t[5*numStages];
+	memcpy(m_coeffs, coeffs, 5*numStages * sizeof(int32_t));
+
+	m_state  = new int32_t[4*numStages];
+	arm_biquad_cascade_df1_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
+}
+
+IirBiQuadFilter::~IirBiQuadFilter()
+{
+	if (m_coeffs) delete [] m_coeffs;
+	if (m_state)  delete [] m_state;
+}
+
+
+bool IirBiQuadFilter::process(int16_t *output, int16_t *input, size_t numSamples)
+{
+	if (!output) return false;
+	if (!input) {
+		// send zeros
+		memset(output, 0, numSamples * sizeof(int16_t));
+	} else {
+
+		// create convertion buffers on teh stack
+		int32_t input32[numSamples];
+		int32_t output32[numSamples];
+		for (int i=0; i<numSamples; i++) {
+			input32[i] = (int32_t)(input[i]);
+		}
+
+		arm_biquad_cascade_df1_fast_q31(&m_iirCfg, input32, output32, numSamples);
+
+		for (int i=0; i<numSamples; i++) {
+			output[i] = (int16_t)(output32[i] & 0xffff);
+		}
+	}
+	return true;
+}
+
+// HIGH QUALITY
+IirBiQuadFilterHQ::IirBiQuadFilterHQ(unsigned numStages, const int32_t *coeffs, int coeffShift)
+: NUM_STAGES(numStages)
+{
+	m_coeffs = new int32_t[5*numStages];
+	memcpy(m_coeffs, coeffs, 5*numStages * sizeof(int32_t));
+
+	m_state = new int64_t[4*numStages];;
+	arm_biquad_cas_df1_32x64_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
+}
+
+IirBiQuadFilterHQ::~IirBiQuadFilterHQ()
+{
+	if (m_coeffs) delete [] m_coeffs;
+	if (m_state)  delete [] m_state;
+}
+
+
+bool IirBiQuadFilterHQ::process(int16_t *output, int16_t *input, size_t numSamples)
+{
+	if (!output) return false;
+	if (!input) {
+		// send zeros
+		memset(output, 0, numSamples * sizeof(int16_t));
+	} else {
+
+		// create convertion buffers on teh stack
+		int32_t input32[numSamples];
+		int32_t output32[numSamples];
+		for (int i=0; i<numSamples; i++) {
+			input32[i] = (int32_t)(input[i]);
+		}
+
+		arm_biquad_cas_df1_32x64_q31(&m_iirCfg, input32, output32, numSamples);
+
+		for (int i=0; i<numSamples; i++) {
+			output[i] = (int16_t)(output32[i] & 0xffff);
+		}
+	}
+	return true;
+}
+
+// FLOAT
+IirBiQuadFilterFloat::IirBiQuadFilterFloat(unsigned numStages, const float *coeffs)
+: NUM_STAGES(numStages)
+{
+	m_coeffs = new float[5*numStages];
+	memcpy(m_coeffs, coeffs, 5*numStages * sizeof(float));
+
+	m_state = new float[4*numStages];;
+	arm_biquad_cascade_df2T_init_f32(&m_iirCfg, numStages, m_coeffs, m_state);
+}
+
+IirBiQuadFilterFloat::~IirBiQuadFilterFloat()
+{
+	if (m_coeffs) delete [] m_coeffs;
+	if (m_state)  delete [] m_state;
+}
+
+
+bool IirBiQuadFilterFloat::process(float *output, float *input, size_t numSamples)
+{
+	if (!output) return false;
+	if (!input) {
+		// send zeros
+		memset(output, 0, numSamples * sizeof(float));
+	} else {
+
+		arm_biquad_cascade_df2T_f32(&m_iirCfg, input, output, numSamples);
+
+	}
+	return true;
 }
 
 }

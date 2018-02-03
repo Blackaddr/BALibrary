@@ -13,10 +13,20 @@ constexpr int MIDI_NUM_PARAMS = 4;
 constexpr int MIDI_CHANNEL = 0;
 constexpr int MIDI_CONTROL = 1;
 
-constexpr int MIDI_ENABLE = 0;
+constexpr int MIDI_BYPASS = 0;
 constexpr int MIDI_DELAY = 1;
 constexpr int MIDI_FEEDBACK = 2;
 constexpr int MIDI_MIX = 3;
+
+// BOSS DM-3 Filters
+constexpr unsigned NUM_IIR_STAGES = 4;
+constexpr unsigned IIR_COEFF_SHIFT = 2;
+constexpr int32_t DEFAULT_COEFFS[5*NUM_IIR_STAGES] = {
+		536870912,            988616936,            455608573,            834606945,           -482959709,
+		536870912,           1031466345,            498793368,            965834205,           -467402235,
+		536870912,           1105821939,            573646688,            928470657,           -448083489,
+    2339,                 5093,                 2776,            302068995,              4412722
+};
 
 
 AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelay)
@@ -24,6 +34,7 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelay)
 {
 	m_memory = new AudioDelay(maxDelay);
 	m_maxDelaySamples = calcAudioSamples(maxDelay);
+	m_iir  = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
 }
 
 AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
@@ -31,6 +42,7 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
 {
 	m_memory = new AudioDelay(numSamples);
 	m_maxDelaySamples = numSamples;
+	m_iir = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
 }
 
 // requires preallocated memory large enough
@@ -40,67 +52,63 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
 	m_memory = new AudioDelay(slot);
 	m_maxDelaySamples = slot->size();
 	m_externalMemory = true;
+	m_iir = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
 }
 
 AudioEffectAnalogDelay::~AudioEffectAnalogDelay()
 {
 	if (m_memory) delete m_memory;
+	if (m_iir) delete m_iir;
 }
 
 void AudioEffectAnalogDelay::update(void)
 {
 	audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
-	if (!inputAudioBlock) {
-		// create silence
-		inputAudioBlock = allocate();
-		if (!inputAudioBlock) { return; } // failed to allocate
-		else {
-			clearAudioBlock(inputAudioBlock);
-		}
-	}
-
+	// Check is block is disabled
 	if (m_enable == false) {
-		// release all held memory resources
-		transmit(inputAudioBlock);
-		release(inputAudioBlock); inputAudioBlock = nullptr;
+		// do not transmit or process any audio, return as quickly as possible.
+		if (inputAudioBlock) release(inputAudioBlock);
 
+		// release all held memory resources
 		if (m_previousBlock) {
 			release(m_previousBlock); m_previousBlock = nullptr;
 		}
 		if (!m_externalMemory) {
+			// when using internal memory we have to release all references in the ring buffer
 			while (m_memory->getRingBuffer()->size() > 0) {
 				audio_block_t *releaseBlock = m_memory->getRingBuffer()->front();
 				m_memory->getRingBuffer()->pop_front();
 				if (releaseBlock) release(releaseBlock);
 			}
 		}
+		return;
 	}
 
-	if (m_callCount < 1024) {
-		if (inputAudioBlock) {
-			transmit(inputAudioBlock, 0);
-			release(inputAudioBlock);
+	// Check is block is bypassed, if so either transmit input directly or create silence
+	if (m_bypass == true) {
+		// transmit the input directly
+		if (!inputAudioBlock) {
+			// create silence
+			inputAudioBlock = allocate();
+			if (!inputAudioBlock) { return; } // failed to allocate
+			else {
+				clearAudioBlock(inputAudioBlock);
+			}
 		}
-		m_callCount++; return;
+		transmit(inputAudioBlock, 0);
+		release(inputAudioBlock);
+		return;
 	}
 
-
-	m_callCount++;
-	//Serial.println(String("AudioEffectAnalgDelay::update: ") + m_callCount);
-
+	// Otherwise perform normal processing
 	// Preprocessing
 	audio_block_t *preProcessed = allocate();
+	// mix the input with the feedback path in the pre-processing stage
 	m_preProcessing(preProcessed, inputAudioBlock, m_previousBlock);
 
 	audio_block_t *blockToRelease = m_memory->addBlock(preProcessed);
 	if (blockToRelease) release(blockToRelease);
-
-//	if (inputAudioBlock) {
-//		transmit(inputAudioBlock, 0);
-//		release(inputAudioBlock);
-//	}
-//	return;
 
 	// OUTPUT PROCESSING
 	audio_block_t *blockToOutput = nullptr;
@@ -110,7 +118,7 @@ void AudioEffectAnalogDelay::update(void)
 	if (!blockToOutput) return; // skip this time due to failure
 	// copy over data
 	m_memory->getSamples(blockToOutput, m_delaySamples);
-	// perform the mix
+	// perform the wet/dry mix mix
 	m_postProcessing(blockToOutput, inputAudioBlock, blockToOutput);
 	transmit(blockToOutput);
 
@@ -177,11 +185,11 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 		return;
 	}
 
-	if ((m_midiConfig[MIDI_ENABLE][MIDI_CHANNEL] == channel) &&
-        (m_midiConfig[MIDI_ENABLE][MIDI_CONTROL] == control)) {
-		// Enable
-		if (value >= 65) { enable(); Serial.println(String("AudioEffectAnalogDelay::enable: ON") + value); }
-		else { disable(); Serial.println(String("AudioEffectAnalogDelay::enable: OFF") + value); }
+	if ((m_midiConfig[MIDI_BYPASS][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[MIDI_BYPASS][MIDI_CONTROL] == control)) {
+		// Bypass
+		if (value >= 65) { bypass(false); Serial.println(String("AudioEffectAnalogDelay::not bypassed -> ON") + value); }
+		else { bypass(true); Serial.println(String("AudioEffectAnalogDelay::bypassed -> OFF") + value); }
 		return;
 	}
 
@@ -208,10 +216,10 @@ void AudioEffectAnalogDelay::mapMidiDelay(int control, int channel)
 	m_midiConfig[MIDI_DELAY][MIDI_CONTROL] = control;
 }
 
-void AudioEffectAnalogDelay::mapMidiEnable(int control, int channel)
+void AudioEffectAnalogDelay::mapMidiBypass(int control, int channel)
 {
-	m_midiConfig[MIDI_ENABLE][MIDI_CHANNEL] = channel;
-	m_midiConfig[MIDI_ENABLE][MIDI_CONTROL] = control;
+	m_midiConfig[MIDI_BYPASS][MIDI_CHANNEL] = channel;
+	m_midiConfig[MIDI_BYPASS][MIDI_CONTROL] = control;
 }
 
 void AudioEffectAnalogDelay::mapMidiFeedback(int control, int channel)
@@ -239,6 +247,8 @@ void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *
 void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
 {
 	if ( out && dry && wet) {
+		// Simulate the LPF IIR nature of the analog systems
+		m_iir->process(wet->data, wet->data, AUDIO_BLOCK_SAMPLES);
 		alphaBlend(out, dry, wet, m_mix);
 	} else if (dry) {
 		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);

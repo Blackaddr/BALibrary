@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <new>
 
+#include <arm_math.h>
 #include "Arduino.h"
 #include "Audio.h"
 
@@ -151,6 +152,65 @@ private:
     MemType m_type;                                      ///< when 0, INTERNAL memory, when 1, external MEMORY.
     RingBuffer<audio_block_t *> *m_ringBuffer = nullptr; ///< When using INTERNAL memory, a RingBuffer will be created.
     ExtMemSlot *m_slot = nullptr;                        ///< When using EXTERNAL memory, an ExtMemSlot must be provided.
+};
+
+/**************************************************************************//**
+ * IIR BiQuad Filter - Direct Form I <br>
+ * y[n] = b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] + a1 * y[n-1] + a2 * y[n-2]<br>
+ * Some design tools (like Matlab assume the feedback coefficients 'a' are negated. You
+ * may have to negate your 'a' coefficients.
+ * @details Note that the ARM CMSIS-DSP library requires an extra zero between first
+ * and second 'b' coefficients. E.g. <br>
+ * {b10, 0, b11, b12, a11, a12, b20, 0, b21, b22, a21, a22, ...}
+ *****************************************************************************/
+class IirBiQuadFilter {
+public:
+	IirBiQuadFilter() = delete;
+	IirBiQuadFilter(unsigned numStages, const int32_t *coeffs, int coeffShift = 0);
+	virtual ~IirBiQuadFilter();
+	bool process(int16_t *output, int16_t *input, size_t numSamples);
+private:
+	const unsigned NUM_STAGES;
+	int32_t *m_coeffs = nullptr;
+
+	// ARM DSP Math library filter instance
+	arm_biquad_casd_df1_inst_q31 m_iirCfg;
+	int32_t *m_state = nullptr;
+};
+
+
+class IirBiQuadFilterHQ {
+public:
+	IirBiQuadFilterHQ() = delete;
+	IirBiQuadFilterHQ(unsigned numStages, const int32_t *coeffs, int coeffShift = 0);
+	virtual ~IirBiQuadFilterHQ();
+	bool process(int16_t *output, int16_t *input, size_t numSamples);
+private:
+
+
+	const unsigned NUM_STAGES;
+	int32_t *m_coeffs = nullptr;
+
+	// ARM DSP Math library filter instance
+	arm_biquad_cas_df1_32x64_ins_q31 m_iirCfg;
+	int64_t *m_state = nullptr;
+
+};
+
+class IirBiQuadFilterFloat {
+public:
+	IirBiQuadFilterFloat() = delete;
+	IirBiQuadFilterFloat(unsigned numStages, const float *coeffs);
+	virtual ~IirBiQuadFilterFloat();
+	bool process(float *output, float *input, size_t numSamples);
+private:
+	const unsigned NUM_STAGES;
+	float *m_coeffs = nullptr;
+
+	// ARM DSP Math library filter instance
+	arm_biquad_cascade_df2T_instance_f32 m_iirCfg;
+	float *m_state = nullptr;
+
 };
 
 /**************************************************************************//**
