@@ -104,6 +104,14 @@ public:
 	/// @returns the next 16-bit data word in memory
 	uint16_t readAdvance16();
 
+
+	/// Read the next block of numWords during circular operation
+	/// @details, dest is ignored when using DMA
+	/// @param dest pointer to the destination of the read.
+	/// @param numWords number of 16-bit words to transfer
+	/// @returns true on success, else false on error
+	bool readAdvance16(int16_t *dest=nullptr, size_t numWords);
+
 	/// Write a block of 16-bit data from the specified location in circular operation
 	/// @param src pointer to the start of the block of data to write to memory
 	/// @param numWords number of 16-bit words to transfer
@@ -120,6 +128,7 @@ public:
 	/// @returns true on success, else false on error
 	bool zeroAdvance16(size_t numWords);
 
+	void readDmaBufferContents(uint8_t *dest, size_t numBytes, size_t bufferOffset = 0);
 
 	/// Get the size of the memory slot
 	/// @returns size of the slot in bytes
@@ -133,6 +142,8 @@ public:
 	/// @returns true if enabled, false if not enabled
 	bool isEnabled() const;
 
+	bool isUseDma() const { return m_useDma; }
+
 	/// DEBUG USE: prints out the slot member variables
 	void printStatus(void) const;
 
@@ -144,6 +155,7 @@ private:
 	size_t m_currentWrPosition = 0; ///< current write pointer for circular operation
 	size_t m_currentRdPosition = 0; ///< current read pointer for circular operation
 	size_t m_size = 0;              ///< size of this slot in bytes
+	bool   m_useDma = false;        ///< when TRUE, BASpiMemoryDMA will be used.
 	SpiDeviceId m_spiId;            ///< the SPI Device ID
 	BASpiMemory *m_spi = nullptr;   ///< pointer to an instance of the BASpiMemory interface class
 };
@@ -175,14 +187,14 @@ public:
 	/// @param delayMilliseconds request the amount of memory based on required time for audio samples, rather than number of bytes.
 	/// @param mem specify which external memory to allocate from
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0);
+	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = true);
 
 	/// Request memory be allocated for the provided slot
 	/// @param slot a pointer to the global slot object to which memory will be allocated
 	/// @param sizeBytes request the amount of memory in bytes to request
 	/// @param mem specify which external memory to allocate from
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0);
+	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = true);
 
 private:
 	static bool m_configured; ///< there should only be one instance of ExternalSramManager in the whole project

@@ -119,11 +119,14 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 //				srcPtr--;
 //			}
 
-			int16_t *srcPtr = block->data;
-			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
-				m_slot->writeAdvance16(*srcPtr);
-				srcPtr++;
-			}
+		    m_slot->writeAdvance16(block->data, AUDIO_BLOCK_SAMPLES);
+
+		    // Code below worked
+//			int16_t *srcPtr = block->data;
+//			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+//				m_slot->writeAdvance16(*srcPtr);
+//				srcPtr++;
+//			}
 
 		}
 		blockToRelease =  block;
@@ -210,11 +213,15 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 //				destPtr--;
 //			}
 
-			int16_t *destPtr = dest->data;
-			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
-				*destPtr = m_slot->readAdvance16();
-				destPtr++;
-			}
+			m_slot->readAdvance16(AUDIO_BLOCK_SAMPLES);
+
+//			// Code below worked
+//			int16_t *destPtr = dest->data;
+//			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+//				*destPtr = m_slot->readAdvance16();
+//				destPtr++;
+//			}
+
 			return true;
 		} else {
 			// numSampmles is > than total slot size
@@ -223,6 +230,11 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 		}
 	}
 
+}
+
+void AudioDelay::readDmaBufferContents(audio_block_t *dest, size_t numSamples, size_t bufferOffset)
+{
+    m_slot->readDmaBufferContents(reinterpret_cast<uint8_t*>(dest->data), sizeof(int16_t)*numSamples, sizeof(int16_t)*bufferOffset);
 }
 
 ////////////////////////////////////////////////////

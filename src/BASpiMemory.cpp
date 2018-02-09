@@ -355,8 +355,8 @@ void BASpiMemoryDMA::begin(void)
 // are done before continuing.
 void BASpiMemoryDMA::write(size_t address, uint8_t *data, size_t numBytes)
 {
-	while ( m_txTransfer->busy()) {}
-	uint16_t transferCount = numBytes + 4;
+	while ( m_txTransfer->busy()) {} // wait until not busy
+	uint16_t transferCount = numBytes + 4; // transfer must be increased by the SPI command and address
 	m_setSpiCmdAddr(SPI_WRITE_CMD, address, m_txBuffer);
 	memcpy(m_txBuffer+4, data, numBytes);
 	*m_txTransfer = DmaSpi::Transfer(m_txBuffer, transferCount, nullptr, 0, m_cs);
@@ -394,8 +394,9 @@ void BASpiMemoryDMA::zero16(size_t address, size_t numWords)
 	m_spiDma->registerTransfer(*m_txTransfer);
 }
 
-void BASpiMemoryDMA::read(size_t address, uint8_t *data, size_t numBytes)
+void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 {
+    UNUSED(dest)
 	while ( m_rxTransfer->busy()) {}
 	uint16_t transferCount = numBytes + 4;
 	m_setSpiCmdAddr(SPI_READ_CMD, address, m_rxBuffer);
@@ -405,6 +406,7 @@ void BASpiMemoryDMA::read(size_t address, uint8_t *data, size_t numBytes)
 
 void BASpiMemoryDMA::read16(size_t address, uint16_t *dest, size_t numWords)
 {
+    UNUSED(dest)
 	while ( m_rxTransfer->busy()) {}
 	m_setSpiCmdAddr(SPI_READ_CMD, address, m_rxBuffer);
 	size_t numBytes = sizeof(uint16_t)*numWords;
@@ -413,9 +415,10 @@ void BASpiMemoryDMA::read16(size_t address, uint16_t *dest, size_t numWords)
 	m_spiDma->registerTransfer(*m_rxTransfer);
 }
 
-void BASpiMemoryDMA::readBufferContents(size_t bufferOffset, uint8_t *dest, size_t numBytes)
+void BASpiMemoryDMA::readBufferContents(uint8_t *dest, size_t numBytes, size_t bufferOffset)
 {
-	memcpy(dest, m_rxBuffer+4, numBytes);
+    while (m_rxTransfer->busy()) {} // ensure transfer is complete
+	memcpy(dest, m_rxBuffer+4+bufferOffset, numBytes);
 }
 
 } /* namespace BAGuitar */

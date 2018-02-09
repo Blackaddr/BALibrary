@@ -115,7 +115,7 @@ class BASpiMemoryDMA : public BASpiMemory {
 	/// read a single 8-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
-	void read(size_t address, uint8_t *data, size_t numBytes) override;
+	void read(size_t address, uint8_t *dest, size_t numBytes) override;
 
 	/// read a block 16-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from
@@ -125,7 +125,7 @@ class BASpiMemoryDMA : public BASpiMemory {
 
 
 	void begin() override;
-	void readBufferContents(size_t bufferOffset, uint8_t *dest, size_t numBytes);
+	void readBufferContents(uint8_t *dest, size_t numBytes, size_t bufferOffset = 0);
 
 private:
 	AbstractDmaSpi<DmaSpi0, SPIClass, SPI> *m_spiDma = nullptr;
@@ -137,8 +137,6 @@ private:
 	DmaSpi::Transfer *m_rxTransfer;
 
 	void m_setSpiCmdAddr(int command, size_t address, uint8_t *dest);
-//	RingBuffer<DmaSpi::Transfer> m_txFifo(MAX_DMA_XFERS);
-//	RingBuffer<DmaSpi::Transfer> m_rxFifo(MAX_DMA_XFERS);
 };
 
 

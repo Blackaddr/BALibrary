@@ -108,6 +108,28 @@ uint16_t ExtMemSlot::readAdvance16()
 	return val;
 }
 
+bool ExtMemSlot::readAdvance16(int16_t *dest=nullptr, size_t numWords)
+{
+    if (!m_valid) { return false; }
+    size_t numBytes = sizeof(int16_t)*numWords;
+
+    if (m_currentRdPosition + numBytes-1 <= m_end) {
+        // entire block fits in memory slot without wrapping
+        m_spi->read16(m_currentWrPosition, reinterpret_cast<uint16_t*>(dest), numWords); // cast audio data to uint.
+        m_currentRdPosition += numBytes;
+
+    } else {
+        // this read will wrap the memory slot
+        size_t rdBytes = m_end - m_currentRdPosition + 1;
+        size_t rdDataNum = rdBytes >> 1; // divide by two to get the number of data
+        m_spi->read16(m_currentRdPosition, reinterpret_cast<uint16_t*>(dest), rdDataNum);
+        size_t remainingData = numWords - rdDataNum;
+        m_spi->read16(m_start, reinterpret_cast<uint16_t*>(dest + rdDataNum), remainingData); // write remaining bytes are start
+        m_currentRdPosition = m_start + (remainingData*sizeof(int16_t));
+    }
+    return true;
+}
+
 
 bool ExtMemSlot::writeAdvance16(int16_t *src, size_t numWords)
 {
@@ -151,6 +173,11 @@ bool ExtMemSlot::zeroAdvance16(size_t numWords)
 		m_currentWrPosition = m_start + remainingWords*sizeof(int16_t);
 	}
 	return true;
+}
+
+void ExtMemSlot::readDmaBufferContents(uint8_t *dest, size_t numBytes, size_t bufferOffset = 0)
+{
+    m_spi->readBufferContents(dest, numBytes, bufferOffset);
 }
 
 
@@ -229,14 +256,14 @@ size_t ExternalSramManager::availableMemory(BAGuitar::MemSelect mem)
 	return m_memConfig[mem].totalAvailable;
 }
 
-bool ExternalSramManager::requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem)
+bool ExternalSramManager::requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem, bool useDma)
 {
 	// convert the time to numer of samples
 	size_t delayLengthInt = (size_t)((delayMilliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f);
-	return requestMemory(slot, delayLengthInt * sizeof(int16_t), mem);
+	return requestMemory(slot, delayLengthInt * sizeof(int16_t), mem, useDma);
 }
 
-bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem)
+bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem, bool useDma)
 {
 
 	if (m_memConfig[mem].totalAvailable >= sizeBytes) {
@@ -249,7 +276,11 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGu
 		slot->m_size = sizeBytes;
 
 		if (!m_memConfig[mem].m_spi) {
-			m_memConfig[mem].m_spi = new BAGuitar::BASpiMemory(static_cast<BAGuitar::SpiDeviceId>(mem));
+		    if (useDma) {
+		        m_memConfig[mem].m_spi = new BAGuitar::BASpiMemoryDma(static_cast<BAGuitar::SpiDeviceId>(mem));
+		    } else {
+		        m_memConfig[mem].m_spi = new BAGuitar::BASpiMemory(static_cast<BAGuitar::SpiDeviceId>(mem));
+		    }
 			if (!m_memConfig[mem].m_spi) {
 				Serial.println("requestMemory: new failed! m_spi is a nullptr");
 			} else {
@@ -264,6 +295,7 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGu
 		slot->m_valid = true;
 		if (!slot->isEnabled()) { slot->enable(); }
 		slot->clear();
+		slot->m_useDma = useDma;
 		return true;
 	} else {
 		// there is not enough memory available for the request

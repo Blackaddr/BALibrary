@@ -102,22 +102,44 @@ void AudioEffectAnalogDelay::update(void)
 	}
 
 	// Otherwise perform normal processing
+	// In order to make use of the SPI DMA, we need to request the read from memory first,
+	// then do other processing while it fills in the back.
+	audio_block_t *blockToOutput = nullptr; // this will hold the output audio
+    blockToOutput = allocate();
+    if (!blockToOutput) return; // skip this update cycle due to failure
+
+    // get the data. If using external memory with DMA, this won't be filled until
+    // later.
+    m_memory->getSamples(blockToOutput, m_delaySamples);
+
+    // If using DMA, we need something else to do while that read executes, so
+    // move on to input preprocessing
+
 	// Preprocessing
 	audio_block_t *preProcessed = allocate();
 	// mix the input with the feedback path in the pre-processing stage
 	m_preProcessing(preProcessed, inputAudioBlock, m_previousBlock);
 
+	// consider doing the BBD post processing here to use up more time while waiting
+	// for the read data to come back
 	audio_block_t *blockToRelease = m_memory->addBlock(preProcessed);
 	if (blockToRelease) release(blockToRelease);
 
-	// OUTPUT PROCESSING
-	audio_block_t *blockToOutput = nullptr;
-	blockToOutput = allocate();
+	// BACK TO OUTPUT PROCESSING
+//	audio_block_t *blockToOutput = nullptr;
+//	blockToOutput = allocate();
 
 	// copy the output data
-	if (!blockToOutput) return; // skip this time due to failure
-	// copy over data
-	m_memory->getSamples(blockToOutput, m_delaySamples);
+//	if (!blockToOutput) return; // skip this time due to failure
+//	// copy over data
+//	m_memory->getSamples(blockToOutput, m_delaySamples);
+
+	// Check if external DMA, if so, we need to copy out of the DMA buffer
+	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
+	    // Using DMA
+	    m_memory->readDmaBufferContents(blockToOutput);
+	}
+
 	// perform the wet/dry mix mix
 	m_postProcessing(blockToOutput, inputAudioBlock, blockToOutput);
 	transmit(blockToOutput);

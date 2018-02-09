@@ -109,7 +109,7 @@ public:
 
     /// Construct an audio buffer using a slot configured with the BAGuitar::ExternalSramManager
     /// @param slot a pointer to the slot representing the memory you wish to use for the buffer.
-    AudioDelay(ExtMemSlot *slot);
+    AudioDelay(ExtMemSlot *slot, bool useDma=true);
 
     ~AudioDelay();
 
@@ -139,6 +139,8 @@ public:
     /// with the buffer.
     /// @returns pointer to the underlying ExtMemSlot.
     ExtMemSlot *getSlot() const { return m_slot; }
+
+    void readDmaBufferContents(audio_block_t *dest, size_t numSamples = AUDIO_BLOCK_SAMPLES, size_t bufferOffset = 0);
 
     RingBuffer<audio_block_t*> *getRingBuffer() const { return m_ringBuffer; }
 
