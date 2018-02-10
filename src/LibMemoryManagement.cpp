@@ -115,7 +115,7 @@ bool ExtMemSlot::readAdvance16(int16_t *dest, size_t numWords)
 
     if (m_currentRdPosition + numBytes-1 <= m_end) {
         // entire block fits in memory slot without wrapping
-        m_spi->read16(m_currentWrPosition, reinterpret_cast<uint16_t*>(dest), numWords); // cast audio data to uint.
+        m_spi->read16(m_currentRdPosition, reinterpret_cast<uint16_t*>(dest), numWords); // cast audio data to uint.
         m_currentRdPosition += numBytes;
 
     } else {

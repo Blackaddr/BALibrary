@@ -119,6 +119,7 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 //				srcPtr--;
 //			}
 
+			// this causes pops
 		    m_slot->writeAdvance16(block->data, AUDIO_BLOCK_SAMPLES);
 
 		    // Code below worked
@@ -213,9 +214,10 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 //				destPtr--;
 //			}
 
+			// This causes pops
 			m_slot->readAdvance16(dest->data, AUDIO_BLOCK_SAMPLES);
 
-//			// Code below worked
+			// Code below worked
 //			int16_t *destPtr = dest->data;
 //			for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
 //				*destPtr = m_slot->readAdvance16();

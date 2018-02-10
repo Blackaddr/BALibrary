@@ -261,6 +261,7 @@ void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *
 {
 	if ( out && dry && wet) {
 		alphaBlend(out, dry, wet, m_feedback);
+		m_iir->process(out->data, out->data, AUDIO_BLOCK_SAMPLES);
 	} else if (dry) {
 		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
 	}
@@ -270,7 +271,7 @@ void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t 
 {
 	if ( out && dry && wet) {
 		// Simulate the LPF IIR nature of the analog systems
-		m_iir->process(wet->data, wet->data, AUDIO_BLOCK_SAMPLES);
+		//m_iir->process(wet->data, wet->data, AUDIO_BLOCK_SAMPLES);
 		alphaBlend(out, dry, wet, m_mix);
 	} else if (dry) {
 		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
