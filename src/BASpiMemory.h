@@ -49,25 +49,51 @@ public:
 	BASpiMemory(SpiDeviceId memDeviceId, uint32_t speedHz);
 	virtual ~BASpiMemory();
 
+	/// initialize and configure the SPI peripheral
 	virtual void begin();
 
-	/// write a single data word to the specified address
+	/// write a single 8-bit word to the specified address
 	/// @param address the address in the SPI RAM to write to
 	/// @param data the value to write
 	void write(size_t address, uint8_t data);
-	virtual void write(size_t address, uint8_t *data, size_t numBytes);
+
+	/// Write a block of 8-bit data to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param src pointer to the source data block
+	/// @param numBytes size of the data block in bytes
+	virtual void write(size_t address, uint8_t *src, size_t numBytes);
+
+	/// Write a block of zeros to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param numBytes size of the data block in bytes
 	virtual void zero(size_t address, size_t numBytes);
 
+	/// write a single 16-bit word to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param data the value to write
 	void write16(size_t address, uint16_t data);
-	virtual void write16(size_t address, uint16_t *data, size_t numWords);
 
+	/// Write a block of 16-bit data to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param src pointer to the source data block
+	/// @param numWords size of the data block in 16-bit words
+	virtual void write16(size_t address, uint16_t *src, size_t numWords);
+
+	/// Write a block of 16-bit zeros to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param numWords size of the data block in 16-bit words
 	virtual void zero16(size_t address, size_t numWords);
 
 	/// read a single 8-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from
 	/// @return the data that was read
 	uint8_t read(size_t address);
-	virtual void read(size_t address, uint8_t *data, size_t numBytes);
+
+	/// Read a block of 8-bit data from the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param dest pointer to the destination
+	/// @param numBytes size of the data block in bytes
+	virtual void read(size_t address, uint8_t *dest, size_t numBytes);
 
 	/// read a single 16-bit data word from the specified address
 	/// @param address the address in the SPI RAM to read from
@@ -80,6 +106,8 @@ public:
 	/// @param numWords the number of 16-bit words to transfer
 	virtual void read16(size_t address, uint16_t *dest, size_t numWords);
 
+	/// Check if the class has been configured by a previous begin() call
+	/// @returns true if initialized, false if not yet initialized
     bool isStarted() const { return m_started; }
 
 protected:
@@ -96,11 +124,13 @@ protected:
 class BASpiMemoryDMA : public BASpiMemory {
 public:
 	BASpiMemoryDMA() = delete;
+
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2).
 	/// @details default is 20 Mhz
 	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
 	/// @param bufferSize size of buffer to store DMA transfers
 	BASpiMemoryDMA(SpiDeviceId memDeviceId, size_t bufferSizeBytes);
+
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2)
 	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
 	/// @param speedHz specify the desired speed in Hz.
@@ -108,14 +138,35 @@ public:
 	BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz, size_t bufferSizeBytes);
 	virtual ~BASpiMemoryDMA();
 
-	void write(size_t address, uint8_t *data, size_t numBytes) override;
+	/// initialize and configure the SPI peripheral
+	void begin() override;
+
+	/// Write a block of 8-bit data to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param src pointer to the source data block
+	/// @param numBytes size of the data block in bytes
+	void write(size_t address, uint8_t *src, size_t numBytes) override;
+
+	/// Write a block of zeros to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param numBytes size of the data block in bytes
 	void zero(size_t address, size_t numBytes) override;
-	void write16(size_t address, uint16_t *data, size_t numWords) override;
+
+	/// Write a block of 16-bit data to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param src pointer to the source data block
+	/// @param numWords size of the data block in 16-bit words
+	void write16(size_t address, uint16_t *src, size_t numWords) override;
+
+	/// Write a block of 16-bit zeros to the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param numWords size of the data block in 16-bit words
 	void zero16(size_t address, size_t numWords) override;
 
-	/// read a single 8-bit data word from the specified address
-	/// @param address the address in the SPI RAM to read from
-	/// @return the data that was read
+	/// Read a block of 8-bit data from the specified address
+	/// @param address the address in the SPI RAM to write to
+	/// @param dest pointer to the destination
+	/// @param numBytes size of the data block in bytes
 	void read(size_t address, uint8_t *dest, size_t numBytes) override;
 
 	/// read a block 16-bit data word from the specified address
@@ -124,9 +175,25 @@ public:
 	/// @param numWords the number of 16-bit words to transfer
 	void read16(size_t address, uint16_t *dest, size_t numWords) override;
 
+	/// Check if a DMA write is in progress
+	/// @returns true if a write DMA is in progress, else false
+	bool isWriteBusy();
 
-	void begin() override;
-	void readBufferContents(uint8_t *dest, size_t numBytes, size_t bufferOffset = 0);
+	/// Check if a DMA read is in progress
+	/// @returns true if a read DMA is in progress, else false
+	bool isReadBusy();
+
+	/// Readout the 8-bit contents of the DMA storage buffer to the specified destination
+	/// @param dest pointer to the destination
+	/// @param numBytes number of bytes to read out
+	/// @param byteOffset, offset from the start of the DMA buffer in bytes to begin reading
+	void readBufferContents(uint8_t *dest,  size_t numBytes, size_t byteOffset = 0);
+
+	/// Readout the 8-bit contents of the DMA storage buffer to the specified destination
+	/// @param dest pointer to the destination
+	/// @param numWords number of 16-bit words to read out
+	/// @param wordOffset, offset from the start of the DMA buffer in words to begin reading
+	void readBufferContents(uint16_t *dest, size_t numWords, size_t wordOffset = 0);
 
 private:
 	AbstractDmaSpi<DmaSpi0, SPIClass, SPI> *m_spiDma = nullptr;
