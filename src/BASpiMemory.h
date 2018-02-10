@@ -94,6 +94,7 @@ protected:
 //constexpr int MAX_DMA_XFERS = 4;
 
 class BASpiMemoryDMA : public BASpiMemory {
+public:
 	BASpiMemoryDMA() = delete;
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2).
 	/// @details default is 20 Mhz

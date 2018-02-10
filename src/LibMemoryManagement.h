@@ -110,7 +110,7 @@ public:
 	/// @param dest pointer to the destination of the read.
 	/// @param numWords number of 16-bit words to transfer
 	/// @returns true on success, else false on error
-	bool readAdvance16(int16_t *dest=nullptr, size_t numWords);
+	bool readAdvance16(int16_t *dest, size_t numWords);
 
 	/// Write a block of 16-bit data from the specified location in circular operation
 	/// @param src pointer to the start of the block of data to write to memory
@@ -186,15 +186,17 @@ public:
 	/// @param slot a pointer to the global slot object to which memory will be allocated
 	/// @param delayMilliseconds request the amount of memory based on required time for audio samples, rather than number of bytes.
 	/// @param mem specify which external memory to allocate from
+	/// @param dmaBufferSize When > 0, DMA mode is used with the specified DMA buffer size
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = true);
+	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, size_t dmaBufferSize = 0);
 
 	/// Request memory be allocated for the provided slot
 	/// @param slot a pointer to the global slot object to which memory will be allocated
 	/// @param sizeBytes request the amount of memory in bytes to request
 	/// @param mem specify which external memory to allocate from
+	/// @param dmaBufferSize When > 0, DMA mode is used with the specified DMA buffer size
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = true);
+	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, size_t dmaBufferSize = 0);
 
 private:
 	static bool m_configured; ///< there should only be one instance of ExternalSramManager in the whole project

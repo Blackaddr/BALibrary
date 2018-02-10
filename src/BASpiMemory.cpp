@@ -293,6 +293,8 @@ BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz, size_t
 	case SpiDeviceId::SPI_DEVICE1 :
 		cs = SPI_CS_MEM1;
 		break;
+	default :
+		cs = SPI_CS_MEM0;
 	}
 	m_cs = new ActiveLowChipSelect(cs, m_settings);
 	m_txBuffer = new uint8_t[bufferSizeBytes+4];
@@ -396,7 +398,7 @@ void BASpiMemoryDMA::zero16(size_t address, size_t numWords)
 
 void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 {
-    UNUSED(dest)
+    UNUSED(dest);
 	while ( m_rxTransfer->busy()) {}
 	uint16_t transferCount = numBytes + 4;
 	m_setSpiCmdAddr(SPI_READ_CMD, address, m_rxBuffer);
@@ -406,7 +408,7 @@ void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 
 void BASpiMemoryDMA::read16(size_t address, uint16_t *dest, size_t numWords)
 {
-    UNUSED(dest)
+    UNUSED(dest);
 	while ( m_rxTransfer->busy()) {}
 	m_setSpiCmdAddr(SPI_READ_CMD, address, m_rxBuffer);
 	size_t numBytes = sizeof(uint16_t)*numWords;

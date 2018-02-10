@@ -213,7 +213,7 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 //				destPtr--;
 //			}
 
-			m_slot->readAdvance16(AUDIO_BLOCK_SAMPLES);
+			m_slot->readAdvance16(dest->data, AUDIO_BLOCK_SAMPLES);
 
 //			// Code below worked
 //			int16_t *destPtr = dest->data;
@@ -268,13 +268,13 @@ bool IirBiQuadFilter::process(int16_t *output, int16_t *input, size_t numSamples
 		// create convertion buffers on teh stack
 		int32_t input32[numSamples];
 		int32_t output32[numSamples];
-		for (int i=0; i<numSamples; i++) {
+		for (size_t i=0; i<numSamples; i++) {
 			input32[i] = (int32_t)(input[i]);
 		}
 
 		arm_biquad_cascade_df1_fast_q31(&m_iirCfg, input32, output32, numSamples);
 
-		for (int i=0; i<numSamples; i++) {
+		for (size_t i=0; i<numSamples; i++) {
 			output[i] = (int16_t)(output32[i] & 0xffff);
 		}
 	}
@@ -310,13 +310,13 @@ bool IirBiQuadFilterHQ::process(int16_t *output, int16_t *input, size_t numSampl
 		// create convertion buffers on teh stack
 		int32_t input32[numSamples];
 		int32_t output32[numSamples];
-		for (int i=0; i<numSamples; i++) {
+		for (size_t i=0; i<numSamples; i++) {
 			input32[i] = (int32_t)(input[i]);
 		}
 
 		arm_biquad_cas_df1_32x64_q31(&m_iirCfg, input32, output32, numSamples);
 
-		for (int i=0; i<numSamples; i++) {
+		for (size_t i=0; i<numSamples; i++) {
 			output[i] = (int16_t)(output32[i] & 0xffff);
 		}
 	}

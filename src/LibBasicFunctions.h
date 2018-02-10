@@ -109,7 +109,7 @@ public:
 
     /// Construct an audio buffer using a slot configured with the BAGuitar::ExternalSramManager
     /// @param slot a pointer to the slot representing the memory you wish to use for the buffer.
-    AudioDelay(ExtMemSlot *slot, bool useDma=true);
+    AudioDelay(ExtMemSlot *slot);
 
     ~AudioDelay();
 
