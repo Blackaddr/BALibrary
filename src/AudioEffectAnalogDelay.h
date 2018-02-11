@@ -45,6 +45,7 @@ private:
 	AudioDelay *m_memory = nullptr;
 	size_t m_maxDelaySamples = 0;
 	audio_block_t *m_previousBlock = nullptr;
+	audio_block_t *m_blockToRelease  = nullptr;
 	IirBiQuadFilterHQ *m_iir = nullptr;
 
 	// Controls

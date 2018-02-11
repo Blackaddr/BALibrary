@@ -138,7 +138,7 @@ void AudioEffectAnalogDelay::update(void)
 	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
 	    // Using DMA
 		unsigned loopCount = 0;
-		while (m_memory->getSlot()->isReadBusy()) { /*Serial.println(String("RB:") + loopCount); loopCount++; */}
+		while (m_memory->getSlot()->isReadBusy()) {}
 	}
 
 	// perform the wet/dry mix mix
@@ -148,12 +148,12 @@ void AudioEffectAnalogDelay::update(void)
 	release(inputAudioBlock);
 	release(m_previousBlock);
 	m_previousBlock = blockToOutput;
+
 	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
 	    // Using DMA
-		unsigned loopCount = 0;
-		while (m_memory->getSlot()->isWriteBusy()) { /*Serial.println(String("WB:") + loopCount); loopCount++; */}
+		if (m_blockToRelease) release(m_blockToRelease);
+		m_blockToRelease = blockToRelease;
 	}
-	if (blockToRelease) release(blockToRelease);
 }
 
 void AudioEffectAnalogDelay::delay(float milliseconds)
