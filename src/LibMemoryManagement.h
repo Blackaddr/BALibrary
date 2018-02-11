@@ -81,24 +81,24 @@ public:
 	size_t getReadPosition() const { return m_currentRdPosition-m_start; }
 
 	/// Write a block of 16-bit data to the memory at the specified offset
-	/// @param offsetBytes offset in bytes from start of slot
-	/// @param dataPtr pointer to start of block of 16-bit data
+	/// @param offsetWords offset in 16-bit words from start of slot
+	/// @param src pointer to start of block of 16-bit data
 	/// @param numWords number of 16-bit words to transfer
 	/// @returns true on success, else false on error
-	bool write16(size_t offsetBytes, int16_t *dest, size_t numWords);
+	bool write16(size_t offsetWords, int16_t *src, size_t numWords);
 
 	/// Write a block of zeros (16-bit) to the memory at the specified offset
-	/// @param offsetBytes offset in bytes from start of slot
+	/// @param offsetWords offset in 16-bit words from start of slot
 	/// @param numWords number of 16-bit words to transfer
 	/// @returns true on success, else false on error
-	bool zero16(size_t offsetBytes, size_t numWords);
+	bool zero16(size_t offsetWords, size_t numWords);
 
 	/// Read a block of 16-bit data from the memory at the specified location
+	/// @param offsetWords offset in 16-bit words from start of slot
 	/// @param dest pointer to destination for the read data
-	/// @param offsetBytes offset in bytes from start of slot
 	/// @param numWords number of 16-bit words to transfer
 	/// @returns true on success, else false on error
-	bool read16(int16_t *dest, size_t offsetBytes, size_t numWords);
+	bool read16(size_t offsetWords, int16_t *dest, size_t numWords);
 
 	/// Read the next in memory during circular operation
 	/// @returns the next 16-bit data word in memory
@@ -188,7 +188,7 @@ public:
 	/// @param slot a pointer to the global slot object to which memory will be allocated
 	/// @param delayMilliseconds request the amount of memory based on required time for audio samples, rather than number of bytes.
 	/// @param mem specify which external memory to allocate from
-	/// @param dmaBufferSize When > 0, DMA mode is used with the specified DMA buffer size
+	/// @param useDma when true, DMA is used for SPI port, else transfers block until complete
 	/// @returns true on success, otherwise false on error
 	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = false);
 
@@ -196,7 +196,7 @@ public:
 	/// @param slot a pointer to the global slot object to which memory will be allocated
 	/// @param sizeBytes request the amount of memory in bytes to request
 	/// @param mem specify which external memory to allocate from
-	/// @param dmaBufferSize When > 0, DMA mode is used with the specified DMA buffer size
+    /// @param useDma when true, DMA is used for SPI port, else transfers block until complete
 	/// @returns true on success, otherwise false on error
 	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = false);
 

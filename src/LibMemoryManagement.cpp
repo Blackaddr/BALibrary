@@ -44,13 +44,13 @@ bool ExtMemSlot::setWritePosition(size_t offsetBytes)
 	} else { return false; }
 }
 
-bool ExtMemSlot::write16(size_t offsetBytes, int16_t *dest, size_t numWords)
+bool ExtMemSlot::write16(size_t offsetWords, int16_t *src, size_t numWords)
 {
 	if (!m_valid) { return false; }
-	size_t writeStart = m_start + offsetBytes; // 2x because int16 is two bytes per data
+	size_t writeStart = m_start + sizeof(int16_t)*offsetWords; // 2x because int16 is two bytes per data
 	size_t numBytes = sizeof(int16_t)*numWords;
 	if ((writeStart + numBytes-1) <= m_end) {
-		m_spi->write16(writeStart, reinterpret_cast<uint16_t*>(dest), numWords); // cast audio data to uint
+		m_spi->write16(writeStart, reinterpret_cast<uint16_t*>(src), numWords); // cast audio data to uint
 		return true;
 	} else {
 		// this would go past the end of the memory slot, do not perform the write
@@ -68,10 +68,10 @@ bool ExtMemSlot::setReadPosition(size_t offsetBytes)
 	}
 }
 
-bool ExtMemSlot::zero16(size_t offsetBytes, size_t numWords)
+bool ExtMemSlot::zero16(size_t offsetWords, size_t numWords)
 {
 	if (!m_valid) { return false; }
-	size_t writeStart = m_start + offsetBytes;
+	size_t writeStart = m_start + sizeof(int16_t)*offsetWords;
 	size_t numBytes = sizeof(int16_t)*numWords;
 	if ((writeStart + numBytes-1) <= m_end) {
 		m_spi->zero16(writeStart, numWords); // cast audio data to uint
@@ -82,10 +82,10 @@ bool ExtMemSlot::zero16(size_t offsetBytes, size_t numWords)
 	}
 }
 
-bool ExtMemSlot::read16(int16_t *dest, size_t offsetBytes, size_t numWords)
+bool ExtMemSlot::read16(size_t offsetWords, int16_t *dest, size_t numWords)
 {
 	if (!dest) return false; // invalid destination
-	size_t readOffset = m_start + offsetBytes;
+	size_t readOffset = m_start + sizeof(int16_t)*offsetWords;
 	size_t numBytes = sizeof(int16_t)*numWords;
 
 	if ((readOffset + numBytes-1) <= m_end) {

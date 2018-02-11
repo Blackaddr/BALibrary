@@ -144,7 +144,7 @@ audio_block_t* AudioDelay::getBlock(size_t index)
 	return ret;
 }
 
-bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSamples)
+bool AudioDelay::getSamples(audio_block_t *dest, size_t offsetSamples, size_t numSamples)
 {
 	if (!dest) {
 		Serial.println("getSamples(): dest is invalid");
@@ -152,7 +152,7 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 	}
 
 	if (m_type == (MemType::MEM_INTERNAL)) {
-		QueuePosition position = calcQueuePosition(offset);
+		QueuePosition position = calcQueuePosition(offsetSamples);
 		size_t index = position.index;
 
 		audio_block_t *currentQueue0 = m_ringBuffer->at(m_ringBuffer->get_index_from_back(index));
@@ -195,7 +195,7 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 		// EXTERNAL Memory
 		if (numSamples*sizeof(int16_t) <= m_slot->size() ) {
 			int currentPositionBytes = (int)m_slot->getWritePosition() - (int)(AUDIO_BLOCK_SAMPLES*sizeof(int16_t));
-			size_t offsetBytes = offset * sizeof(int16_t);
+			size_t offsetBytes = offsetSamples * sizeof(int16_t);
 
 			if ((int)offsetBytes <= currentPositionBytes) {
 				m_slot->setReadPosition(currentPositionBytes - offsetBytes);
