@@ -128,8 +128,6 @@ public:
 	/// @returns true on success, else false on error
 	bool zeroAdvance16(size_t numWords);
 
-	void readDmaBufferContents(uint8_t *dest, size_t numBytes, size_t bufferOffset = 0);
-
 	/// Get the size of the memory slot
 	/// @returns size of the slot in bytes
 	size_t size() const { return m_size; }
@@ -143,6 +141,10 @@ public:
 	bool isEnabled() const;
 
 	bool isUseDma() const { return m_useDma; }
+
+	bool isWriteBusy() const;
+
+	bool isReadBusy() const;
 
 	/// DEBUG USE: prints out the slot member variables
 	void printStatus(void) const;
@@ -188,7 +190,7 @@ public:
 	/// @param mem specify which external memory to allocate from
 	/// @param dmaBufferSize When > 0, DMA mode is used with the specified DMA buffer size
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, size_t dmaBufferSize = 0);
+	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = false);
 
 	/// Request memory be allocated for the provided slot
 	/// @param slot a pointer to the global slot object to which memory will be allocated
@@ -196,7 +198,7 @@ public:
 	/// @param mem specify which external memory to allocate from
 	/// @param dmaBufferSize When > 0, DMA mode is used with the specified DMA buffer size
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, size_t dmaBufferSize = 0);
+	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = false);
 
 private:
 	static bool m_configured; ///< there should only be one instance of ExternalSramManager in the whole project

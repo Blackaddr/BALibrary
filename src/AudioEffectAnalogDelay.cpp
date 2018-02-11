@@ -123,7 +123,7 @@ void AudioEffectAnalogDelay::update(void)
 	// consider doing the BBD post processing here to use up more time while waiting
 	// for the read data to come back
 	audio_block_t *blockToRelease = m_memory->addBlock(preProcessed);
-	if (blockToRelease) release(blockToRelease);
+
 
 	// BACK TO OUTPUT PROCESSING
 //	audio_block_t *blockToOutput = nullptr;
@@ -134,10 +134,11 @@ void AudioEffectAnalogDelay::update(void)
 //	// copy over data
 //	m_memory->getSamples(blockToOutput, m_delaySamples);
 
-	// Check if external DMA, if so, we need to copy out of the DMA buffer
+	// Check if external DMA, if so, we need to be sure the read is completed
 	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
 	    // Using DMA
-	    m_memory->readDmaBufferContents(blockToOutput);
+		unsigned loopCount = 0;
+		while (m_memory->getSlot()->isReadBusy()) { /*Serial.println(String("RB:") + loopCount); loopCount++; */}
 	}
 
 	// perform the wet/dry mix mix
@@ -147,6 +148,12 @@ void AudioEffectAnalogDelay::update(void)
 	release(inputAudioBlock);
 	release(m_previousBlock);
 	m_previousBlock = blockToOutput;
+	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
+	    // Using DMA
+		unsigned loopCount = 0;
+		while (m_memory->getSlot()->isWriteBusy()) { /*Serial.println(String("WB:") + loopCount); loopCount++; */}
+	}
+	if (blockToRelease) release(blockToRelease);
 }
 
 void AudioEffectAnalogDelay::delay(float milliseconds)

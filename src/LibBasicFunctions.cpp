@@ -234,11 +234,6 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offset, size_t numSample
 
 }
 
-void AudioDelay::readDmaBufferContents(audio_block_t *dest, size_t numSamples, size_t bufferOffset)
-{
-    m_slot->readDmaBufferContents(reinterpret_cast<uint8_t*>(dest->data), sizeof(int16_t)*numSamples, sizeof(int16_t)*bufferOffset);
-}
-
 ////////////////////////////////////////////////////
 // IirBiQuadFilter
 ////////////////////////////////////////////////////

@@ -128,14 +128,12 @@ public:
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2).
 	/// @details default is 20 Mhz
 	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
-	/// @param bufferSize size of buffer to store DMA transfers
-	BASpiMemoryDMA(SpiDeviceId memDeviceId, size_t bufferSizeBytes);
+	BASpiMemoryDMA(SpiDeviceId memDeviceId);
 
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2)
 	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
 	/// @param speedHz specify the desired speed in Hz.
-	/// @param bufferSize size of buffer to store DMA transfers
-	BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz, size_t bufferSizeBytes);
+	BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz);
 	virtual ~BASpiMemoryDMA();
 
 	/// initialize and configure the SPI peripheral
@@ -177,11 +175,11 @@ public:
 
 	/// Check if a DMA write is in progress
 	/// @returns true if a write DMA is in progress, else false
-	bool isWriteBusy();
+	bool isWriteBusy() const;
 
 	/// Check if a DMA read is in progress
 	/// @returns true if a read DMA is in progress, else false
-	bool isReadBusy();
+	bool isReadBusy() const;
 
 	/// Readout the 8-bit contents of the DMA storage buffer to the specified destination
 	/// @param dest pointer to the destination
@@ -198,11 +196,16 @@ public:
 private:
 	AbstractDmaSpi<DmaSpi0, SPIClass, SPI> *m_spiDma = nullptr;
 	ActiveLowChipSelect *m_cs = nullptr;
-	size_t m_bufferSize;
-	uint8_t *m_txBuffer = nullptr;
+	//size_t m_bufferSize;
+	//uint8_t *m_txBuffer = nullptr;
+	uint8_t *m_txCommandBuffer = nullptr;
 	DmaSpi::Transfer *m_txTransfer;
-	uint8_t *m_rxBuffer = nullptr;
+	//uint8_t *m_rxBuffer = nullptr;
+	uint8_t *m_rxCommandBuffer = nullptr;
 	DmaSpi::Transfer *m_rxTransfer;
+
+	uint16_t m_txXferCount;
+	uint16_t m_rxXferCount;
 
 	void m_setSpiCmdAddr(int command, size_t address, uint8_t *dest);
 };

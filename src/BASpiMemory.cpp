@@ -45,6 +45,8 @@ constexpr int SPI_ADDR_1_MASK = 0x00FF00;
 constexpr int SPI_ADDR_1_SHIFT = 8;
 constexpr int SPI_ADDR_0_MASK = 0x0000FF;
 
+constexpr int CMD_ADDRESS_SIZE = 4;
+constexpr int MAX_DMA_XFER_SIZE = 0x4000;
 
 BASpiMemory::BASpiMemory(SpiDeviceId memDeviceId)
 {
@@ -262,8 +264,8 @@ void BASpiMemory::read16(size_t address, uint16_t *dest, size_t numWords)
 /////////////////////////////////////////////////////////////////////////////
 // BASpiMemoryDMA
 /////////////////////////////////////////////////////////////////////////////
-BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, size_t bufferSizeBytes)
-: BASpiMemory(memDeviceId), m_bufferSize(bufferSizeBytes)
+BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId)
+: BASpiMemory(memDeviceId)
 {
 	int cs;
 	switch (memDeviceId) {
@@ -277,15 +279,15 @@ BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, size_t bufferSizeBytes)
 		cs = SPI_CS_MEM0;
 	}
 	m_cs = new ActiveLowChipSelect(cs, m_settings);
-	// add 4 bytes to buffer for SPI CMD and 3 bytes of addresse
-	m_txBuffer = new uint8_t[bufferSizeBytes+4];
-	m_rxBuffer = new uint8_t[bufferSizeBytes+4];
-	m_txTransfer = new DmaSpi::Transfer();
-	m_rxTransfer = new DmaSpi::Transfer();
+	// add 4 bytes to buffer for SPI CMD and 3 bytes of address
+	m_txCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
+	m_rxCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
+	m_txTransfer = new DmaSpi::Transfer[2];
+	m_rxTransfer = new DmaSpi::Transfer[2];
 }
 
-BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz, size_t bufferSizeBytes)
-: BASpiMemory(memDeviceId, speedHz), m_bufferSize(bufferSizeBytes)
+BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz)
+: BASpiMemory(memDeviceId, speedHz)
 {
 	int cs;
 	switch (memDeviceId) {
@@ -299,19 +301,19 @@ BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz, size_t
 		cs = SPI_CS_MEM0;
 	}
 	m_cs = new ActiveLowChipSelect(cs, m_settings);
-	m_txBuffer = new uint8_t[bufferSizeBytes+4];
-	m_rxBuffer = new uint8_t[bufferSizeBytes+4];
-	m_txTransfer = new DmaSpi::Transfer();
-	m_rxTransfer = new DmaSpi::Transfer();
+	m_txCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
+	m_rxCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
+	m_txTransfer = new DmaSpi::Transfer[2];
+	m_rxTransfer = new DmaSpi::Transfer[2];
 }
 
 BASpiMemoryDMA::~BASpiMemoryDMA()
 {
 	delete m_cs;
-	if (m_txBuffer) delete [] m_txBuffer;
-	if (m_rxBuffer) delete [] m_rxBuffer;
-	if (m_txTransfer) delete m_txTransfer;
-	if (m_rxTransfer) delete m_rxTransfer;
+	if (m_txTransfer) delete [] m_txTransfer;
+	if (m_rxTransfer) delete [] m_rxTransfer;
+	if (m_txCommandBuffer) delete [] m_txCommandBuffer;
+	if (m_rxCommandBuffer) delete [] m_txCommandBuffer;
 }
 
 void BASpiMemoryDMA::m_setSpiCmdAddr(int command, size_t address, uint8_t *dest)
@@ -358,91 +360,102 @@ void BASpiMemoryDMA::begin(void)
     m_started = true;
 }
 
+
+
 // SPI must build up a payload that starts the teh CMD/Address first. It will cycle
 // through the payloads in a circular buffer and use the transfer objects to check if they
 // are done before continuing.
 void BASpiMemoryDMA::write(size_t address, uint8_t *src, size_t numBytes)
 {
-	while ( m_txTransfer->busy()) {} // wait until not busy
-	uint16_t transferCount = numBytes + 4; // transfer must be increased by the SPI command and address
-	m_setSpiCmdAddr(SPI_WRITE_CMD, address, m_txBuffer);
-	memcpy(m_txBuffer+4, src, numBytes);
-	*m_txTransfer = DmaSpi::Transfer(m_txBuffer, transferCount, nullptr, 0, m_cs);
-	m_spiDma->registerTransfer(*m_txTransfer);
+	size_t bytesRemaining = numBytes;
+	uint8_t *srcPtr = src;
+	size_t nextAddress = address;
+	while (bytesRemaining > 0) {
+		m_txXferCount = min(bytesRemaining, MAX_DMA_XFER_SIZE);
+		while ( m_txTransfer[1].busy()) {Serial.println("W1");} // wait until not busy
+		m_setSpiCmdAddr(SPI_WRITE_CMD, nextAddress, m_txCommandBuffer);
+		m_txTransfer[1] = DmaSpi::Transfer(m_txCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
+		m_spiDma->registerTransfer(m_txTransfer[1]);
+
+		while ( m_txTransfer[0].busy()) { Serial.println("W2");} // wait until not busy
+		m_txTransfer[0] = DmaSpi::Transfer(srcPtr, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS);
+		m_spiDma->registerTransfer(m_txTransfer[0]);
+		bytesRemaining -= m_txXferCount;
+		srcPtr += m_txXferCount;
+		nextAddress += m_txXferCount;
+	}
 }
+
 
 void BASpiMemoryDMA::zero(size_t address, size_t numBytes)
 {
-	while ( m_txTransfer->busy()) {}
-	uint16_t transferCount = numBytes + 4;
-	m_setSpiCmdAddr(SPI_WRITE_CMD, address, m_txBuffer);
-	memset(m_txBuffer+4, 0, numBytes);
-	*m_txTransfer = DmaSpi::Transfer(m_txBuffer, transferCount, nullptr, 0, m_cs);
-	m_spiDma->registerTransfer(*m_txTransfer);
+	size_t bytesRemaining = numBytes;
+	size_t nextAddress = address;
+	while (bytesRemaining > 0) {
+		m_txXferCount = min(bytesRemaining, MAX_DMA_XFER_SIZE);
+		while ( m_txTransfer[1].busy()) {} // wait until not busy
+		m_setSpiCmdAddr(SPI_WRITE_CMD, nextAddress, m_txCommandBuffer);
+		m_txTransfer[1] = DmaSpi::Transfer(m_txCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
+		m_spiDma->registerTransfer(m_txTransfer[1]);
+
+		while ( m_txTransfer[0].busy()) {} // wait until not busy
+		m_txTransfer[0] = DmaSpi::Transfer(nullptr, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS);
+		m_spiDma->registerTransfer(m_txTransfer[0]);
+		bytesRemaining -= m_txXferCount;
+		nextAddress += m_txXferCount;
+	}
 }
+
 
 void BASpiMemoryDMA::write16(size_t address, uint16_t *src, size_t numWords)
 {
-	while ( m_txTransfer->busy()) {}
-	size_t numBytes = sizeof(uint16_t)*numWords;
-	uint16_t transferCount = numBytes + 4;
-	m_setSpiCmdAddr(SPI_WRITE_CMD, address, m_txBuffer);
-	memcpy(m_txBuffer+4, src, numBytes);
-	*m_txTransfer = DmaSpi::Transfer(m_txBuffer, transferCount, nullptr, 0, m_cs);
-	m_spiDma->registerTransfer(*m_txTransfer);
+	write(address, reinterpret_cast<uint8_t*>(src), sizeof(uint16_t)*numWords);
 }
 
 void BASpiMemoryDMA::zero16(size_t address, size_t numWords)
 {
-	while ( m_txTransfer->busy()) {}
-	size_t numBytes = sizeof(uint16_t)*numWords;
-	uint16_t transferCount = numBytes + 4;
-	m_setSpiCmdAddr(SPI_WRITE_CMD, address, m_txBuffer);
-	memset(m_txBuffer+4, 0, numBytes);
-	*m_txTransfer = DmaSpi::Transfer(m_txBuffer, transferCount, nullptr, 0, m_cs);
-	m_spiDma->registerTransfer(*m_txTransfer);
+	zero(address, sizeof(uint16_t)*numWords);
 }
+
 
 void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 {
-    UNUSED(dest);
-	while ( m_rxTransfer->busy()) {}
-	uint16_t transferCount = numBytes + 4;
-	m_setSpiCmdAddr(SPI_READ_CMD, address, m_rxBuffer);
-	*m_rxTransfer = DmaSpi::Transfer(m_rxBuffer, transferCount, m_rxBuffer, 0, m_cs);
-	m_spiDma->registerTransfer(*m_rxTransfer);
+	size_t bytesRemaining = numBytes;
+	uint8_t *destPtr = dest;
+	size_t nextAddress = address;
+	while (bytesRemaining > 0) {
+		m_setSpiCmdAddr(SPI_READ_CMD, nextAddress, m_rxCommandBuffer);
+
+		while ( m_rxTransfer[1].busy()) { Serial.println("R1"); }
+		m_rxTransfer[1] = DmaSpi::Transfer(m_rxCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
+		m_spiDma->registerTransfer(m_rxTransfer[1]);
+
+		m_rxXferCount = min(bytesRemaining, MAX_DMA_XFER_SIZE);
+		while ( m_rxTransfer[0].busy()) {Serial.println("R2");}
+		m_rxTransfer[0] = DmaSpi::Transfer(nullptr, m_rxXferCount, destPtr, 0, m_cs, TransferType::NO_START_CS);
+		m_spiDma->registerTransfer(m_rxTransfer[0]);
+
+		bytesRemaining -= m_rxXferCount;
+		destPtr += m_rxXferCount;
+		nextAddress += m_rxXferCount;
+	}
 }
+
 
 void BASpiMemoryDMA::read16(size_t address, uint16_t *dest, size_t numWords)
 {
-    UNUSED(dest);
-	while ( m_rxTransfer->busy()) {}
-	m_setSpiCmdAddr(SPI_READ_CMD, address, m_rxBuffer);
-	size_t numBytes = sizeof(uint16_t)*numWords;
-	uint16_t transferCount = numBytes + 4;
-	*m_rxTransfer = DmaSpi::Transfer(m_rxBuffer, transferCount, m_rxBuffer, 0, m_cs);
-	m_spiDma->registerTransfer(*m_rxTransfer);
+	read(address, reinterpret_cast<uint8_t*>(dest), sizeof(uint16_t)*numWords);
 }
 
-bool BASpiMemoryDMA::isWriteBusy(void)
+
+bool BASpiMemoryDMA::isWriteBusy(void) const
 {
-	return m_txTransfer->busy();
+	return (m_txTransfer[0].busy() or m_txTransfer[1].busy());
 }
 
-bool BASpiMemoryDMA::isReadBusy(void)
+bool BASpiMemoryDMA::isReadBusy(void) const
 {
-	return m_rxTransfer->busy();
-}
-
-void BASpiMemoryDMA::readBufferContents(uint16_t *dest, size_t numWords, size_t wordOffset)
-{
-	readBufferContents(reinterpret_cast<uint8_t *>(dest), sizeof(uint16_t)*numWords, sizeof(uint16_t)*wordOffset);
-}
-
-void BASpiMemoryDMA::readBufferContents(uint8_t *dest, size_t numBytes, size_t byteOffset)
-{
-    while (m_rxTransfer->busy()) {} // ensure transfer is complete
-	memcpy(dest, m_rxBuffer+4+byteOffset, numBytes);
+	return (m_rxTransfer[0].busy() or m_rxTransfer[1].busy());
 }
 
 } /* namespace BAGuitar */

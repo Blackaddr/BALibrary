@@ -93,6 +93,7 @@ class RingBuffer; // forward declare so AudioDelay can use it.
  * approach. When using EXTERNAL memory, data is actually copyied to/from an external
  * SRAM device.
  *****************************************************************************/
+constexpr size_t AUDIO_BLOCK_SIZE = sizeof(int16_t)*AUDIO_BLOCK_SAMPLES;
 class AudioDelay {
 public:
     AudioDelay() = delete;
@@ -139,8 +140,6 @@ public:
     /// with the buffer.
     /// @returns pointer to the underlying ExtMemSlot.
     ExtMemSlot *getSlot() const { return m_slot; }
-
-    void readDmaBufferContents(audio_block_t *dest, size_t numSamples = AUDIO_BLOCK_SAMPLES, size_t bufferOffset = 0);
 
     RingBuffer<audio_block_t*> *getRingBuffer() const { return m_ringBuffer; }
 
