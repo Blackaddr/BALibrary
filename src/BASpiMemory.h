@@ -194,8 +194,12 @@ public:
 	void readBufferContents(uint16_t *dest, size_t numWords, size_t wordOffset = 0);
 
 private:
-	AbstractDmaSpi<DmaSpi0, SPIClass, SPI> *m_spiDma = nullptr;
-	ActiveLowChipSelect *m_cs = nullptr;
+	//AbstractDmaSpi<DmaSpi0, SPIClass, SPI> *m_spiDma = nullptr;
+	//AbstractDmaSpi<DmaSpi0, SPIClass, SPI1> *m_spiDma = nullptr;
+	DmaSpiGeneric *m_spiDma = nullptr;
+
+	AbstractChipSelect *m_cs = nullptr;
+
 	//size_t m_bufferSize;
 	//uint8_t *m_txBuffer = nullptr;
 	uint8_t *m_txCommandBuffer = nullptr;
