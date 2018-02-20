@@ -30,8 +30,8 @@
 #include "BATypes.h"
 #include "LibMemoryManagement.h"
 
-#ifndef __LIBBASICFUNCTIONS_H
-#define __LIBBASICFUNCTIONS_H
+#ifndef __BAGUITAR_LIBBASICFUNCTIONS_H
+#define __BAGUITAR_LIBBASICFUNCTIONS_H
 
 namespace BAGuitar {
 
@@ -260,4 +260,4 @@ private:
 }
 
 
-#endif /* __LIBBASICFUNCTIONS_H */
+#endif /* __BAGUITAR_LIBBASICFUNCTIONS_H */

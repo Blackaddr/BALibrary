@@ -29,11 +29,11 @@ constexpr int32_t DEFAULT_COEFFS[5*NUM_IIR_STAGES] = {
 };
 
 
-AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelay)
+AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelayMs)
 : AudioStream(1, m_inputQueueArray)
 {
-	m_memory = new AudioDelay(maxDelay);
-	m_maxDelaySamples = calcAudioSamples(maxDelay);
+	m_memory = new AudioDelay(maxDelayMs);
+	m_maxDelaySamples = calcAudioSamples(maxDelayMs);
 	m_iir  = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
 }
 

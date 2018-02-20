@@ -20,8 +20,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __SRC_BAGPIO_H
-#define __SRC_BAGPIO_H
+#ifndef __BAGUITAR_BAGPIO_H
+#define __BAGUITAR_BAGPIO_H
 
 #include "BAHardware.h"
 
@@ -35,6 +35,7 @@ namespace BAGuitar {
  *****************************************************************************/
 class BAGpio {
 public:
+	/// Construct a GPIO object for controlling the various GPIO and user pins
 	BAGpio();
 	virtual ~BAGpio();
 
@@ -72,4 +73,4 @@ private:
 
 } /* namespace BAGuitar */
 
-#endif /* __SRC_BAGPIO_H */
+#endif /* __BAGUITAR_BAGPIO_H */

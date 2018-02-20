@@ -22,8 +22,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAAUDIOCONTROLWM8731_H
-#define __BAAUDIOCONTROLWM8731_H
+#ifndef __BAGUITAR__BAAUDIOCONTROLWM8731_H
+#define __BAGUITAR__BAAUDIOCONTROLWM8731_H
 
 namespace BAGuitar {
 
@@ -128,4 +128,4 @@ private:
 
 } /* namespace BAGuitar */
 
-#endif /* __BAAUDIOCONTROLWM8731_H */
+#endif /* __BAGUITAR__BAAUDIOCONTROLWM8731_H */

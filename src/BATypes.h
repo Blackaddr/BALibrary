@@ -1,12 +1,26 @@
-/*
- * BATypes.h
+/**************************************************************************//**
+ *  @file
+ *  @author Steve Lascos
+ *  @company Blackaddr Audio
  *
- *  Created on: Feb 7, 2018
- *      Author: slascos
- */
+ *  This file contains some custom types used by the rest of the BAGuitar library.
+ *
+ *  @copyright This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.*
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *****************************************************************************/
 
-#ifndef SRC_BATYPES_H_
-#define SRC_BATYPES_H_
+#ifndef __BAGUITAR_BATYPES_H
+#define __BAGUITAR_BATYPES_H
 
 namespace BAGuitar {
 
@@ -141,4 +155,4 @@ private:
 } // BAGuitar
 
 
-#endif /* SRC_BATYPES_H_ */
+#endif /* __BAGUITAR_BATYPES_H */

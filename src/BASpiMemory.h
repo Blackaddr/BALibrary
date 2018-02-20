@@ -4,7 +4,8 @@
  *  @company Blackaddr Audio
  *
  *  BASpiMemory is convenience class for accessing the optional SPI RAMs on
- *  the GTA Series boards.
+ *  the GTA Series boards. BASpiMemoryDma works the same but uses DMA to reduce
+ *  load on the processor.
  *
  *  @copyright This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +20,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
-#ifndef __SRC_BASPIMEMORY_H
-#define __SRC_BASPIMEMORY_H
+#ifndef __BAGUITAR_BASPIMEMORY_H
+#define __BAGUITAR_BASPIMEMORY_H
 
 #include <SPI.h>
 #include <DmaSpi.h>
@@ -119,7 +120,6 @@ protected:
 
 };
 
-//constexpr int MAX_DMA_XFERS = 4;
 
 class BASpiMemoryDMA : public BASpiMemory {
 public:
@@ -194,17 +194,12 @@ public:
 	void readBufferContents(uint16_t *dest, size_t numWords, size_t wordOffset = 0);
 
 private:
-	//AbstractDmaSpi<DmaSpi0, SPIClass, SPI> *m_spiDma = nullptr;
-	//AbstractDmaSpi<DmaSpi0, SPIClass, SPI1> *m_spiDma = nullptr;
-	DmaSpiGeneric *m_spiDma = nullptr;
 
+	DmaSpiGeneric *m_spiDma = nullptr;
 	AbstractChipSelect *m_cs = nullptr;
 
-	//size_t m_bufferSize;
-	//uint8_t *m_txBuffer = nullptr;
 	uint8_t *m_txCommandBuffer = nullptr;
 	DmaSpi::Transfer *m_txTransfer;
-	//uint8_t *m_rxBuffer = nullptr;
 	uint8_t *m_rxCommandBuffer = nullptr;
 	DmaSpi::Transfer *m_rxTransfer;
 
@@ -217,4 +212,4 @@ private:
 
 } /* namespace BAGuitar */
 
-#endif /* __SRC_BASPIMEMORY_H */
+#endif /* __BAGUITAR_BASPIMEMORY_H */

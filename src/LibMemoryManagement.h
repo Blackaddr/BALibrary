@@ -26,8 +26,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __LIBMEMORYMANAGEMENT_H
-#define __LIBMEMORYMANAGEMENT_H
+#ifndef __BAGUITAR_LIBMEMORYMANAGEMENT_H
+#define __BAGUITAR_LIBMEMORYMANAGEMENT_H
 
 #include <cstddef>
 

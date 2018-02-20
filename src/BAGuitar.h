@@ -18,16 +18,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __SRC_BATGUITAR_H
-#define __SRC_BATGUITAR_H
+#ifndef __BATGUITAR_H
+#define __BATGUITAR_H
 
 #include "BAHardware.h" // contains the Blackaddr hardware board definitions
 
+#include "BATypes.h"
 #include "BAAudioControlWM8731.h" // Codec Control
 #include "BASpiMemory.h"
 #include "BAGpio.h"
 #include "BAAudioEffectDelayExternal.h"
-
 #include "AudioEffectAnalogDelay.h"
+#include "LibBasicFunctions.h"
+#include "LibMemoryManagement.h"
 
-#endif /* __SRC_BATGUITAR_H */
+#endif /* __BATGUITAR_H */
