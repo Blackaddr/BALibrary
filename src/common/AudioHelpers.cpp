@@ -47,12 +47,6 @@ size_t calcOffset(QueuePosition position)
 
 void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix)
 {
-	 //Non-optimized version for illustrative purposes
-//		for (int i=0; i< AUDIO_BLOCK_SAMPLES; i++) {
-//			out->data[i] = (dry->data[i] * (1 - mix)) + (wet->data[i] * mix);
-//		}
-//		return;
-
 	// ARM DSP optimized
 	int16_t wetBuffer[AUDIO_BLOCK_SAMPLES];
 	int16_t dryBuffer[AUDIO_BLOCK_SAMPLES];
@@ -62,6 +56,12 @@ void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, floa
 	arm_scale_q15(dry->data, scaleFractDry, 0, dryBuffer, AUDIO_BLOCK_SAMPLES);
 	arm_scale_q15(wet->data, scaleFractWet, 0, wetBuffer, AUDIO_BLOCK_SAMPLES);
 	arm_add_q15(wetBuffer, dryBuffer, out->data, AUDIO_BLOCK_SAMPLES);
+}
+
+void gainAdjust(audio_block_t *out, audio_block_t *in, float vol, int coeffShift)
+{
+	int16_t scale = (int16_t)(vol * 32767.0f);
+	arm_scale_q15(in->data, scale, coeffShift, out->data, AUDIO_BLOCK_SAMPLES);
 }
 
 void clearAudioBlock(audio_block_t *block)

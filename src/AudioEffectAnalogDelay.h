@@ -39,7 +39,21 @@ namespace BAGuitar {
  *****************************************************************************/
 class AudioEffectAnalogDelay : public AudioStream {
 public:
+
+	///< List of AudioEffectAnalogDelay MIDI controllable parameters
+	enum {
+		BYPASS = 0,  ///<  controls effect bypass
+		DELAY,       ///< controls the amount of delay
+		FEEDBACK,    ///< controls the amount of echo feedback (regen)
+		MIX,         ///< controls the the mix of input and echo signals
+		VOLUME,      ///< controls the output volume level
+		NUM_CONTROLS ///< this can be used as an alias for the number of MIDI controls
+	};
+
 	AudioEffectAnalogDelay() = delete;
+
+	// *** CONSTRUCTORS ***
+
 	/// Construct an analog delay using internal memory by specifying the maximum
 	/// delay in milliseconds.
 	/// @param maxDelayMs maximum delay in milliseconds. Larger delays use more memory.
@@ -56,6 +70,8 @@ public:
 	AudioEffectAnalogDelay(ExtMemSlot *slot); // requires sufficiently sized pre-allocated memory
 
 	virtual ~AudioEffectAnalogDelay(); ///< Destructor
+
+	// *** PARAMETERS ***
 
 	/// Set the delay in milliseconds.
 	/// @param milliseconds the request delay in milliseconds. Must be less than max delay.
@@ -79,22 +95,46 @@ public:
 	/// 0.5, output is 50% Dry, 50% Wet.
 	void mix(float mix) { m_mix = mix; }
 
+	/// Set the output volume. This affect both the wet and dry signals.
+	/// @details The default is 1.0.
+	/// @param vol Sets the output volume between -1.0 and +1.0
+	void volume(float vol) {m_volume = vol; }
+
+	// ** ENABLE  / DISABLE **
+
 	/// Enables audio processing. Note: when not enabled, CPU load is nearly zero.
 	void enable() { m_enable = true; }
 
 	/// Disables audio process. When disabled, CPU load is nearly zero.
 	void disable() { m_enable = false; }
 
-	void processMidi(int channel, int control, int value);
-	void mapMidiBypass(int control, int channel = 0);
-	void mapMidiDelay(int control, int channel = 0);
-	void mapMidiFeedback(int control, int channel = 0);
-	void mapMidiMix(int control, int channel = 0);
+	// ** MIDI **
+
+	/// Sets whether MIDI OMNI channel is processig on or off. When on,
+	/// all midi channels are used for matching CCs.
+	/// @param isOmni when true, all channels are processed, when false, channel
+	/// must match configured value.
+	void setMidiOmni(bool isOmni) { m_isOmni = isOmni; }
+
+	/// Configure an effect parameter to be controlled by a MIDI CC
+	/// number on a particular channel.
+	/// @param parameter one of the parameter names in the class enum
+	/// @param midiCC the CC number from 0 to 127
+	/// @param midiChannel the effect will only response to the CC on this channel
+	/// when OMNI mode is off.
+	void mapMidiControl(int parameter, int midiCC, int midiChannel = 0);
+
+	/// process a MIDI Continous-Controller (CC) message
+	/// @param channel the MIDI channel from 0 to 15)
+	/// @param midiCC the CC number from 0 to 127
+	/// @param value the CC value from 0 to 127
+	void processMidi(int channel, int midiCC, int value);
 
 	virtual void update(void); ///< update automatically called by the Teesny Audio Library
 
 private:
 	audio_block_t *m_inputQueueArray[1];
+	bool m_isOmni = false;
 	bool m_bypass = true;
 	bool m_enable = false;
 	bool m_externalMemory = false;
@@ -105,10 +145,11 @@ private:
 	IirBiQuadFilterHQ *m_iir = nullptr;
 
 	// Controls
-	int m_midiConfig[4][2];
+	int m_midiConfig[NUM_CONTROLS][2]; // stores the midi parameter mapping
 	size_t m_delaySamples = 0;
 	float m_feedback = 0.0f;
 	float m_mix = 0.0f;
+	float m_volume = 1.0f;
 
 	void m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
 	void m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);

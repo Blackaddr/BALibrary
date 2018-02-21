@@ -1,7 +1,8 @@
-//#include <MIDI.h>
+#include <MIDI.h>
 #include "BAGuitar.h"
 
 using namespace BAGuitar;
+
 AudioInputI2S i2sIn;
 AudioOutputI2S i2sOut;
 BAAudioControlWM8731 codec;
@@ -9,22 +10,35 @@ BAAudioControlWM8731 codec;
 #define USE_EXT
 
 #ifdef USE_EXT
-ExternalSramManager externalSram(1); // Manage both SRAMs
-ExtMemSlot delaySlot; // For the external memory
+// If using external SPI memory, we will instantiance an SRAM
+// manager and create an external memory slot to use as the memory
+// for our audio delay
+ExternalSramManager externalSram(1); // Manage only one SRAM.
+ExtMemSlot delaySlot; // Declare an external memory slot.
+
+// Instantiate the AudioEffectAnalogDelay to use external memory by
+/// passing it the delay slot.
 AudioEffectAnalogDelay myDelay(&delaySlot);
 #else
-AudioEffectAnalogDelay myDelay(200.0f);
+// If using internal memory, we will instantiate the AudioEffectAnalogDelay
+// by passing it the maximum amount of delay we will use in millseconds. Note that
+// audio delay lengths are very limited when using internal memory due to limited
+// internal RAM size.
+AudioEffectAnalogDelay myDelay(200.0f); // max delay of 200 ms.
 #endif
 
-AudioMixer4              mixer; // Used to mix the original dry with the wet (effects) path.
+//AudioMixer4              mixer; // Used to mix the original dry with the wet (effects) path.
+//
+//AudioConnection patch0(i2sIn,0, myDelay,0);
+//AudioConnection mixerDry(i2sIn,0, mixer,0);
+//AudioConnection mixerWet(myDelay,0, mixer,1);
 
-AudioConnection patch0(i2sIn,0, myDelay,0);
-AudioConnection mixerDry(i2sIn,0, mixer,0);
-AudioConnection mixerWet(myDelay,0, mixer,1);
-AudioConnection leftOut(mixer,0, i2sOut, 0);
-AudioConnection rightOut(mixer,0, i2sOut, 1);
+AudioConnection input(i2sIn,0, myDelay,0);
+AudioConnection leftOut(myDelay,0, i2sOut, 0);
 
-unsigned loopCount = 0;
+int loopCount = 0;
+
+AudioConnection rightOut(myDelay,0, i2sOut, 1);
 
 void setup() {
   delay(100);
@@ -43,32 +57,31 @@ void setup() {
   
   #ifdef USE_EXT
   Serial.println("Using EXTERNAL memory");
-  //externalSram.requestMemory(&delaySlot, 1400.0f);
-  //externalSram.requestMemory(&delaySlot, 1400.0f, MemSelect::MEM0, true);
+  // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, 1400.0f, MemSelect::MEM1, true);
   #else
   Serial.println("Using INTERNAL memory");
   #endif
 
+  // Configure which MIDI CC's will control the effects
+  myDelay.mapMidiControl(AudioEffectAnalogDelay::BYPASS,16);
+  myDelay.mapMidiControl(AudioEffectAnalogDelay::DELAY,20);
+  myDelay.mapMidiControl(AudioEffectAnalogDelay::FEEDBACK,21);
+  myDelay.mapMidiControl(AudioEffectAnalogDelay::MIX,22);
+  myDelay.mapMidiControl(AudioEffectAnalogDelay::VOLUME,23);
+
+  // Besure to enable the delay, by default it's processing is off.
+  myDelay.enable(); 
+
+  // Set some default values. They can be changed by sending MIDI CC messages
+  // over the USB.
   myDelay.delay(200.0f);
-  //myDelay.delay( 128.0f/44100.0f*1000.0f);
-  //myDelay.delay(0, 0.0f);
-  //myDelay.delay((size_t)8192);
-
-  
-
-  myDelay.mapMidiBypass(16);
-  myDelay.mapMidiDelay(20);
-  myDelay.mapMidiFeedback(21);
-  myDelay.mapMidiMix(22);
-
-  myDelay.enable();
   myDelay.bypass(false);
   myDelay.mix(1.0f);
   myDelay.feedback(0.0f);
   
-  mixer.gain(0, 0.0f); // unity gain on the dry
-  mixer.gain(1, 1.0f); // unity gain on the wet
+//  mixer.gain(0, 0.0f); // unity gain on the dry
+//  mixer.gain(1, 1.0f); // unity gain on the wet
 
 }
 

@@ -9,23 +9,17 @@
 
 namespace BAGuitar {
 
-constexpr int MIDI_NUM_PARAMS = 4;
 constexpr int MIDI_CHANNEL = 0;
 constexpr int MIDI_CONTROL = 1;
-
-constexpr int MIDI_BYPASS = 0;
-constexpr int MIDI_DELAY = 1;
-constexpr int MIDI_FEEDBACK = 2;
-constexpr int MIDI_MIX = 3;
 
 // BOSS DM-3 Filters
 constexpr unsigned NUM_IIR_STAGES = 4;
 constexpr unsigned IIR_COEFF_SHIFT = 2;
 constexpr int32_t DEFAULT_COEFFS[5*NUM_IIR_STAGES] = {
-		536870912,            988616936,            455608573,            834606945,           -482959709,
-		536870912,           1031466345,            498793368,            965834205,           -467402235,
-		536870912,           1105821939,            573646688,            928470657,           -448083489,
-    2339,                 5093,                 2776,            302068995,              4412722
+    536870912,            988616936,            455608573,            834606945,           -482959709,
+    536870912,           1031466345,            498793368,            965834205,           -467402235,
+    536870912,           1105821939,            573646688,            928470657,           -448083489,
+    2339,                      5093,                 2776,            302068995,              4412722
 };
 
 
@@ -200,70 +194,6 @@ void AudioEffectAnalogDelay::delay(size_t delaySamples)
 	m_delaySamples= delaySamples;
 }
 
-
-void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
-{
-	float val = (float)value / 127.0f;
-
-	if ((m_midiConfig[MIDI_DELAY][MIDI_CHANNEL] == channel) &&
-        (m_midiConfig[MIDI_DELAY][MIDI_CONTROL] == control)) {
-		// Delay
-		m_maxDelaySamples = m_memory->getSlot()->size();
-		Serial.println(String("AudioEffectAnalogDelay::delay: ") + val + String(" out of ") + m_maxDelaySamples);
-		delay((size_t)(val * (float)m_maxDelaySamples));
-		return;
-	}
-
-	if ((m_midiConfig[MIDI_BYPASS][MIDI_CHANNEL] == channel) &&
-        (m_midiConfig[MIDI_BYPASS][MIDI_CONTROL] == control)) {
-		// Bypass
-		if (value >= 65) { bypass(false); Serial.println(String("AudioEffectAnalogDelay::not bypassed -> ON") + value); }
-		else { bypass(true); Serial.println(String("AudioEffectAnalogDelay::bypassed -> OFF") + value); }
-		return;
-	}
-
-	if ((m_midiConfig[MIDI_FEEDBACK][MIDI_CHANNEL] == channel) &&
-        (m_midiConfig[MIDI_FEEDBACK][MIDI_CONTROL] == control)) {
-		// Feedback
-		Serial.println(String("AudioEffectAnalogDelay::feedback: ") + val);
-		feedback(val);
-		return;
-	}
-
-	if ((m_midiConfig[MIDI_MIX][MIDI_CHANNEL] == channel) &&
-        (m_midiConfig[MIDI_MIX][MIDI_CONTROL] == control)) {
-		// Mix
-		Serial.println(String("AudioEffectAnalogDelay::mix: ") + val);
-		mix(val);
-		return;
-	}
-
-}
-void AudioEffectAnalogDelay::mapMidiDelay(int control, int channel)
-{
-	m_midiConfig[MIDI_DELAY][MIDI_CHANNEL] = channel;
-	m_midiConfig[MIDI_DELAY][MIDI_CONTROL] = control;
-}
-
-void AudioEffectAnalogDelay::mapMidiBypass(int control, int channel)
-{
-	m_midiConfig[MIDI_BYPASS][MIDI_CHANNEL] = channel;
-	m_midiConfig[MIDI_BYPASS][MIDI_CONTROL] = control;
-}
-
-void AudioEffectAnalogDelay::mapMidiFeedback(int control, int channel)
-{
-	m_midiConfig[MIDI_FEEDBACK][MIDI_CHANNEL] = channel;
-	m_midiConfig[MIDI_FEEDBACK][MIDI_CONTROL] = control;
-}
-
-void AudioEffectAnalogDelay::mapMidiMix(int control, int channel)
-{
-	m_midiConfig[MIDI_MIX][MIDI_CHANNEL] = channel;
-	m_midiConfig[MIDI_MIX][MIDI_CONTROL] = control;
-}
-
-
 void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
 {
 	if ( out && dry && wet) {
@@ -276,6 +206,8 @@ void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *
 
 void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
 {
+	if (!out) return; // no valid output buffer
+
 	if ( out && dry && wet) {
 		// Simulate the LPF IIR nature of the analog systems
 		//m_iir->process(wet->data, wet->data, AUDIO_BLOCK_SAMPLES);
@@ -283,6 +215,67 @@ void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t 
 	} else if (dry) {
 		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
 	}
+	// Set the output volume
+	gainAdjust(out, out, m_volume, 1);
+
+}
+
+
+void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
+{
+
+	float val = (float)value / 127.0f;
+
+	if ((m_midiConfig[DELAY][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[DELAY][MIDI_CONTROL] == control)) {
+		// Delay
+		m_maxDelaySamples = m_memory->getSlot()->size();
+		Serial.println(String("AudioEffectAnalogDelay::delay: ") + val + String(" out of ") + m_maxDelaySamples);
+		delay((size_t)(val * (float)m_maxDelaySamples));
+		return;
+	}
+
+	if ((m_midiConfig[BYPASS][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[BYPASS][MIDI_CONTROL] == control)) {
+		// Bypass
+		if (value >= 65) { bypass(false); Serial.println(String("AudioEffectAnalogDelay::not bypassed -> ON") + value); }
+		else { bypass(true); Serial.println(String("AudioEffectAnalogDelay::bypassed -> OFF") + value); }
+		return;
+	}
+
+	if ((m_midiConfig[FEEDBACK][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[FEEDBACK][MIDI_CONTROL] == control)) {
+		// Feedback
+		Serial.println(String("AudioEffectAnalogDelay::feedback: ") + val);
+		feedback(val);
+		return;
+	}
+
+	if ((m_midiConfig[MIX][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[MIX][MIDI_CONTROL] == control)) {
+		// Mix
+		Serial.println(String("AudioEffectAnalogDelay::mix: ") + val);
+		mix(val);
+		return;
+	}
+
+	if ((m_midiConfig[VOLUME][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[VOLUME][MIDI_CONTROL] == control)) {
+		// Volume
+		Serial.println(String("AudioEffectAnalogDelay::volume: ") + val);
+		volume(val);
+		return;
+	}
+
+}
+
+void AudioEffectAnalogDelay::mapMidiControl(int parameter, int midiCC, int midiChannel)
+{
+	if (parameter >= NUM_CONTROLS) {
+		return ; // Invalid midi parameter
+	}
+	m_midiConfig[parameter][MIDI_CHANNEL] = midiChannel;
+	m_midiConfig[parameter][MIDI_CONTROL] = midiCC;
 }
 
 }

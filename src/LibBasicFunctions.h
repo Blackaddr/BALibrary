@@ -70,10 +70,25 @@ size_t        calcAudioSamples(float milliseconds);
 /// specified position.
 size_t calcOffset(QueuePosition position);
 
+/// Clear the contents of an audio block to zero
+/// @param block pointer to the audio block to clear
 void clearAudioBlock(audio_block_t *block);
 
-
+/// Perform an alpha blend between to audio blocks. Performs <br>
+/// out = dry*(1-mix) + wet*(mix)
+/// @param out pointer to the destination audio block
+/// @param dry pointer to the dry audio
+/// @param wet pointer to the wet audio
+/// @param mix float between 0.0 and 1.0.
 void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix);
+
+/// Applies a gain to the audio via fixed-point scaling accoring to <br>
+/// out = int * (vol * 2^coeffShift)
+/// @param out pointer to output audio block
+/// @param in  pointer to input audio block
+/// @param vol volume cofficient between -1.0 and +1.0
+/// @param coeffShift number of bits to shiftt the coefficient
+void gainAdjust(audio_block_t *out, audio_block_t *in, float vol, int coeffShift = 0);
 
 
 template <class T>
