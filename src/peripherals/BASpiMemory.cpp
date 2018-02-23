@@ -273,10 +273,12 @@ BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId)
 		cs = SPI_CS_MEM0;
 		m_cs = new ActiveLowChipSelect(cs, m_settings);
 		break;
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
 		cs = SPI_CS_MEM1;
 		m_cs = new ActiveLowChipSelect1(cs, m_settings);
 		break;
+#endif
 	default :
 		cs = SPI_CS_MEM0;
 	}
@@ -297,10 +299,12 @@ BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz)
 		cs = SPI_CS_MEM0;
 		m_cs = new ActiveLowChipSelect(cs, m_settings);
 		break;
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
 		cs = SPI_CS_MEM1;
 		m_cs = new ActiveLowChipSelect1(cs, m_settings);
 		break;
+#endif
 	default :
 		cs = SPI_CS_MEM0;
 	}

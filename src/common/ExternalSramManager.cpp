@@ -31,6 +31,7 @@ namespace BAGuitar {
 bool ExternalSramManager::m_configured = false;
 MemConfig ExternalSramManager::m_memConfig[BAGuitar::NUM_MEM_SLOTS];
 
+
 ExternalSramManager::ExternalSramManager(unsigned numMemories)
 {
 	// Initialize the static memory configuration structs
@@ -44,6 +45,12 @@ ExternalSramManager::ExternalSramManager(unsigned numMemories)
 		}
 		m_configured = true;
 	}
+}
+
+ExternalSramManager::ExternalSramManager()
+: ExternalSramManager(1)
+{
+
 }
 
 ExternalSramManager::~ExternalSramManager()

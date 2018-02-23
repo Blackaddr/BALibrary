@@ -28,6 +28,11 @@ size_t calcAudioSamples(float milliseconds)
 	return (size_t)((milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f);
 }
 
+float calcAudioTimeMs(size_t numSamples)
+{
+	return ((float)(numSamples) / AUDIO_SAMPLE_RATE_EXACT) * 1000.0f;
+}
+
 QueuePosition calcQueuePosition(size_t numSamples)
 {
 	QueuePosition queuePosition;

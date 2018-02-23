@@ -44,7 +44,7 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(slot);
-	m_maxDelaySamples = slot->size();
+	m_maxDelaySamples = (slot->size() / sizeof(int16_t));
 	m_externalMemory = true;
 	m_iir = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
 }
@@ -120,18 +120,9 @@ void AudioEffectAnalogDelay::update(void)
 
 
 	// BACK TO OUTPUT PROCESSING
-//	audio_block_t *blockToOutput = nullptr;
-//	blockToOutput = allocate();
-
-	// copy the output data
-//	if (!blockToOutput) return; // skip this time due to failure
-//	// copy over data
-//	m_memory->getSamples(blockToOutput, m_delaySamples);
-
 	// Check if external DMA, if so, we need to be sure the read is completed
 	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
 	    // Using DMA
-		unsigned loopCount = 0;
 		while (m_memory->getSlot()->isReadBusy()) {}
 	}
 
@@ -143,11 +134,14 @@ void AudioEffectAnalogDelay::update(void)
 	release(m_previousBlock);
 	m_previousBlock = blockToOutput;
 
-	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
-	    // Using DMA
-		if (m_blockToRelease) release(m_blockToRelease);
-		m_blockToRelease = blockToRelease;
-	}
+//	if (m_externalMemory && m_memory->getSlot()->isUseDma()) {
+//	    // Using DMA
+//		if (m_blockToRelease) release(m_blockToRelease);
+//		m_blockToRelease = blockToRelease;
+//	}
+
+	if (m_blockToRelease) release(m_blockToRelease);
+	m_blockToRelease = blockToRelease;
 }
 
 void AudioEffectAnalogDelay::delay(float milliseconds)
@@ -229,9 +223,11 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[DELAY][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[DELAY][MIDI_CONTROL] == control)) {
 		// Delay
-		m_maxDelaySamples = m_memory->getSlot()->size();
-		Serial.println(String("AudioEffectAnalogDelay::delay: ") + val + String(" out of ") + m_maxDelaySamples);
-		delay((size_t)(val * (float)m_maxDelaySamples));
+		if (m_externalMemory) { m_maxDelaySamples = m_memory->getSlot()->size() / sizeof(int16_t); }
+		size_t delayVal = (size_t)(val * (float)m_maxDelaySamples);
+		delay(delayVal);
+		Serial.println(String("AudioEffectAnalogDelay::delay (ms): ") + calcAudioTimeMs(delayVal)
+				+ String(" (samples): ") + delayVal + String(" out of ") + m_maxDelaySamples);
 		return;
 	}
 
@@ -246,7 +242,7 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[FEEDBACK][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[FEEDBACK][MIDI_CONTROL] == control)) {
 		// Feedback
-		Serial.println(String("AudioEffectAnalogDelay::feedback: ") + val);
+		Serial.println(String("AudioEffectAnalogDelay::feedback: ") + 100*val + String("%"));
 		feedback(val);
 		return;
 	}
@@ -254,7 +250,7 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[MIX][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[MIX][MIDI_CONTROL] == control)) {
 		// Mix
-		Serial.println(String("AudioEffectAnalogDelay::mix: ") + val);
+		Serial.println(String("AudioEffectAnalogDelay::mix: Dry: ") + 100*(1-val) + String("% Wet: ") + 100*val );
 		mix(val);
 		return;
 	}
@@ -262,7 +258,7 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[VOLUME][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[VOLUME][MIDI_CONTROL] == control)) {
 		// Volume
-		Serial.println(String("AudioEffectAnalogDelay::volume: ") + val);
+		Serial.println(String("AudioEffectAnalogDelay::volume: ") + 100*val + String("%"));
 		volume(val);
 		return;
 	}

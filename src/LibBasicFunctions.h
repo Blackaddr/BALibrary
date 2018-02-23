@@ -61,7 +61,12 @@ QueuePosition calcQueuePosition(size_t numSamples);
 /// given length of time.
 /// @param milliseconds length of the interval in milliseconds
 /// @returns the number of corresonding audio samples.
-size_t        calcAudioSamples(float milliseconds);
+size_t calcAudioSamples(float milliseconds);
+
+/// Calculate a length of time in milliseconds from the number of audio samples.
+/// @param numSamples Number of audio samples to convert to time
+/// @return the equivalent time in milliseconds.
+float calcAudioTimeMs(size_t numSamples);
 
 /// Calculate the number of audio samples (usually an offset) from
 /// a queue position.

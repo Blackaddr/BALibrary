@@ -171,11 +171,11 @@ private:
  *****************************************************************************/
 class ExternalSramManager final {
 public:
-	ExternalSramManager() = delete;
+	ExternalSramManager();
 
 	/// The manager is constructed by specifying how many external memories to handle allocations for
 	/// @param numMemories the number of external memories
-	ExternalSramManager(unsigned numMemories = 1);
+	ExternalSramManager(unsigned numMemories);
 	virtual ~ExternalSramManager();
 
 	/// Query the amount of available (unallocated) memory

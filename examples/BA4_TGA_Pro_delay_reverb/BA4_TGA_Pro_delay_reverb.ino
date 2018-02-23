@@ -35,13 +35,14 @@ AudioConnection      patch2(delayModule,0, gainModule, 0); // send the delay to 
 AudioConnection      patch2b(gainModule, 0, reverb, 0); // then to the reverb
 
 
-AudioConnection      patch1(i2sIn,1, mixer,0); // mixer input 0 is our original dry signal
+AudioConnection      patch1(i2sIn,0, mixer,0); // mixer input 0 is our original dry signal
 AudioConnection      patch3(reverb, 0, mixer, 1); // mixer input 1 is our wet
 
 AudioConnection      patch4(mixer, 0, cabFilter, 0); // mixer outpt to the cabinet filter
 
 
 AudioConnection      patch5(cabFilter, 0, i2sOut, 0); // connect the cab filter to the output.
+AudioConnection      patch5b(cabFilter, 0, i2sOut, 1); // connect the cab filter to the output.
 
 void setup() {
 
