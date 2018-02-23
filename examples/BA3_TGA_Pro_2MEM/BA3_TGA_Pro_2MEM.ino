@@ -59,7 +59,6 @@ void setup() {
 
   MIDI.begin(MIDI_CHANNEL_OMNI);
   Serial.begin(57600);
-  while (!Serial) {}
   delay(5);
 
   // If the codec was already powered up (due to reboot) power itd own first
