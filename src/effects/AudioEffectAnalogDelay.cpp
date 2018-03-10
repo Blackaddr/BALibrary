@@ -13,9 +13,8 @@ constexpr int MIDI_CHANNEL = 0;
 constexpr int MIDI_CONTROL = 1;
 
 // BOSS DM-3 Filters
-constexpr unsigned NUM_IIR_STAGES = 4;
-constexpr unsigned IIR_COEFF_SHIFT = 2;
-constexpr int32_t DEFAULT_COEFFS[5*NUM_IIR_STAGES] = {
+constexpr unsigned DM3_COEFF_SHIFT = 2;
+constexpr int32_t DM3[5*MAX_NUM_FILTER_STAGES] = {
     536870912,            988616936,            455608573,            834606945,           -482959709,
     536870912,           1031466345,            498793368,            965834205,           -467402235,
     536870912,           1105821939,            573646688,            928470657,           -448083489,
@@ -28,7 +27,7 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelayMs)
 {
 	m_memory = new AudioDelay(maxDelayMs);
 	m_maxDelaySamples = calcAudioSamples(maxDelayMs);
-	m_iir  = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
+	m_constructFilter();
 }
 
 AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
@@ -36,7 +35,7 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
 {
 	m_memory = new AudioDelay(numSamples);
 	m_maxDelaySamples = numSamples;
-	m_iir = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
+	m_constructFilter();
 }
 
 // requires preallocated memory large enough
@@ -46,13 +45,25 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
 	m_memory = new AudioDelay(slot);
 	m_maxDelaySamples = (slot->size() / sizeof(int16_t));
 	m_externalMemory = true;
-	m_iir = new IirBiQuadFilterHQ(NUM_IIR_STAGES, reinterpret_cast<const int32_t *>(&DEFAULT_COEFFS), IIR_COEFF_SHIFT);
+	m_constructFilter();
 }
 
 AudioEffectAnalogDelay::~AudioEffectAnalogDelay()
 {
 	if (m_memory) delete m_memory;
 	if (m_iir) delete m_iir;
+}
+
+// This function just sets up the default filter and coefficients
+void AudioEffectAnalogDelay::m_constructFilter(void)
+{
+	// Use DM3 coefficients by default
+	m_iir = new IirBiQuadFilterHQ(MAX_NUM_FILTER_STAGES, reinterpret_cast<const int32_t *>(&DM3), DM3_COEFF_SHIFT);
+}
+
+void AudioEffectAnalogDelay::setFilterCoeffs(int numStages, const int32_t *coeffs, int coeffShift)
+{
+	m_iir->changeFilterCoeffs(numStages, coeffs, coeffShift);
 }
 
 void AudioEffectAnalogDelay::update(void)

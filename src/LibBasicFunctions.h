@@ -199,6 +199,13 @@ public:
 	IirBiQuadFilter(unsigned numStages, const int32_t *coeffs, int coeffShift = 0);
 	virtual ~IirBiQuadFilter();
 
+	/// Reconfigure the filter coefficients.
+	/// @details See CMSIS-DSP documentation for more details
+	/// @param numStages number of biquad stages. Each stage has 5 coefficients.
+	/// @param coeffs pointer to an array of Q31 fixed-point coefficients (range -1 to +0.999...)
+	/// @param coeffShift coeffs are multiplied by 2^coeffShift to support coefficient range scaling
+	void changeFilterCoeffs(unsigned numStages, const int32_t *coeffs, int coeffShift = 0);
+
 	/// Process the data using the configured IIR filter
 	/// @details output and input can be the same pointer if in-place modification is desired
 	/// @param output pointer to where the output results will be written
@@ -227,8 +234,15 @@ public:
     /// @param numStages number of biquad stages. Each stage has 5 coefficients.
     /// @param coeffs pointer to an array of Q31 fixed-point coefficients (range -1 to +0.999...)
     /// @param coeffShift coeffs are multiplied by 2^coeffShift to support coefficient range scaling
-	IirBiQuadFilterHQ(unsigned numStages, const int32_t *coeffs, int coeffShift = 0);
+	IirBiQuadFilterHQ(unsigned maxNumStages, const int32_t *coeffs, int coeffShift = 0);
 	virtual ~IirBiQuadFilterHQ();
+
+	/// Reconfigure the filter coefficients.
+	/// @details See CMSIS-DSP documentation for more details
+	/// @param numStages number of biquad stages. Each stage has 5 coefficients.
+	/// @param coeffs pointer to an array of Q31 fixed-point coefficients (range -1 to +0.999...)
+	/// @param coeffShift coeffs are multiplied by 2^coeffShift to support coefficient range scaling
+	void changeFilterCoeffs(unsigned numStages, const int32_t *coeffs, int coeffShift = 0);
 
     /// Process the data using the configured IIR filter
     /// @details output and input can be the same pointer if in-place modification is desired
@@ -257,9 +271,15 @@ public:
     /// Construct a Biquad filter with specified number of stages and coefficients
     /// @details See CMSIS-DSP documentation for more details
     /// @param numStages number of biquad stages. Each stage has 5 coefficients.
-    /// @param coeffs pointer to an array of Q31 fixed-point coefficients (range -1 to +0.999...)
-	IirBiQuadFilterFloat(unsigned numStages, const float *coeffs);
+    /// @param coeffs pointer to an array of single-precision floating-point coefficients
+	IirBiQuadFilterFloat(unsigned maxNumStages, const float *coeffs);
 	virtual ~IirBiQuadFilterFloat();
+
+	/// Reconfigure the filter coefficients.
+	/// @details See CMSIS-DSP documentation for more details
+	/// @param numStages number of biquad stages. Each stage has 5 coefficients.
+    /// @param coeffs pointer to an array of single-precision floating-point coefficients
+	void changeFilterCoeffs(unsigned numStages, const float *coeffs);
 
     /// Process the data using the configured IIR filter
     /// @details output and input can be the same pointer if in-place modification is desired

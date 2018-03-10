@@ -26,20 +26,32 @@ namespace BAGuitar {
 ////////////////////////////////////////////////////
 // IirBiQuadFilter
 ////////////////////////////////////////////////////
-IirBiQuadFilter::IirBiQuadFilter(unsigned numStages, const int32_t *coeffs, int coeffShift)
-: NUM_STAGES(numStages)
+constexpr int NUM_COEFFS_PER_STAGE = 5;
+constexpr int NUM_STATES_PER_STAGE = 4;
+IirBiQuadFilter::IirBiQuadFilter(unsigned maxNumStages, const int32_t *coeffs, int coeffShift)
+: NUM_STAGES(maxNumStages)
 {
-	m_coeffs = new int32_t[5*numStages];
-	memcpy(m_coeffs, coeffs, 5*numStages * sizeof(int32_t));
+	m_coeffs = new int32_t[NUM_COEFFS_PER_STAGE*maxNumStages];
+	//memcpy(m_coeffs, coeffs, 5*numStages * sizeof(int32_t));
 
-	m_state  = new int32_t[4*numStages];
-	arm_biquad_cascade_df1_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
+	m_state  = new int32_t[NUM_STATES_PER_STAGE*maxNumStages];
+	//arm_biquad_cascade_df1_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
+	changeFilterCoeffs(maxNumStages, coeffs, coeffShift);
 }
 
 IirBiQuadFilter::~IirBiQuadFilter()
 {
 	if (m_coeffs) delete [] m_coeffs;
 	if (m_state)  delete [] m_state;
+}
+
+void IirBiQuadFilter::changeFilterCoeffs(unsigned numStages, const int32_t *coeffs, int coeffShift)
+{
+	// clear the state
+	memset(m_state, 0, sizeof(int32_t) * NUM_COEFFS_PER_STAGE * numStages);
+	// copy the coeffs
+	memcpy(m_coeffs, coeffs, NUM_COEFFS_PER_STAGE*numStages * sizeof(int32_t));
+	arm_biquad_cascade_df1_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
 }
 
 
@@ -67,21 +79,33 @@ bool IirBiQuadFilter::process(int16_t *output, int16_t *input, size_t numSamples
 	return true;
 }
 
+///////////////////////////////////
 // HIGH QUALITY
-IirBiQuadFilterHQ::IirBiQuadFilterHQ(unsigned numStages, const int32_t *coeffs, int coeffShift)
-: NUM_STAGES(numStages)
+///////////////////////////////////
+IirBiQuadFilterHQ::IirBiQuadFilterHQ(unsigned maxNumStages, const int32_t *coeffs, int coeffShift)
+: NUM_STAGES(maxNumStages)
 {
-	m_coeffs = new int32_t[5*numStages];
-	memcpy(m_coeffs, coeffs, 5*numStages * sizeof(int32_t));
+	m_coeffs = new int32_t[NUM_COEFFS_PER_STAGE*maxNumStages];
+	//memcpy(m_coeffs, coeffs, 5*numStages * sizeof(int32_t));
 
-	m_state = new int64_t[4*numStages];;
-	arm_biquad_cas_df1_32x64_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
+	m_state = new int64_t[NUM_STATES_PER_STAGE*maxNumStages];;
+	//arm_biquad_cas_df1_32x64_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
+	changeFilterCoeffs(maxNumStages, coeffs, coeffShift);
 }
 
 IirBiQuadFilterHQ::~IirBiQuadFilterHQ()
 {
 	if (m_coeffs) delete [] m_coeffs;
 	if (m_state)  delete [] m_state;
+}
+
+void IirBiQuadFilterHQ::changeFilterCoeffs(unsigned numStages, const int32_t *coeffs, int coeffShift)
+{
+	// clear the state
+	memset(m_state, 0, sizeof(int32_t) * NUM_COEFFS_PER_STAGE * numStages);
+	// copy the coeffs
+	memcpy(m_coeffs, coeffs, NUM_COEFFS_PER_STAGE*numStages * sizeof(int32_t));
+	arm_biquad_cas_df1_32x64_init_q31(&m_iirCfg, numStages, m_coeffs, m_state, coeffShift);
 }
 
 
@@ -109,21 +133,34 @@ bool IirBiQuadFilterHQ::process(int16_t *output, int16_t *input, size_t numSampl
 	return true;
 }
 
+///////////////////////
 // FLOAT
-IirBiQuadFilterFloat::IirBiQuadFilterFloat(unsigned numStages, const float *coeffs)
-: NUM_STAGES(numStages)
+///////////////////////
+IirBiQuadFilterFloat::IirBiQuadFilterFloat(unsigned maxNumStages, const float *coeffs)
+: NUM_STAGES(maxNumStages)
 {
-	m_coeffs = new float[5*numStages];
-	memcpy(m_coeffs, coeffs, 5*numStages * sizeof(float));
+	m_coeffs = new float[NUM_COEFFS_PER_STAGE*maxNumStages];
+	//memcpy(m_coeffs, coeffs, NUM_COEFFS_PER_STAGE*maxNumStages * sizeof(float));
 
-	m_state = new float[4*numStages];;
-	arm_biquad_cascade_df2T_init_f32(&m_iirCfg, numStages, m_coeffs, m_state);
+	m_state = new float[NUM_STATES_PER_STAGE*maxNumStages];;
+	//arm_biquad_cascade_df2T_init_f32(&m_iirCfg, maxNumStages, m_coeffs, m_state);
+	changeFilterCoeffs(maxNumStages, coeffs);
 }
 
 IirBiQuadFilterFloat::~IirBiQuadFilterFloat()
 {
 	if (m_coeffs) delete [] m_coeffs;
 	if (m_state)  delete [] m_state;
+}
+
+
+void IirBiQuadFilterFloat::changeFilterCoeffs(unsigned numStages, const float *coeffs)
+{
+	// clear the state
+	memset(m_state, 0, sizeof(float) * NUM_COEFFS_PER_STAGE * numStages);
+	// copy the coeffs
+	memcpy(m_coeffs, coeffs, NUM_COEFFS_PER_STAGE*numStages * sizeof(float));
+	arm_biquad_cascade_df2T_init_f32(&m_iirCfg, numStages, m_coeffs, m_state);
 }
 
 

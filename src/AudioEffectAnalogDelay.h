@@ -30,6 +30,10 @@
 
 namespace BAGuitar {
 
+/// The number of stages in the analog-response Biquad filter
+constexpr unsigned MAX_NUM_FILTER_STAGES = 4;
+constexpr unsigned NUM_COEFFS_PER_STAGE = 5;
+
 /**************************************************************************//**
  * AudioEffectAnalogDelay models BBD based analog delays. It provides controls
  * for delay, feedback (or regen), mix and output level. All parameters can be
@@ -50,9 +54,8 @@ public:
 		NUM_CONTROLS ///< this can be used as an alias for the number of MIDI controls
 	};
 
-	AudioEffectAnalogDelay() = delete;
-
 	// *** CONSTRUCTORS ***
+	AudioEffectAnalogDelay() = delete;
 
 	/// Construct an analog delay using internal memory by specifying the maximum
 	/// delay in milliseconds.
@@ -130,6 +133,18 @@ public:
 	/// @param value the CC value from 0 to 127
 	void processMidi(int channel, int midiCC, int value);
 
+	/// Override the default coefficients with your own. The number of filters stages affects how
+	/// much CPU is consumed.
+	/// @details The effect uses the CMSIS-DSP library for biquads which requires coefficents
+	/// be in q31 format, which means they are 32-bit signed integers representing -1.0 to slightly
+	/// less than +1.0. The coeffShift parameter effectively multiplies the coefficients by 2^shift. <br>
+	/// Example: If you really want +1.5, must instead use +0.75 * 2^1, thus 0.75 in q31 format is
+	/// (0.75 * 2^31) = 1610612736 and coeffShift = 1.
+	/// @param numStages the actual number of filter stages you want to use. Must be <= MAX_NUM_FILTER_STAGES.
+	/// @param coeffs pointer to an integer array of coefficients in q31 format.
+	/// @param coeffShift Coefficient scaling factor = 2^coeffShift.
+	void setFilterCoeffs(int numStages, const int32_t *coeffs, int coeffShift);
+
 	virtual void update(void); ///< update automatically called by the Teesny Audio Library
 
 private:
@@ -154,7 +169,13 @@ private:
 	void m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
 	void m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
 
-	size_t m_callCount = 0;
+	// Coefficients
+	void m_constructFilter(void);
+//	int m_numStages;
+//	int m_coeffShift;
+//	int m_coeffs[MAX_NUM_FILTER_STAGES*NUM_COEFFS_PER_STAGE] = {};
+
+	//size_t m_callCount = 0;
 };
 
 }
