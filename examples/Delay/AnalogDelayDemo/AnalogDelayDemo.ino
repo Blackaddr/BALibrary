@@ -1,6 +1,7 @@
 #include <MIDI.h>
 #include "BAGuitar.h"
 
+using namespace midi;
 using namespace BAGuitar;
 
 AudioInputI2S i2sIn;
@@ -8,6 +9,7 @@ AudioOutputI2S i2sOut;
 BAAudioControlWM8731 codec;
 
 /// IMPORTANT /////
+// YOU MUST USE TEENSYDUINO 1.41 or greater
 // YOU MUST COMPILE THIS DEMO USING Serial + Midi
 
 //#define USE_EXT // uncomment this line to use External MEM0
@@ -128,10 +130,12 @@ void loop() {
     // this code entered only if new MIDI received
     byte type, channel, data1, data2, cable;
     type = usbMIDI.getType();       // which MIDI message, 128-255
-      channel = usbMIDI.getChannel(); // which MIDI channel, 1-16
-      data1 = usbMIDI.getData1();     // first data byte of message, 0-127
-      data2 = usbMIDI.getData2();     // second data byte of message, 0-127
-    if (type == 3) {
+    channel = usbMIDI.getChannel(); // which MIDI channel, 1-16
+    data1 = usbMIDI.getData1();     // first data byte of message, 0-127
+    data2 = usbMIDI.getData2();     // second data byte of message, 0-127
+    Serial.println(String("Received a MIDI message on channel ") + channel);
+    
+    if (type == MidiType::ControlChange) {
       // if type is 3, it's a CC MIDI Message
       // Note: the Arduino MIDI library encodes channels as 1-16 instead
       // of 0 to 15 as it should, so we must subtract one.
