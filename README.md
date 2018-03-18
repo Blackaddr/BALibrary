@@ -5,8 +5,10 @@ This library is under active development as of 2018.
 This library uses a forked (modified) version of [DmaSpi](https://github.com/Blackaddr/DmaSpi) for Teensy, a library that extends SPI functionality to support DMA. This allows audio programs to use external SPI RAM with very little processor overhead.
 
 Last tested with:
-Arduino IDE: v1.8.4
-Teensyduino: v1.39
+Arduino IDE: v1.8.5
+Teensyduino: v1.41*
+
+*The Arduino MIDI library has recently undergone changes to it's interface. You must have Teensyduino v1.41 or higher for the library and it's examples to work correctly.
 
 **INTRODUCTION**
 This open-source library is designed to extend the capabilities of Teensyduino, a collection of Arudino libraries  ported to the Teensy microcontroller platform by Paul at PJRC.com.
