@@ -51,9 +51,9 @@ public:
 	};
 
 	enum class Filter {
-		DM3 = 0,
-	    WARM,
-		DARK
+        DM3 = 0,
+        WARM,
+        DARK
 	};
 
 	// *** CONSTRUCTORS ***
