@@ -5,22 +5,13 @@
  *      Author: slascos
  */
 #include <new>
+#include "AudioEffectAnalogDelayFilters.h"
 #include "AudioEffectAnalogDelay.h"
 
 namespace BAGuitar {
 
 constexpr int MIDI_CHANNEL = 0;
 constexpr int MIDI_CONTROL = 1;
-
-// BOSS DM-3 Filters
-constexpr unsigned DM3_COEFF_SHIFT = 2;
-constexpr int32_t DM3[5*MAX_NUM_FILTER_STAGES] = {
-    536870912,            988616936,            455608573,            834606945,           -482959709,
-    536870912,           1031466345,            498793368,            965834205,           -467402235,
-    536870912,           1105821939,            573646688,            928470657,           -448083489,
-    2339,                      5093,                 2776,            302068995,              4412722
-};
-
 
 AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelayMs)
 : AudioStream(1, m_inputQueueArray)
@@ -58,12 +49,28 @@ AudioEffectAnalogDelay::~AudioEffectAnalogDelay()
 void AudioEffectAnalogDelay::m_constructFilter(void)
 {
 	// Use DM3 coefficients by default
-	m_iir = new IirBiQuadFilterHQ(MAX_NUM_FILTER_STAGES, reinterpret_cast<const int32_t *>(&DM3), DM3_COEFF_SHIFT);
+	m_iir = new IirBiQuadFilterHQ(DM3_NUM_STAGES, reinterpret_cast<const int32_t *>(&DM3), DM3_COEFF_SHIFT);
 }
 
 void AudioEffectAnalogDelay::setFilterCoeffs(int numStages, const int32_t *coeffs, int coeffShift)
 {
 	m_iir->changeFilterCoeffs(numStages, coeffs, coeffShift);
+}
+
+void AudioEffectAnalogDelay::setFilter(Filter filter)
+{
+	switch(filter) {
+	case Filter::WARM :
+		m_iir->changeFilterCoeffs(WARM_NUM_STAGES, reinterpret_cast<const int32_t *>(&WARM), WARM_COEFF_SHIFT);
+		break;
+	case Filter::DARK :
+		m_iir->changeFilterCoeffs(DARK_NUM_STAGES, reinterpret_cast<const int32_t *>(&DARK), DARK_COEFF_SHIFT);
+		break;
+	case Filter::DM3 :
+	default:
+		m_iir->changeFilterCoeffs(DM3_NUM_STAGES, reinterpret_cast<const int32_t *>(&DM3), DM3_COEFF_SHIFT);
+		break;
+	}
 }
 
 void AudioEffectAnalogDelay::update(void)
