@@ -94,6 +94,13 @@ void setup() {
   analogDelay.mix(0.5f);
   analogDelay.feedback(0.0f);
 
+  //////////////////////////////////
+  // AnalogDelay filter selection //
+  // Uncomment to tryout the 3 different built-in filters.
+  //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::DM3); // The default filter. Naturally bright echo (highs stay, lows fade away)
+  //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::WARM); // A warm filter with a smooth frequency rolloff above 2Khz
+  //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::DARK); // A very dark filter, with a sharp rolloff above 1Khz
+
   // Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
   cabFilter.setLowpass(1, 4500, .7071);
