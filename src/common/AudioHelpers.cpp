@@ -69,6 +69,11 @@ void gainAdjust(audio_block_t *out, audio_block_t *in, float vol, int coeffShift
 	arm_scale_q15(in->data, scale, coeffShift, out->data, AUDIO_BLOCK_SAMPLES);
 }
 
+void combine(audio_block_t *out, audio_block_t *in0, audio_block_t *in1)
+{
+    arm_add_q15 (in0->data, in1->data, out->data, AUDIO_BLOCK_SAMPLES);
+}
+
 void clearAudioBlock(audio_block_t *block)
 {
 	memset(block->data, 0, sizeof(int16_t)*AUDIO_BLOCK_SAMPLES);

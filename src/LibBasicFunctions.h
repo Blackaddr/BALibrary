@@ -92,9 +92,15 @@ void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, floa
 /// @param out pointer to output audio block
 /// @param in  pointer to input audio block
 /// @param vol volume cofficient between -1.0 and +1.0
-/// @param coeffShift number of bits to shiftt the coefficient
+/// @param coeffShift number of bits to shift the coefficient
 void gainAdjust(audio_block_t *out, audio_block_t *in, float vol, int coeffShift = 0);
 
+/// Combine two audio blocks through vector addition
+/// out[n] = in0[n] + in1[n]
+/// @param out pointer to output audio block
+/// @param in0 pointer to first input audio block to combine
+/// @param in1 pointer to second input audio block to combine
+void combine(audio_block_t *out, audio_block_t *in0, audio_block_t *in1);
 
 template <class T>
 class RingBuffer; // forward declare so AudioDelay can use it.
@@ -246,7 +252,7 @@ public:
 
     /// Process the data using the configured IIR filter
     /// @details output and input can be the same pointer if in-place modification is desired
-    /// @param output pointer to where the output results will be written
+    /// @param output poinvoid combine(audio_block_t *out, audio_block_t *in0, audio_block_t *in1)ter to where the output results will be written
     /// @param input pointer to where the input data will be read from
     /// @param numSampmles number of samples to process
 	bool process(int16_t *output, int16_t *input, size_t numSamples);
@@ -297,7 +303,65 @@ private:
 
 };
 
-}
+} // namespace BAGuitar
+
+namespace BALibrary {
+
+/**************************************************************************//**
+ * The class will automate a parameter using a trigger from a start value to an
+ * end value, using either a preprogrammed function or a user-provided LUT.
+ *****************************************************************************/
+template <typename T>
+class ParameterAutomation
+{
+public:
+    enum class Function : unsigned {
+        LINEAR = 0,  ///< f(x) = x
+        EXPONENTIAL,  ///< f(x) = e^x
+        LOGARITHMIC,  ///< f(x) = ln(x)
+        PARABOLIC,    ///< f(x) = x^2
+        LOOKUP_TABLE  ///< f(x) = lut(x)
+    };
+    ParameterAutomation() = delete;
+    ParameterAutomation(T startValue, T endValue, size_t durationSamples,     Function function = Function::LINEAR);
+    ParameterAutomation(T startValue, T endValue, float durationMilliseconds, Function function = Function::LINEAR);
+    ~ParameterAutomation();
+
+    /// set the start and end values for the automation
+    /// @param function select which automation curve (function) to use
+    /// @param startValue after reset, parameter automation start from this value
+    /// @param endValue after the automation duration, paramter will finish at this value
+    /// @param durationSamples number of samples to transition from startValue to endValue
+    void reconfigure(T startValue, T endValue, size_t durationSamples,     Function function = Function::LINEAR);
+    void reconfigure(T startValue, T endValue, float durationMilliseconds, Function function = Function::LINEAR);
+
+    /// Start the automation from startValue
+    void trigger();
+
+    /// Retrieve the next calculated automation value
+    /// @returns the calculated parameter value of templated type T
+    T getNextValue();
+
+private:
+    Function m_function;
+    T m_startValue;
+    T m_endValue;
+    bool m_running = false;
+    T m_currentValueX; ///< the current value of x in f(x)
+    size_t m_duration;
+    T m_coeffs[3]; ///< some general coefficient storage
+};
+
+
+// TODO: initialize with const number of sequences with null type that automatically skips
+// then register each new sequence.
+template <typename T>
+class ParameterAutomationSequence
+{
+
+};
+
+} // BALibrary
 
 
 #endif /* __BAGUITAR_LIBBASICFUNCTIONS_H */
