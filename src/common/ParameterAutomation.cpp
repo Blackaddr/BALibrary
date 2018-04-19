@@ -24,7 +24,15 @@ using namespace BAGuitar;
 
 namespace BALibrary {
 
+///////////////////////////////////////////////////////////////////////////////
+// ParameterAutomation
+///////////////////////////////////////////////////////////////////////////////
 constexpr int LINEAR_SLOPE = 0;
+template <class T>
+ParameterAutomation<T>::ParameterAutomation()
+{
+    reconfigure(0.0f, 0.0f, static_cast<size_t>(0), Function::NOT_CONFIGURED);
+}
 
 template <class T>
 ParameterAutomation<T>::ParameterAutomation(T startValue, T endValue, float durationMilliseconds, Function function)
@@ -36,6 +44,12 @@ template <class T>
 ParameterAutomation<T>::ParameterAutomation(T startValue, T endValue, size_t durationSamples, Function function)
 {
     reconfigure(startValue, endValue, durationSamples, function);
+}
+
+template <class T>
+ParameterAutomation<T>::~ParameterAutomation()
+{
+
 }
 
 template <class T>
@@ -52,6 +66,7 @@ void ParameterAutomation<T>::reconfigure(T startValue, T endValue, size_t durati
     m_endValue = endValue;
     m_currentValueX = startValue;
     m_duration = durationSamples;
+    m_running = false;
 
     // Pre-compute any necessary coefficients
     switch(m_function) {
@@ -106,5 +121,77 @@ T ParameterAutomation<T>::getNextValue()
     }
     return m_currentValueX;
 }
+
+// Template instantiation
+//template class MyStack<int, 6>;
+template class ParameterAutomation<float>;
+
+///////////////////////////////////////////////////////////////////////////////
+// ParameterAutomationSequence
+///////////////////////////////////////////////////////////////////////////////
+template <class T>
+ParameterAutomationSequence<T>::ParameterAutomationSequence(int numStages)
+{
+    //m_paramArray = malloc(sizeof(ParameterAutomation<T>*) * numStages);
+    if (numStages < MAX_PARAMETER_SEQUENCES) {
+        for (int i=0; i<numStages; i++) {
+            m_paramArray[i] = new ParameterAutomation<T>();
+        }
+        for (int i=numStages; i<MAX_PARAMETER_SEQUENCES; i++) {
+            m_paramArray[i] = nullptr;
+        }
+        m_numStages = numStages;
+    }
+}
+
+template <class T>
+ParameterAutomationSequence<T>::~ParameterAutomationSequence()
+{
+    //if (m_paramArray) {
+        for (int i=0; i<m_numStages; i++) {
+            if (m_paramArray[i]) {
+                delete m_paramArray[i];
+            }
+        }
+    //    delete m_paramArray;
+    //}
+}
+
+template <class T>
+void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, size_t durationSamples, typename ParameterAutomation<T>::Function function)
+{
+    m_paramArray[index]->reconfigure(startValue, endValue, durationSamples, function);
+}
+
+template <class T>
+void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, float durationMilliseconds, typename ParameterAutomation<T>::Function function)
+{
+    m_paramArray[index]->reconfigure(startValue, endValue, durationMilliseconds, function);
+}
+
+template <class T>
+void ParameterAutomationSequence<T>::trigger(void)
+{
+    m_currentIndex = 0;
+    for (int i=0; i<m_numStages; i++) {
+        m_paramArray[i]->trigger();
+    }
+}
+
+template <class T>
+bool ParameterAutomationSequence<T>::isFinished()
+{
+    bool finished = true;
+    for (int i=0; i<m_numStages; i++) {
+        if (!m_paramArray[i]->isFinished()) {
+            finished = false;
+            break;
+        }
+    }
+    return finished;
+}
+
+// Template instantiation
+template class ParameterAutomationSequence<float>;
 
 }

@@ -316,16 +316,17 @@ class ParameterAutomation
 {
 public:
     enum class Function : unsigned {
-        LINEAR = 0,  ///< f(x) = x
+        NOT_CONFIGURED = 0, ///< Initial, unconfigured stage
+        LINEAR,       ///< f(x) = x
         EXPONENTIAL,  ///< f(x) = e^x
         LOGARITHMIC,  ///< f(x) = ln(x)
         PARABOLIC,    ///< f(x) = x^2
         LOOKUP_TABLE  ///< f(x) = lut(x)
     };
-    ParameterAutomation() = delete;
+    ParameterAutomation();
     ParameterAutomation(T startValue, T endValue, size_t durationSamples,     Function function = Function::LINEAR);
     ParameterAutomation(T startValue, T endValue, float durationMilliseconds, Function function = Function::LINEAR);
-    ~ParameterAutomation();
+    virtual ~ParameterAutomation();
 
     /// set the start and end values for the automation
     /// @param function select which automation curve (function) to use
@@ -342,6 +343,8 @@ public:
     /// @returns the calculated parameter value of templated type T
     T getNextValue();
 
+    bool isFinished() { return !m_running; }
+
 private:
     Function m_function;
     T m_startValue;
@@ -355,10 +358,28 @@ private:
 
 // TODO: initialize with const number of sequences with null type that automatically skips
 // then register each new sequence.
+constexpr int MAX_PARAMETER_SEQUENCES = 32;
 template <typename T>
 class ParameterAutomationSequence
 {
+public:
+    ParameterAutomationSequence() = delete;
+    ParameterAutomationSequence(int numStages);
+    virtual ~ParameterAutomationSequence();
 
+    void setupParameter(int index, T startValue, T endValue, size_t durationSamples,     typename ParameterAutomation<T>::Function function);
+    void setupParameter(int index, T startValue, T endValue, float durationMilliseconds, typename ParameterAutomation<T>::Function function);
+
+    /// Trigger a the automation sequence until numStages is reached or a Function is ParameterAutomation<T>::Function::NOT_CONFIGURED
+    void trigger();
+
+    T getNextValue();
+    bool isFinished();
+
+private:
+    ParameterAutomation<T> *m_paramArray[MAX_PARAMETER_SEQUENCES];
+    int m_currentIndex = 0;
+    int m_numStages = 0;
 };
 
 } // BALibrary
