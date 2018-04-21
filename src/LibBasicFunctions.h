@@ -153,6 +153,12 @@ public:
     /// @returns a pointer to the requested audio_block_t
     audio_block_t *getBlock(size_t index);
 
+    /// Returns the max possible delay samples. For INTERNAL memory, the delay can be equal to
+    /// the full maxValue specified. For EXTERNAL memory, the max delay is actually one audio
+    /// block less then the full size to prevent wrapping.
+    /// @returns the maximum delay offset in units of samples.
+    size_t getMaxDelaySamples();
+
     /// Retrieve an audio block (or samples) from the buffer.
     /// @details when using INTERNAL memory, only supported size is AUDIO_BLOCK_SAMPLES. When using
     /// EXTERNAL, a size smaller than AUDIO_BLOCK_SAMPLES can be requested.
@@ -166,6 +172,8 @@ public:
     /// with the buffer.
     /// @returns pointer to the underlying ExtMemSlot.
     ExtMemSlot *getSlot() const { return m_slot; }
+
+
 
     /// Ween using INTERNAL memory, thsi function can return a pointer to the underlying RingBuffer that contains
     /// audio_block_t * pointers.
@@ -183,6 +191,7 @@ private:
     MemType m_type;                                      ///< when 0, INTERNAL memory, when 1, external MEMORY.
     RingBuffer<audio_block_t *> *m_ringBuffer = nullptr; ///< When using INTERNAL memory, a RingBuffer will be created.
     ExtMemSlot *m_slot = nullptr;                        ///< When using EXTERNAL memory, an ExtMemSlot must be provided.
+    size_t m_maxDelaySamples = 0;                             ///< stores the number of audio samples in the AudioDelay.
 };
 
 /**************************************************************************//**
@@ -317,6 +326,7 @@ class ParameterAutomation
 public:
     enum class Function : unsigned {
         NOT_CONFIGURED = 0, ///< Initial, unconfigured stage
+        HOLD,         ///< f(x) = constant
         LINEAR,       ///< f(x) = x
         EXPONENTIAL,  ///< f(x) = e^x
         LOGARITHMIC,  ///< f(x) = ln(x)
@@ -350,9 +360,10 @@ private:
     T m_startValue;
     T m_endValue;
     bool m_running = false;
-    T m_currentValueX; ///< the current value of x in f(x)
+    float m_currentValueX; ///< the current value of x in f(x)
     size_t m_duration;
-    T m_coeffs[3]; ///< some general coefficient storage
+    float m_coeffs[3]; ///< some general coefficient storage
+    bool m_positiveSlope = true;
 };
 
 
@@ -380,6 +391,7 @@ private:
     ParameterAutomation<T> *m_paramArray[MAX_PARAMETER_SEQUENCES];
     int m_currentIndex = 0;
     int m_numStages = 0;
+    bool m_running = false;
 };
 
 } // BALibrary

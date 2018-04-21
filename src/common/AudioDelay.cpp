@@ -34,6 +34,7 @@ AudioDelay::AudioDelay(size_t maxSamples)
 	// INTERNAL memory consisting of audio_block_t data structures.
 	QueuePosition pos = calcQueuePosition(maxSamples);
 	m_ringBuffer = new RingBuffer<audio_block_t *>(pos.index+2); // If the delay is in queue x, we need to overflow into x+1, thus x+2 total buffers.
+	m_maxDelaySamples = maxSamples;
 }
 
 AudioDelay::AudioDelay(float maxDelayTimeMs)
@@ -46,6 +47,7 @@ AudioDelay::AudioDelay(ExtMemSlot *slot)
 {
 	m_type = (MemType::MEM_EXTERNAL);
 	m_slot = slot;
+	m_maxDelaySamples = (slot->size() / sizeof(int16_t)) - AUDIO_BLOCK_SAMPLES;
 }
 
 AudioDelay::~AudioDelay()
@@ -91,6 +93,11 @@ audio_block_t* AudioDelay::getBlock(size_t index)
 		ret =  m_ringBuffer->at(m_ringBuffer->get_index_from_back(index));
 	}
 	return ret;
+}
+
+size_t AudioDelay::getMaxDelaySamples()
+{
+    return m_maxDelaySamples;
 }
 
 bool AudioDelay::getSamples(audio_block_t *dest, size_t offsetSamples, size_t numSamples)
@@ -159,8 +166,9 @@ bool AudioDelay::getSamples(audio_block_t *dest, size_t offsetSamples, size_t nu
 
 			return true;
 		} else {
-			// numSampmles is > than total slot size
+			// numSamples is > than total slot size
 			Serial.println("getSamples(): ERROR numSamples > total slot size");
+			Serial.println(numSamples + String(" > ") + m_slot->size());
 			return false;
 		}
 	}

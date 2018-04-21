@@ -74,11 +74,17 @@ constexpr size_t MEM_MAX_ADDR[NUM_MEM_SLOTS] = { 131071, 131071 };
 /**************************************************************************//**
  * General Purpose SPI Interfaces
  *****************************************************************************/
-enum SpiDeviceId : unsigned {
+enum class SpiDeviceId : unsigned {
 	SPI_DEVICE0 = 0, ///< Arduino SPI device
 	SPI_DEVICE1 = 1  ///< Arduino SPI1 device
 };
 constexpr int SPI_MAX_ADDR = 131071; ///< Max address size per chip
+constexpr size_t SPI_MEM0_SIZE_BYTES = 131072;
+constexpr size_t SPI_MEM0_MAX_AUDIO_SAMPLES = SPI_MEM0_SIZE_BYTES/sizeof(int16_t);
+
+constexpr size_t SPI_MEM1_SIZE_BYTES = 131072;
+constexpr size_t SPI_MEM1_MAX_AUDIO_SAMPLES = SPI_MEM1_SIZE_BYTES/sizeof(int16_t);
+
 
 
 #else

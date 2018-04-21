@@ -46,6 +46,8 @@ public:
 
     // *** CONSTRUCTORS ***
     AudioEffectSOS() = delete;
+    AudioEffectSOS(float maxDelayMs);
+    AudioEffectSOS(size_t numSamples);
 
     /// Construct an analog delay using external SPI via an ExtMemSlot. The amount of
     /// delay will be determined by the amount of memory in the slot.
@@ -66,6 +68,9 @@ public:
     /// Note that audio still passes through when bypass is enabled.
     void bypass(bool byp) { m_bypass = byp; }
 
+    /// Activate the gate automation. Input gate will open, then close.
+    void trigger() { m_inputGateAuto.trigger(); }
+
     /// Set the output volume. This affect both the wet and dry signals.
     /// @details The default is 1.0.
     /// @param vol Sets the output volume between -1.0 and +1.0
@@ -74,7 +79,7 @@ public:
     // ** ENABLE  / DISABLE **
 
     /// Enables audio processing. Note: when not enabled, CPU load is nearly zero.
-    void enable() { m_enable = true; }
+    void enable();
 
     /// Disables audio process. When disabled, CPU load is nearly zero.
     void disable() { m_enable = false; }
@@ -123,12 +128,12 @@ private:
     float m_volume = 1.0f;
 
     // Automated Controls
-    BALibrary::ParameterAutomation<float> m_inputGateAuto =
-            BALibrary::ParameterAutomation<float>(0.0f, 1.0f, 0.0f, BALibrary::ParameterAutomation<float>::Function::LINEAR);
+    BALibrary::ParameterAutomationSequence<float> m_inputGateAuto =
+            BALibrary::ParameterAutomationSequence<float>(3);
 
     // Private functions
     void m_preProcessing (audio_block_t *out, audio_block_t *input, audio_block_t *delayedSignal);
-    //void m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
+    void m_postProcessing(audio_block_t *out, audio_block_t *input);
 };
 
 }

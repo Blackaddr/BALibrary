@@ -19,18 +19,51 @@ constexpr int MIDI_CONTROL = 1;
 constexpr float MAX_GATE_OPEN_TIME_MS = 3000.0f;
 constexpr float MAX_GATE_CLOSE_TIME_MS = 3000.0f;
 
+constexpr int GATE_OPEN_STAGE = 0;
+constexpr int GATE_HOLD_STAGE = 1;
+constexpr int GATE_CLOSE_STAGE = 2;
+
+AudioEffectSOS::AudioEffectSOS(float maxDelayMs)
+: AudioStream(1, m_inputQueueArray)
+{
+    m_memory = new AudioDelay(maxDelayMs);
+    m_maxDelaySamples = calcAudioSamples(maxDelayMs);
+    m_externalMemory = false;
+}
+
+AudioEffectSOS::AudioEffectSOS(size_t numSamples)
+: AudioStream(1, m_inputQueueArray)
+{
+    m_memory = new AudioDelay(numSamples);
+    m_maxDelaySamples = numSamples;
+    m_externalMemory = false;
+}
+
 AudioEffectSOS::AudioEffectSOS(ExtMemSlot *slot)
 : AudioStream(1, m_inputQueueArray)
 {
     m_memory = new AudioDelay(slot);
-    m_maxDelaySamples = (slot->size() / sizeof(int16_t));
-    m_delaySamples = m_maxDelaySamples;
     m_externalMemory = true;
 }
 
 AudioEffectSOS::~AudioEffectSOS()
 {
+    if (m_memory) delete m_memory;
+}
 
+void AudioEffectSOS::enable(void)
+{
+    m_enable = true;
+    if (m_externalMemory) {
+        // Because we hold the previous output buffer for an update cycle, the maximum delay is actually
+        // 1 audio block mess then the max delay returnable from the memory.
+        m_maxDelaySamples = m_memory->getMaxDelaySamples();
+        Serial.println(String("SOS Enabled with delay length ") + m_maxDelaySamples + String(" samples"));
+    }
+    m_delaySamples = m_maxDelaySamples;
+    m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::LINEAR);
+    m_inputGateAuto.setupParameter(GATE_HOLD_STAGE, 1.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::HOLD);
+    m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::LINEAR);
 }
 
 void AudioEffectSOS::update(void)
@@ -58,7 +91,7 @@ void AudioEffectSOS::update(void)
     }
 
     // Check is block is bypassed, if so either transmit input directly or create silence
-    if (m_bypass == true) {
+    if ( (m_bypass == true) || (!inputAudioBlock) ) {
         // transmit the input directly
         if (!inputAudioBlock) {
             // create silence
@@ -73,6 +106,8 @@ void AudioEffectSOS::update(void)
         return;
     }
 
+    if (!inputAudioBlock) return;
+
     // Otherwise perform normal processing
     // In order to make use of the SPI DMA, we need to request the read from memory first,
     // then do other processing while it fills in the back.
@@ -83,6 +118,8 @@ void AudioEffectSOS::update(void)
     // get the data. If using external memory with DMA, this won't be filled until
     // later.
     m_memory->getSamples(blockToOutput, m_delaySamples);
+    //Serial.println(String("Delay samples:") + m_delaySamples);
+    //Serial.println(String("Use dma: ") + m_memory->getSlot()->isUseDma());
 
     // If using DMA, we need something else to do while that read executes, so
     // move on to input preprocessing
@@ -95,6 +132,8 @@ void AudioEffectSOS::update(void)
     // consider doing the BBD post processing here to use up more time while waiting
     // for the read data to come back
     audio_block_t *blockToRelease = m_memory->addBlock(preProcessed);
+    //audio_block_t *blockToRelease = m_memory->addBlock(inputAudioBlock);
+    //Serial.println("Done adding new block");
 
 
     // BACK TO OUTPUT PROCESSING
@@ -105,12 +144,18 @@ void AudioEffectSOS::update(void)
     }
 
     // perform the wet/dry mix mix
-    //m_postProcessing(blockToOutput, inputAudioBlock, blockToOutput);
+    m_postProcessing(blockToOutput, blockToOutput);
     transmit(blockToOutput);
 
     release(inputAudioBlock);
-    release(m_previousBlock);
+
+    if (m_previousBlock)
+        release(m_previousBlock);
     m_previousBlock = blockToOutput;
+
+    if (m_blockToRelease == m_previousBlock) {
+        Serial.println("ERROR: POINTER COLLISION");
+    }
 
     if (m_blockToRelease) release(m_blockToRelease);
     m_blockToRelease = blockToRelease;
@@ -121,12 +166,13 @@ void AudioEffectSOS::gateOpenTime(float milliseconds)
 {
     // TODO - change the paramter automation to an automation sequence
     m_openTimeMs = milliseconds;
-    //m_inputGateAuto.reconfigure();
+    m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, m_openTimeMs, ParameterAutomation<float>::Function::LINEAR);
 }
 
 void AudioEffectSOS::gateCloseTime(float milliseconds)
 {
     m_closeTimeMs = milliseconds;
+    m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, m_closeTimeMs, ParameterAutomation<float>::Function::LINEAR);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -149,7 +195,7 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
         (m_midiConfig[GATE_CLOSE_TIME][MIDI_CONTROL] == control)) {
         // Gate Close Time
         gateCloseTime(val * MAX_GATE_CLOSE_TIME_MS);
-        Serial.println(String("AudioEffectSOS::gate close time (ms): ") + m_openTimeMs);
+        Serial.println(String("AudioEffectSOS::gate close time (ms): ") + m_closeTimeMs);
         return;
     }
 
@@ -180,8 +226,8 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
     if ((m_midiConfig[GATE_TRIGGER][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[GATE_TRIGGER][MIDI_CONTROL] == control)) {
         // The gate is trigged by any value
-        m_inputGateAuto.trigger();
         Serial.println(String("AudioEffectSOS::Gate Triggered!"));
+        m_inputGateAuto.trigger();
         return;
     }
 }
@@ -203,15 +249,23 @@ void AudioEffectSOS::m_preProcessing (audio_block_t *out, audio_block_t *input, 
     if ( out && input && delayedSignal) {
         // Multiply the input signal by the automated gate value
         // Multiply the delayed signal by the user set feedback value
-        // then mix together.
+
         float gateVol = m_inputGateAuto.getNextValue();
+
+        //float gateVol = 1.0f;
         audio_block_t tempAudioBuffer;
         gainAdjust(out, input, gateVol, 0); // last paremeter is coeff shift, 0 bits
-        gainAdjust(&tempAudioBuffer, delayedSignal, m_feedback, 0); // last paremeter is coeff shift, 0 bits
+        gainAdjust(&tempAudioBuffer, delayedSignal, m_feedback, 0); // last parameter is coeff shift, 0 bits
         combine(out, out, &tempAudioBuffer);
+
     } else if (input) {
         memcpy(out->data, input->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
     }
+}
+
+void AudioEffectSOS::m_postProcessing(audio_block_t *out, audio_block_t *in)
+{
+    gainAdjust(out, out, m_volume, 0);
 }
 
 

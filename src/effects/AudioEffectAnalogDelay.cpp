@@ -166,6 +166,11 @@ void AudioEffectAnalogDelay::delay(float milliseconds)
 {
 	size_t delaySamples = calcAudioSamples(milliseconds);
 
+	if (delaySamples > m_memory->getMaxDelaySamples()) {
+	    // this exceeds max delay value, limit it.
+	    delaySamples = m_memory->getMaxDelaySamples();
+	}
+
 	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
 
 	if (!m_externalMemory) {

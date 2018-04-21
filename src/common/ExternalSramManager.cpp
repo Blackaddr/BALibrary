@@ -37,8 +37,8 @@ ExternalSramManager::ExternalSramManager(unsigned numMemories)
 	// Initialize the static memory configuration structs
 	if (!m_configured) {
 		for (unsigned i=0; i < NUM_MEM_SLOTS; i++) {
-			m_memConfig[i].size           = MEM_MAX_ADDR[i];
-			m_memConfig[i].totalAvailable = MEM_MAX_ADDR[i];
+			m_memConfig[i].size           = MEM_MAX_ADDR[i]+1;
+			m_memConfig[i].totalAvailable = MEM_MAX_ADDR[i]+1;
 			m_memConfig[i].nextAvailable  = 0;
 
 			m_memConfig[i].m_spi = nullptr;
@@ -111,7 +111,9 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGu
 		return true;
 	} else {
 		// there is not enough memory available for the request
-
+	    Serial.println(String("ExternalSramManager::requestMemory(): Insufficient memory in slot, request/available: ")
+	            + sizeBytes + String(" : ")
+	            + m_memConfig[mem].totalAvailable);
 		return false;
 	}
 }
