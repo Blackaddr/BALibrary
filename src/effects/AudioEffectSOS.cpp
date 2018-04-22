@@ -61,9 +61,9 @@ void AudioEffectSOS::enable(void)
         Serial.println(String("SOS Enabled with delay length ") + m_maxDelaySamples + String(" samples"));
     }
     m_delaySamples = m_maxDelaySamples;
-    m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::LINEAR);
+    m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
     m_inputGateAuto.setupParameter(GATE_HOLD_STAGE, 1.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::HOLD);
-    m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::LINEAR);
+    m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 void AudioEffectSOS::update(void)
@@ -166,13 +166,13 @@ void AudioEffectSOS::gateOpenTime(float milliseconds)
 {
     // TODO - change the paramter automation to an automation sequence
     m_openTimeMs = milliseconds;
-    m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, m_openTimeMs, ParameterAutomation<float>::Function::LINEAR);
+    m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, m_openTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 void AudioEffectSOS::gateCloseTime(float milliseconds)
 {
     m_closeTimeMs = milliseconds;
-    m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, m_closeTimeMs, ParameterAutomation<float>::Function::LINEAR);
+    m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, m_closeTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 ////////////////////////////////////////////////////////////////////////

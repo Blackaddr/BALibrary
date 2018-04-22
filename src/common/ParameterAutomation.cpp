@@ -28,6 +28,7 @@ namespace BALibrary {
 // ParameterAutomation
 ///////////////////////////////////////////////////////////////////////////////
 constexpr int LINEAR_SLOPE = 0;
+constexpr float EXPONENTIAL_K = 5.0f;
 
 template <class T>
 ParameterAutomation<T>::ParameterAutomation()
@@ -65,10 +66,13 @@ void ParameterAutomation<T>::reconfigure(T startValue, T endValue, size_t durati
     m_function = function;
     m_startValue = startValue;
     m_endValue = endValue;
-    m_currentValueX = static_cast<float>(startValue);
+    m_currentValueX = 0.0f;
     m_duration = durationSamples;
     m_running = false;
 
+    float duration = m_duration / static_cast<float>(AUDIO_BLOCK_SAMPLES);
+    m_slopeX = (1.0f / static_cast<float>(duration));
+    m_scaleY = abs(endValue - startValue);
     if (endValue >= startValue) {
         // value is increasing
         m_positiveSlope = true;
@@ -76,46 +80,14 @@ void ParameterAutomation<T>::reconfigure(T startValue, T endValue, size_t durati
         // value is decreasing
         m_positiveSlope = false;
     }
-
-    float duration = m_duration / static_cast<float>(AUDIO_BLOCK_SAMPLES);
-
-    // Pre-compute any necessary coefficients
-    switch(m_function) {
-    case Function::EXPONENTIAL :
-        break;
-    case Function::LOGARITHMIC :
-        break;
-    case Function::PARABOLIC :
-        break;
-    case Function::LOOKUP_TABLE :
-        break;
-
-    // Default will be same as LINEAR
-    case Function::HOLD   :
-        m_coeffs[LINEAR_SLOPE] = (1.0f / static_cast<float>(duration)); // convert duration from ms to sec
-        break;
-    case Function::LINEAR :
-    default :
-        // The number of parameter updates will be duration in samples divided by audio sample block size since
-        // we only update once per block.
-        m_coeffs[LINEAR_SLOPE] = static_cast<float>(endValue - startValue) / duration; // convert duration from ms to sec
-        break;
-    }
 }
 
 
 template <class T>
 void ParameterAutomation<T>::trigger()
 {
-    if (m_function == Function::HOLD) {
-        // The HOLD function will move currentValueX from 0 to 1.0 over the desired duration,
-        // but will always return the startValue.
-        m_currentValueX = 0.0f;
-    } else {
-        m_currentValueX = static_cast<float>(m_startValue);
-    }
+    m_currentValueX = 0.0f;
     m_running = true;
-    //Serial.println("ParameterAutomation<T>::trigger() called");
 }
 
 template <class T>
@@ -125,43 +97,44 @@ T ParameterAutomation<T>::getNextValue()
         return m_startValue;
     }
 
-    if (m_function == Function::HOLD) {
-        // HOLD is treated as a special case
-        m_currentValueX += m_coeffs[LINEAR_SLOPE];
-        if (m_currentValueX >= 1.0) {
-            m_running = false;
-        }
-        return m_startValue;
-    }
+    m_currentValueX += m_slopeX;
+    float value;
 
     switch(m_function) {
     case Function::EXPONENTIAL :
-        break;
-    case Function::LOGARITHMIC :
+        // f(x) = exp(-k*x)
+        value = 1.0f - expf(-EXPONENTIAL_K*m_currentValueX);
         break;
     case Function::PARABOLIC :
+        value = m_currentValueX*m_currentValueX;
         break;
     case Function::LOOKUP_TABLE :
-        break;
     case Function::LINEAR :
     default :
-        // output = m_currentValueX + slope
-        m_currentValueX += m_coeffs[LINEAR_SLOPE];
+        value = m_currentValueX;
         break;
     }
 
     // Check if the automation is finished.
-    if ( ( m_positiveSlope && (m_currentValueX >= m_endValue)) ||
-         (!m_positiveSlope && (m_currentValueX <= m_endValue)) ) {
+    if (m_currentValueX >= 1.0f) {
+        m_currentValueX = 0.0f;
         m_running = false;
         return m_endValue;
-    } else {
-        return static_cast<T>(m_currentValueX);
     }
+
+    float returnValue;
+    if (m_positiveSlope) {
+        returnValue = m_startValue + (m_scaleY*value);
+    } else {
+        returnValue = m_startValue - (m_scaleY*value);
+    }
+//    Serial.println(String("Start/End values: ") + m_startValue + String(":") + m_endValue);
+//    Serial.print("Parameter m_currentValueX is "); Serial.println(m_currentValueX, 6);
+//    Serial.print("Parameter returnValue is "); Serial.println(returnValue, 6);
+    return returnValue;
 }
 
 // Template instantiation
-//template class MyStack<int, 6>;
 template class ParameterAutomation<float>;
 template class ParameterAutomation<int>;
 template class ParameterAutomation<unsigned>;
@@ -196,6 +169,7 @@ ParameterAutomationSequence<T>::~ParameterAutomationSequence()
 template <class T>
 void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, size_t durationSamples, typename ParameterAutomation<T>::Function function)
 {
+    Serial.println("setupParameter() called");
     m_paramArray[index]->reconfigure(startValue, endValue, durationSamples, function);
     m_currentIndex = 0;
 }
@@ -203,6 +177,7 @@ void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T e
 template <class T>
 void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, float durationMilliseconds, typename ParameterAutomation<T>::Function function)
 {
+    Serial.println("setupParameter() called");
     m_paramArray[index]->reconfigure(startValue, endValue, durationMilliseconds, function);
     m_currentIndex = 0;
 }
@@ -261,5 +236,7 @@ bool ParameterAutomationSequence<T>::isFinished()
 
 // Template instantiation
 template class ParameterAutomationSequence<float>;
+template class ParameterAutomationSequence<int>;
+template class ParameterAutomationSequence<unsigned>;
 
 }

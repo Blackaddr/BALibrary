@@ -328,8 +328,8 @@ public:
         NOT_CONFIGURED = 0, ///< Initial, unconfigured stage
         HOLD,         ///< f(x) = constant
         LINEAR,       ///< f(x) = x
-        EXPONENTIAL,  ///< f(x) = e^x
-        LOGARITHMIC,  ///< f(x) = ln(x)
+        EXPONENTIAL,  ///< f(x) = exp(-k*x)
+        LOGARITHMIC,  ///< f(x) =
         PARABOLIC,    ///< f(x) = x^2
         LOOKUP_TABLE  ///< f(x) = lut(x)
     };
@@ -362,7 +362,9 @@ private:
     bool m_running = false;
     float m_currentValueX; ///< the current value of x in f(x)
     size_t m_duration;
-    float m_coeffs[3]; ///< some general coefficient storage
+    //float m_coeffs[3]; ///< some general coefficient storage
+    float m_slopeX;
+    float m_scaleY;
     bool m_positiveSlope = true;
 };
 
