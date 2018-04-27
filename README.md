@@ -4,6 +4,8 @@ This library is under active development as of 2018.
 **REQUIREMENTS**
 This library uses a forked (modified) version of [DmaSpi](https://github.com/Blackaddr/DmaSpi) for Teensy, a library that extends SPI functionality to support DMA. This allows audio programs to use external SPI RAM with very little processor overhead.
 
+**YOU MUST DOWNLOAD AND INSTALL THE DMA SPI LIBRARY FROM THE LINK ABOVE SEPARATELY TO USE THIS BAGUITAR LIBRARY. IT IS NOT AUTOMATICALLY INSTALLED AS PART OF THE BAGUITAR LIBRARY**
+
 Last tested with:
 Arduino IDE: v1.8.5
 Teensyduino: v1.41*
