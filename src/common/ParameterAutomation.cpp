@@ -29,6 +29,7 @@ namespace BALibrary {
 ///////////////////////////////////////////////////////////////////////////////
 constexpr int LINEAR_SLOPE = 0;
 constexpr float EXPONENTIAL_K = 5.0f;
+constexpr float EXP_EXPONENTIAL_K = expf(EXPONENTIAL_K);
 
 template <class T>
 ParameterAutomation<T>::ParameterAutomation()
@@ -99,11 +100,18 @@ T ParameterAutomation<T>::getNextValue()
 
     m_currentValueX += m_slopeX;
     float value;
+    float returnValue;
 
     switch(m_function) {
     case Function::EXPONENTIAL :
-        // f(x) = exp(-k*x)
-        value = 1.0f - expf(-EXPONENTIAL_K*m_currentValueX);
+
+        if (m_positiveSlope) {
+            // Growth: f(x) = exp(k*x) / exp(k)
+            value = expf(EXPONENTIAL_K*m_currentValueX) / EXP_EXPONENTIAL_K;
+        } else {
+            // Decay: f(x) = 1 - exp(-k*x)
+            value = 1.0f - expf(-EXPONENTIAL_K*m_currentValueX);
+        }
         break;
     case Function::PARABOLIC :
         value = m_currentValueX*m_currentValueX;
@@ -122,15 +130,15 @@ T ParameterAutomation<T>::getNextValue()
         return m_endValue;
     }
 
-    float returnValue;
+
     if (m_positiveSlope) {
         returnValue = m_startValue + (m_scaleY*value);
     } else {
         returnValue = m_startValue - (m_scaleY*value);
     }
 //    Serial.println(String("Start/End values: ") + m_startValue + String(":") + m_endValue);
-//    Serial.print("Parameter m_currentValueX is "); Serial.println(m_currentValueX, 6);
-//    Serial.print("Parameter returnValue is "); Serial.println(returnValue, 6);
+    //Serial.print("Parameter m_currentValueX is "); Serial.println(m_currentValueX, 6);
+    //Serial.print("Parameter returnValue is "); Serial.println(returnValue, 6);
     return returnValue;
 }
 
@@ -169,7 +177,7 @@ ParameterAutomationSequence<T>::~ParameterAutomationSequence()
 template <class T>
 void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, size_t durationSamples, typename ParameterAutomation<T>::Function function)
 {
-    Serial.println("setupParameter() called");
+    Serial.println(String("setupParameter() called with samples: ") + durationSamples);
     m_paramArray[index]->reconfigure(startValue, endValue, durationSamples, function);
     m_currentIndex = 0;
 }
@@ -177,7 +185,7 @@ void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T e
 template <class T>
 void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, float durationMilliseconds, typename ParameterAutomation<T>::Function function)
 {
-    Serial.println("setupParameter() called");
+    Serial.print(String("setupParameter() called with time: ")); Serial.println(durationMilliseconds, 6);
     m_paramArray[index]->reconfigure(startValue, endValue, durationMilliseconds, function);
     m_currentIndex = 0;
 }
@@ -208,6 +216,7 @@ T ParameterAutomationSequence<T>::getNextValue()
 
             if (m_currentIndex >= m_numStages) {
                 // Last stage already finished
+                Serial.println("Last stage finished");
                 m_running = false;
                 m_currentIndex = 0;
             } else {
@@ -223,15 +232,7 @@ T ParameterAutomationSequence<T>::getNextValue()
 template <class T>
 bool ParameterAutomationSequence<T>::isFinished()
 {
-    bool finished = true;
-    for (int i=0; i<m_numStages; i++) {
-        if (!m_paramArray[i]->isFinished()) {
-            finished = false;
-            break;
-        }
-    }
-    m_running = !finished;
-    return finished;
+    return !m_running;
 }
 
 // Template instantiation

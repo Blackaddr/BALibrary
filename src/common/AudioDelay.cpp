@@ -97,6 +97,10 @@ audio_block_t* AudioDelay::getBlock(size_t index)
 
 size_t AudioDelay::getMaxDelaySamples()
 {
+    if (m_type == MemType::MEM_EXTERNAL) {
+        // update the max delay sample size
+        m_maxDelaySamples = (m_slot->size() / sizeof(int16_t)) - AUDIO_BLOCK_SAMPLES;
+    }
     return m_maxDelaySamples;
 }
 

@@ -38,6 +38,7 @@ public:
         BYPASS = 0,      ///< controls effect bypass
         GATE_TRIGGER,    ///< begins the gate sequence
         GATE_OPEN_TIME,  ///< controls how long it takes to open the gate
+        //GATE_HOLD_TIME,  ///< controls how long the gate stays open at unity
         GATE_CLOSE_TIME, ///< controls how long it takes to close the gate (release)
         FEEDBACK,        ///< controls the amount of feedback, more gives longer SOS sustain
         VOLUME,          ///< controls the output volume level
@@ -55,6 +56,8 @@ public:
     AudioEffectSOS(BAGuitar::ExtMemSlot *slot); // requires sufficiently sized pre-allocated memory
 
     virtual ~AudioEffectSOS(); ///< Destructor
+
+    void setGateLedGpio(int pinId);
 
     // *** PARAMETERS ***
     void gateOpenTime(float milliseconds);
@@ -118,6 +121,7 @@ private:
     audio_block_t *m_previousBlock = nullptr;
     audio_block_t *m_blockToRelease  = nullptr;
     size_t m_maxDelaySamples = 0;
+    int m_gateLedPinId = -1;
 
     // Controls
     int m_midiConfig[NUM_CONTROLS][2]; // stores the midi parameter mapping

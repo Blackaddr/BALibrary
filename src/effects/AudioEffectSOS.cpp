@@ -51,6 +51,12 @@ AudioEffectSOS::~AudioEffectSOS()
     if (m_memory) delete m_memory;
 }
 
+void AudioEffectSOS::setGateLedGpio(int pinId)
+{
+    m_gateLedPinId = pinId;
+    pinMode(static_cast<uint8_t>(m_gateLedPinId), OUTPUT);
+}
+
 void AudioEffectSOS::enable(void)
 {
     m_enable = true;
@@ -62,7 +68,7 @@ void AudioEffectSOS::enable(void)
     }
     m_delaySamples = m_maxDelaySamples;
     m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
-    m_inputGateAuto.setupParameter(GATE_HOLD_STAGE, 1.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::HOLD);
+    m_inputGateAuto.setupParameter(GATE_HOLD_STAGE, 1.0f, 1.0f, m_maxDelaySamples, ParameterAutomation<float>::Function::HOLD);
     m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
@@ -260,6 +266,15 @@ void AudioEffectSOS::m_preProcessing (audio_block_t *out, audio_block_t *input, 
 
     } else if (input) {
         memcpy(out->data, input->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
+    }
+
+    // Update the gate LED
+    if (m_gateLedPinId >= 0) {
+        if (m_inputGateAuto.isFinished()) {
+            digitalWriteFast(m_gateLedPinId, 0x0);
+        } else {
+            digitalWriteFast(m_gateLedPinId, 0x1);
+        }
     }
 }
 
