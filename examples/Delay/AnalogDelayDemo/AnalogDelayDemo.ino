@@ -2,7 +2,8 @@
 #include "BAGuitar.h"
 
 using namespace midi;
-using namespace BAGuitar;
+using namespace BAEffects;
+using namespace BALibrary;
 
 AudioInputI2S i2sIn;
 AudioOutputI2S i2sOut;

@@ -19,8 +19,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUITAR_BAAUDIOEFFECTSOS_H
-#define __BAGUITAR_BAAUDIOEFFECTSOS_H
+#ifndef __BAEFFECTS_BAAUDIOEFFECTSOS_H
+#define __BAEFFECTS_BAAUDIOEFFECTSOS_H
 
 #include <Audio.h>
 #include "LibBasicFunctions.h"
@@ -53,7 +53,7 @@ public:
     /// Construct an analog delay using external SPI via an ExtMemSlot. The amount of
     /// delay will be determined by the amount of memory in the slot.
     /// @param slot A pointer to the ExtMemSlot to use for the delay.
-    AudioEffectSOS(BAGuitar::ExtMemSlot *slot); // requires sufficiently sized pre-allocated memory
+    AudioEffectSOS(BALibrary::ExtMemSlot *slot); // requires sufficiently sized pre-allocated memory
 
     virtual ~AudioEffectSOS(); ///< Destructor
 
@@ -116,7 +116,7 @@ private:
     bool m_isOmni = false;
     bool m_bypass = true;
     bool m_enable = false;
-    BAGuitar::AudioDelay *m_memory = nullptr;
+    BALibrary::AudioDelay *m_memory = nullptr;
     bool m_externalMemory = true;
     audio_block_t *m_previousBlock = nullptr;
     audio_block_t *m_blockToRelease  = nullptr;
@@ -133,7 +133,7 @@ private:
 
     // Automated Controls
     BALibrary::ParameterAutomationSequence<float> m_inputGateAuto =
-            BALibrary::ParameterAutomationSequence<float>(3);
+    BALibrary::ParameterAutomationSequence<float>(3);
 
     // Private functions
     void m_preProcessing (audio_block_t *out, audio_block_t *input, audio_block_t *delayedSignal);
@@ -142,4 +142,4 @@ private:
 
 }
 
-#endif /* __BAGUITAR_BAAUDIOEFFECTANALOGDELAY_H */
+#endif /* __BAEFFECTS_BAAUDIOEFFECTSOS_H */

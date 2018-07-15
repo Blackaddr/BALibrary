@@ -22,10 +22,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUITAR__BAAUDIOCONTROLWM8731_H
-#define __BAGUITAR__BAAUDIOCONTROLWM8731_H
+#ifndef __BALIBRARY_BAAUDIOCONTROLWM8731_H
+#define __BALIBRARY_BAAUDIOCONTROLWM8731_H
 
-namespace BAGuitar {
+namespace BALibrary {
 
 constexpr int WM8731_NUM_REGS = 10; // Number of registers in the internal shadow array
 
@@ -126,6 +126,6 @@ private:
 
 };
 
-} /* namespace BAGuitar */
+} /* namespace BALibrary */
 
-#endif /* __BAGUITAR__BAAUDIOCONTROLWM8731_H */
+#endif /* __BALIBRARY_BAAUDIOCONTROLWM8731_H */

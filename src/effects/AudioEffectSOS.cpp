@@ -8,7 +8,6 @@
 #include "AudioEffectSOS.h"
 #include "LibBasicFunctions.h"
 
-using namespace BAGuitar;
 using namespace BALibrary;
 
 namespace BAEffects {

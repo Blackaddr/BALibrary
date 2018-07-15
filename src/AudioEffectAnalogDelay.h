@@ -22,13 +22,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUITAR_BAAUDIOEFFECTANALOGDELAY_H
-#define __BAGUITAR_BAAUDIOEFFECTANALOGDELAY_H
+#ifndef __BAEFFECTS_BAAUDIOEFFECTANALOGDELAY_H
+#define __BAEFFECTS_BAAUDIOEFFECTANALOGDELAY_H
 
 #include <Audio.h>
 #include "LibBasicFunctions.h"
 
-namespace BAGuitar {
+namespace BAEffects {
 
 /**************************************************************************//**
  * AudioEffectAnalogDelay models BBD based analog delays. It provides controls
@@ -72,7 +72,7 @@ public:
 	/// Construct an analog delay using external SPI via an ExtMemSlot. The amount of
 	/// delay will be determined by the amount of memory in the slot.
 	/// @param slot A pointer to the ExtMemSlot to use for the delay.
-	AudioEffectAnalogDelay(ExtMemSlot *slot); // requires sufficiently sized pre-allocated memory
+	AudioEffectAnalogDelay(BALibrary::ExtMemSlot *slot); // requires sufficiently sized pre-allocated memory
 
 	virtual ~AudioEffectAnalogDelay(); ///< Destructor
 
@@ -163,11 +163,11 @@ private:
 	bool m_bypass = true;
 	bool m_enable = false;
 	bool m_externalMemory = false;
-	AudioDelay *m_memory = nullptr;
+	BALibrary::AudioDelay *m_memory = nullptr;
 	size_t m_maxDelaySamples = 0;
 	audio_block_t *m_previousBlock = nullptr;
 	audio_block_t *m_blockToRelease  = nullptr;
-	IirBiQuadFilterHQ *m_iir = nullptr;
+	BALibrary::IirBiQuadFilterHQ *m_iir = nullptr;
 
 	// Controls
 	int m_midiConfig[NUM_CONTROLS][2]; // stores the midi parameter mapping
@@ -185,4 +185,4 @@ private:
 
 }
 
-#endif /* __BAGUITAR_BAAUDIOEFFECTANALOGDELAY_H */
+#endif /* __BAEFFECTS_BAAUDIOEFFECTANALOGDELAY_H */

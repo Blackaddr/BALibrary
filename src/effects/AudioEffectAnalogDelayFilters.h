@@ -21,7 +21,7 @@
  *****************************************************************************/
 #include <cstdint>
 
-namespace BAGuitar {
+namespace BAEffects {
 
 // The number of stages in the analog-response Biquad filter
 constexpr unsigned MAX_NUM_FILTER_STAGES = 4;

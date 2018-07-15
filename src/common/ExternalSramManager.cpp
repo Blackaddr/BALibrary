@@ -23,13 +23,13 @@
 #include "Audio.h"
 #include "LibMemoryManagement.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 /////////////////////////////////////////////////////////////////////////////
 // EXTERNAL SRAM MANAGER
 /////////////////////////////////////////////////////////////////////////////
 bool ExternalSramManager::m_configured = false;
-MemConfig ExternalSramManager::m_memConfig[BAGuitar::NUM_MEM_SLOTS];
+MemConfig ExternalSramManager::m_memConfig[BALibrary::NUM_MEM_SLOTS];
 
 
 ExternalSramManager::ExternalSramManager(unsigned numMemories)
@@ -60,19 +60,19 @@ ExternalSramManager::~ExternalSramManager()
 	}
 }
 
-size_t ExternalSramManager::availableMemory(BAGuitar::MemSelect mem)
+size_t ExternalSramManager::availableMemory(BALibrary::MemSelect mem)
 {
 	return m_memConfig[mem].totalAvailable;
 }
 
-bool ExternalSramManager::requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem, bool useDma)
+bool ExternalSramManager::requestMemory(ExtMemSlot *slot, float delayMilliseconds, BALibrary::MemSelect mem, bool useDma)
 {
 	// convert the time to numer of samples
 	size_t delayLengthInt = (size_t)((delayMilliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f);
 	return requestMemory(slot, delayLengthInt * sizeof(int16_t), mem, useDma);
 }
 
-bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem, bool useDma)
+bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALibrary::MemSelect mem, bool useDma)
 {
 
 	if (m_memConfig[mem].totalAvailable >= sizeBytes) {
@@ -86,10 +86,10 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGu
 
 		if (!m_memConfig[mem].m_spi) {
 		    if (useDma) {
-		        m_memConfig[mem].m_spi = new BAGuitar::BASpiMemoryDMA(static_cast<BAGuitar::SpiDeviceId>(mem));
+		        m_memConfig[mem].m_spi = new BALibrary::BASpiMemoryDMA(static_cast<BALibrary::SpiDeviceId>(mem));
 		        slot->m_useDma = true;
 		    } else {
-		        m_memConfig[mem].m_spi = new BAGuitar::BASpiMemory(static_cast<BAGuitar::SpiDeviceId>(mem));
+		        m_memConfig[mem].m_spi = new BALibrary::BASpiMemory(static_cast<BALibrary::SpiDeviceId>(mem));
 		        slot->m_useDma = false;
 		    }
 			if (!m_memConfig[mem].m_spi) {

@@ -23,7 +23,8 @@
 MIDI_CREATE_DEFAULT_INSTANCE();
 using namespace midi;
 
-using namespace BAGuitar;
+using namespace BALibrary;
+using namespace BAEffects;
 
 AudioInputI2S            i2sIn;
 AudioOutputI2S           i2sOut;

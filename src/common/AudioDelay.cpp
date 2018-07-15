@@ -21,7 +21,7 @@
 #include "Audio.h"
 #include "LibBasicFunctions.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 ////////////////////////////////////////////////////
 // AudioDelay

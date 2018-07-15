@@ -23,7 +23,7 @@
 #include "Audio.h"
 #include "LibMemoryManagement.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 /////////////////////////////////////////////////////////////////////////////
 // MEM SLOT

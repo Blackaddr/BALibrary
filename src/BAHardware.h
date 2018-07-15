@@ -20,15 +20,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUTIAR_BAHARDWARE_H
-#define __BAGUTIAR_BAHARDWARE_H
+#ifndef __BALIBRARY_BAHARDWARE_H
+#define __BALIBRARY_BAHARDWARE_H
 
 #include <cstdint>
 
 /**************************************************************************//**
  * BAGuitar is a namespace/Library for Guitar processing from Blackaddr Audio.
  *****************************************************************************/
-namespace BAGuitar {
+namespace BALibrary {
 
 // uncomment the line that corresponds to your hardware
 #define TGA_PRO_REVA
@@ -93,7 +93,7 @@ constexpr size_t SPI_MEM1_MAX_AUDIO_SAMPLES = SPI_MEM1_SIZE_BYTES/sizeof(int16_t
 
 #endif
 
-} // namespace BAGuitar
+} // namespace BALibrary
 
 
-#endif /* __BAGUTIAR_BAHARDWARE_H */
+#endif /* __BALIBRARY_BAHARDWARE_H */

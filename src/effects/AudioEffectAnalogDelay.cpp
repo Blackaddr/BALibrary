@@ -8,7 +8,9 @@
 #include "AudioEffectAnalogDelayFilters.h"
 #include "AudioEffectAnalogDelay.h"
 
-namespace BAGuitar {
+using namespace BALibrary;
+
+namespace BAEffects {
 
 constexpr int MIDI_CHANNEL = 0;
 constexpr int MIDI_CONTROL = 1;

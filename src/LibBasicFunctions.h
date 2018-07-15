@@ -30,10 +30,10 @@
 #include "BATypes.h"
 #include "LibMemoryManagement.h"
 
-#ifndef __BAGUITAR_LIBBASICFUNCTIONS_H
-#define __BAGUITAR_LIBBASICFUNCTIONS_H
+#ifndef __BALIBRARY_LIBBASICFUNCTIONS_H
+#define __BALIBRARY_LIBBASICFUNCTIONS_H
 
-namespace BAGuitar {
+namespace BALibrary {
 
 /**************************************************************************//**
  * QueuePosition is used for storing the index (in an array of queues) and the
@@ -134,7 +134,7 @@ public:
     /// @param maxDelayTimeMs max length of time you want in the buffer specified in milliseconds
     AudioDelay(float maxDelayTimeMs);
 
-    /// Construct an audio buffer using a slot configured with the BAGuitar::ExternalSramManager
+    /// Construct an audio buffer using a slot configured with the BALibrary::ExternalSramManager
     /// @param slot a pointer to the slot representing the memory you wish to use for the buffer.
     AudioDelay(ExtMemSlot *slot);
 
@@ -312,7 +312,7 @@ private:
 
 };
 
-} // namespace BAGuitar
+} // namespace BALibrary
 
 namespace BALibrary {
 
@@ -399,4 +399,4 @@ private:
 } // BALibrary
 
 
-#endif /* __BAGUITAR_LIBBASICFUNCTIONS_H */
+#endif /* __BALIBRARY_LIBBASICFUNCTIONS_H */
