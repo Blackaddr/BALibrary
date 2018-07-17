@@ -40,6 +40,7 @@ public:
         GATE_OPEN_TIME,  ///< controls how long it takes to open the gate
         //GATE_HOLD_TIME,  ///< controls how long the gate stays open at unity
         GATE_CLOSE_TIME, ///< controls how long it takes to close the gate (release)
+        CLEAR_FEEDBACK_TRIGGER, ///< begins the sequence to clear out the looping feedback
         FEEDBACK,        ///< controls the amount of feedback, more gives longer SOS sustain
         VOLUME,          ///< controls the output volume level
         NUM_CONTROLS     ///< this can be used as an alias for the number of MIDI controls
@@ -132,8 +133,8 @@ private:
     float m_volume = 1.0f;
 
     // Automated Controls
-    BALibrary::ParameterAutomationSequence<float> m_inputGateAuto =
-    BALibrary::ParameterAutomationSequence<float>(3);
+    BALibrary::ParameterAutomationSequence<float> m_inputGateAuto     = BALibrary::ParameterAutomationSequence<float>(3);
+    BALibrary::ParameterAutomationSequence<float> m_clearFeedbackAuto = BALibrary::ParameterAutomationSequence<float>(3);
 
     // Private functions
     void m_preProcessing (audio_block_t *out, audio_block_t *input, audio_block_t *delayedSignal);

@@ -16,7 +16,7 @@ constexpr int MIDI_CHANNEL = 0;
 constexpr int MIDI_CONTROL = 1;
 
 constexpr float MAX_GATE_OPEN_TIME_MS = 3000.0f;
-constexpr float MAX_GATE_CLOSE_TIME_MS = 3000.0f;
+constexpr float MAX_GATE_CLOSE_TIME_MS = 1000.0f;
 
 constexpr int GATE_OPEN_STAGE = 0;
 constexpr int GATE_HOLD_STAGE = 1;
@@ -69,6 +69,10 @@ void AudioEffectSOS::enable(void)
     m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
     m_inputGateAuto.setupParameter(GATE_HOLD_STAGE, 1.0f, 1.0f, m_maxDelaySamples, ParameterAutomation<float>::Function::HOLD);
     m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
+
+    m_clearFeedbackAuto.setupParameter(GATE_OPEN_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
+    m_clearFeedbackAuto.setupParameter(GATE_HOLD_STAGE, 0.0f, 0.0f, m_maxDelaySamples, ParameterAutomation<float>::Function::HOLD);
+    m_clearFeedbackAuto.setupParameter(GATE_CLOSE_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 void AudioEffectSOS::update(void)
@@ -172,12 +176,14 @@ void AudioEffectSOS::gateOpenTime(float milliseconds)
     // TODO - change the paramter automation to an automation sequence
     m_openTimeMs = milliseconds;
     m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, m_openTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
+    //m_clearFeedbackAuto.setupParameter(GATE_OPEN_STAGE, 1.0f, 0.0f, m_openTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 void AudioEffectSOS::gateCloseTime(float milliseconds)
 {
     m_closeTimeMs = milliseconds;
     m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, m_closeTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
+    //m_clearFeedbackAuto.setupParameter(GATE_CLOSE_STAGE, 0.0f, 1.0f, m_closeTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -230,9 +236,17 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
 
     if ((m_midiConfig[GATE_TRIGGER][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[GATE_TRIGGER][MIDI_CONTROL] == control)) {
-        // The gate is trigged by any value
+        // The gate is triggered by any value
         Serial.println(String("AudioEffectSOS::Gate Triggered!"));
         m_inputGateAuto.trigger();
+        return;
+    }
+
+    if ((m_midiConfig[CLEAR_FEEDBACK_TRIGGER][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[CLEAR_FEEDBACK_TRIGGER][MIDI_CONTROL] == control)) {
+        // The gate is triggered by any value
+        Serial.println(String("AudioEffectSOS::Clear feedback Triggered!"));
+        m_clearFeedbackAuto.trigger();
         return;
     }
 }
@@ -254,13 +268,14 @@ void AudioEffectSOS::m_preProcessing (audio_block_t *out, audio_block_t *input, 
     if ( out && input && delayedSignal) {
         // Multiply the input signal by the automated gate value
         // Multiply the delayed signal by the user set feedback value
+        // Then combine the two
 
-        float gateVol = m_inputGateAuto.getNextValue();
-
-        //float gateVol = 1.0f;
+        float gateVol     = m_inputGateAuto.getNextValue();
+        float feedbackAdjust = m_clearFeedbackAuto.getNextValue();
         audio_block_t tempAudioBuffer;
+
         gainAdjust(out, input, gateVol, 0); // last paremeter is coeff shift, 0 bits
-        gainAdjust(&tempAudioBuffer, delayedSignal, m_feedback, 0); // last parameter is coeff shift, 0 bits
+        gainAdjust(&tempAudioBuffer, delayedSignal, m_feedback*feedbackAdjust, 0); // last parameter is coeff shift, 0 bits
         combine(out, out, &tempAudioBuffer);
 
     } else if (input) {
@@ -269,7 +284,7 @@ void AudioEffectSOS::m_preProcessing (audio_block_t *out, audio_block_t *input, 
 
     // Update the gate LED
     if (m_gateLedPinId >= 0) {
-        if (m_inputGateAuto.isFinished()) {
+        if (m_inputGateAuto.isFinished() && m_clearFeedbackAuto.isFinished()) {
             digitalWriteFast(m_gateLedPinId, 0x0);
         } else {
             digitalWriteFast(m_gateLedPinId, 0x1);
