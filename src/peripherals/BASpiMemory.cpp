@@ -21,7 +21,7 @@
 #include "Arduino.h"
 #include "BASpiMemory.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 // MEM0 Settings
 constexpr int SPI_CS_MEM0 = 15;
@@ -468,4 +468,4 @@ bool BASpiMemoryDMA::isReadBusy(void) const
 	return (m_rxTransfer[0].busy() or m_rxTransfer[1].busy());
 }
 
-} /* namespace BAGuitar */
+} /* namespace BALibrary */

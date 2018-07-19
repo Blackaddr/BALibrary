@@ -30,10 +30,10 @@
 #include "BATypes.h"
 #include "LibMemoryManagement.h"
 
-#ifndef __BAGUITAR_LIBBASICFUNCTIONS_H
-#define __BAGUITAR_LIBBASICFUNCTIONS_H
+#ifndef __BALIBRARY_LIBBASICFUNCTIONS_H
+#define __BALIBRARY_LIBBASICFUNCTIONS_H
 
-namespace BAGuitar {
+namespace BALibrary {
 
 /**************************************************************************//**
  * QueuePosition is used for storing the index (in an array of queues) and the
@@ -92,9 +92,15 @@ void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, floa
 /// @param out pointer to output audio block
 /// @param in  pointer to input audio block
 /// @param vol volume cofficient between -1.0 and +1.0
-/// @param coeffShift number of bits to shiftt the coefficient
+/// @param coeffShift number of bits to shift the coefficient
 void gainAdjust(audio_block_t *out, audio_block_t *in, float vol, int coeffShift = 0);
 
+/// Combine two audio blocks through vector addition
+/// out[n] = in0[n] + in1[n]
+/// @param out pointer to output audio block
+/// @param in0 pointer to first input audio block to combine
+/// @param in1 pointer to second input audio block to combine
+void combine(audio_block_t *out, audio_block_t *in0, audio_block_t *in1);
 
 template <class T>
 class RingBuffer; // forward declare so AudioDelay can use it.
@@ -128,7 +134,7 @@ public:
     /// @param maxDelayTimeMs max length of time you want in the buffer specified in milliseconds
     AudioDelay(float maxDelayTimeMs);
 
-    /// Construct an audio buffer using a slot configured with the BAGuitar::ExternalSramManager
+    /// Construct an audio buffer using a slot configured with the BALibrary::ExternalSramManager
     /// @param slot a pointer to the slot representing the memory you wish to use for the buffer.
     AudioDelay(ExtMemSlot *slot);
 
@@ -147,6 +153,12 @@ public:
     /// @returns a pointer to the requested audio_block_t
     audio_block_t *getBlock(size_t index);
 
+    /// Returns the max possible delay samples. For INTERNAL memory, the delay can be equal to
+    /// the full maxValue specified. For EXTERNAL memory, the max delay is actually one audio
+    /// block less then the full size to prevent wrapping.
+    /// @returns the maximum delay offset in units of samples.
+    size_t getMaxDelaySamples();
+
     /// Retrieve an audio block (or samples) from the buffer.
     /// @details when using INTERNAL memory, only supported size is AUDIO_BLOCK_SAMPLES. When using
     /// EXTERNAL, a size smaller than AUDIO_BLOCK_SAMPLES can be requested.
@@ -160,6 +172,8 @@ public:
     /// with the buffer.
     /// @returns pointer to the underlying ExtMemSlot.
     ExtMemSlot *getSlot() const { return m_slot; }
+
+
 
     /// Ween using INTERNAL memory, thsi function can return a pointer to the underlying RingBuffer that contains
     /// audio_block_t * pointers.
@@ -177,6 +191,7 @@ private:
     MemType m_type;                                      ///< when 0, INTERNAL memory, when 1, external MEMORY.
     RingBuffer<audio_block_t *> *m_ringBuffer = nullptr; ///< When using INTERNAL memory, a RingBuffer will be created.
     ExtMemSlot *m_slot = nullptr;                        ///< When using EXTERNAL memory, an ExtMemSlot must be provided.
+    size_t m_maxDelaySamples = 0;                             ///< stores the number of audio samples in the AudioDelay.
 };
 
 /**************************************************************************//**
@@ -246,7 +261,7 @@ public:
 
     /// Process the data using the configured IIR filter
     /// @details output and input can be the same pointer if in-place modification is desired
-    /// @param output pointer to where the output results will be written
+    /// @param output poinvoid combine(audio_block_t *out, audio_block_t *in0, audio_block_t *in1)ter to where the output results will be written
     /// @param input pointer to where the input data will be read from
     /// @param numSampmles number of samples to process
 	bool process(int16_t *output, int16_t *input, size_t numSamples);
@@ -297,7 +312,91 @@ private:
 
 };
 
-}
+} // namespace BALibrary
+
+namespace BALibrary {
+
+/**************************************************************************//**
+ * The class will automate a parameter using a trigger from a start value to an
+ * end value, using either a preprogrammed function or a user-provided LUT.
+ *****************************************************************************/
+template <typename T>
+class ParameterAutomation
+{
+public:
+    enum class Function : unsigned {
+        NOT_CONFIGURED = 0, ///< Initial, unconfigured stage
+        HOLD,         ///< f(x) = constant
+        LINEAR,       ///< f(x) = x
+        EXPONENTIAL,  ///< f(x) = exp(-k*x)
+        LOGARITHMIC,  ///< f(x) =
+        PARABOLIC,    ///< f(x) = x^2
+        LOOKUP_TABLE  ///< f(x) = lut(x)
+    };
+    ParameterAutomation();
+    ParameterAutomation(T startValue, T endValue, size_t durationSamples,     Function function = Function::LINEAR);
+    ParameterAutomation(T startValue, T endValue, float durationMilliseconds, Function function = Function::LINEAR);
+    virtual ~ParameterAutomation();
+
+    /// set the start and end values for the automation
+    /// @param function select which automation curve (function) to use
+    /// @param startValue after reset, parameter automation start from this value
+    /// @param endValue after the automation duration, paramter will finish at this value
+    /// @param durationSamples number of samples to transition from startValue to endValue
+    void reconfigure(T startValue, T endValue, size_t durationSamples,     Function function = Function::LINEAR);
+    void reconfigure(T startValue, T endValue, float durationMilliseconds, Function function = Function::LINEAR);
+
+    /// Start the automation from startValue
+    void trigger();
+
+    /// Retrieve the next calculated automation value
+    /// @returns the calculated parameter value of templated type T
+    T getNextValue();
+
+    bool isFinished() { return !m_running; }
+
+private:
+    Function m_function;
+    T m_startValue;
+    T m_endValue;
+    bool m_running = false;
+    float m_currentValueX; ///< the current value of x in f(x)
+    size_t m_duration;
+    //float m_coeffs[3]; ///< some general coefficient storage
+    float m_slopeX;
+    float m_scaleY;
+    bool m_positiveSlope = true;
+};
 
 
-#endif /* __BAGUITAR_LIBBASICFUNCTIONS_H */
+// TODO: initialize with const number of sequences with null type that automatically skips
+// then register each new sequence.
+constexpr int MAX_PARAMETER_SEQUENCES = 32;
+template <typename T>
+class ParameterAutomationSequence
+{
+public:
+    ParameterAutomationSequence() = delete;
+    ParameterAutomationSequence(int numStages);
+    virtual ~ParameterAutomationSequence();
+
+    void setupParameter(int index, T startValue, T endValue, size_t durationSamples,     typename ParameterAutomation<T>::Function function);
+    void setupParameter(int index, T startValue, T endValue, float durationMilliseconds, typename ParameterAutomation<T>::Function function);
+
+    /// Trigger a the automation sequence until numStages is reached or a Function is ParameterAutomation<T>::Function::NOT_CONFIGURED
+    void trigger();
+
+    T getNextValue();
+    bool isFinished();
+
+private:
+    ParameterAutomation<T> *m_paramArray[MAX_PARAMETER_SEQUENCES];
+    int m_currentIndex = 0;
+    int m_numStages = 0;
+    bool m_running = false;
+};
+
+} // BALibrary
+
+
+#endif /* __BALIBRARY_LIBBASICFUNCTIONS_H */

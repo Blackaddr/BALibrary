@@ -20,7 +20,9 @@
 
 #include "BAAudioEffectDelayExternal.h"
 
-namespace BAGuitar {
+using namespace BALibrary;
+
+namespace BAEffects {
 
 #define SPISETTING SPISettings(20000000, MSBFIRST, SPI_MODE0)
 
@@ -49,7 +51,7 @@ BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(MemSelect mem)
 	initialize(mem);
 }
 
-BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(BAGuitar::MemSelect type, float delayLengthMs)
+BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(BALibrary::MemSelect type, float delayLengthMs)
 : AudioStream(1, m_inputQueueArray)
 {
 	unsigned delayLengthInt = (delayLengthMs*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f;
@@ -289,4 +291,4 @@ inline void BAAudioEffectDelayExternal::m_stopUsingSPI(int spiBus) {
 #endif
 
 
-} /* namespace BAGuitar */
+} /* namespace BAEffects */

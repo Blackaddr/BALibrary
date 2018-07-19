@@ -14,7 +14,8 @@
 #include <MIDI.h>
 #include "BAGuitar.h"
 
-using namespace BAGuitar;
+using namespace BAEffects;
+using namespace BALibrary;
 
 BAAudioControlWM8731      codecControl;
 

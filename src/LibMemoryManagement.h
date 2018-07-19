@@ -26,15 +26,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUITAR_LIBMEMORYMANAGEMENT_H
-#define __BAGUITAR_LIBMEMORYMANAGEMENT_H
+#ifndef __BALIBRARY_LIBMEMORYMANAGEMENT_H
+#define __BALIBRARY_LIBMEMORYMANAGEMENT_H
 
 #include <cstddef>
 
 #include "BAHardware.h"
 #include "BASpiMemory.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 /**************************************************************************//**
  * MemConfig contains the configuration information associated with a particular
@@ -182,7 +182,7 @@ public:
 	/// @details note that currently, memory cannot be allocated.
 	/// @param mem specifies which memory to query, default is memory 0
 	/// @returns the available memory in bytes
-	size_t availableMemory(BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0);
+	size_t availableMemory(BALibrary::MemSelect mem = BALibrary::MemSelect::MEM0);
 
 	/// Request memory be allocated for the provided slot
 	/// @param slot a pointer to the global slot object to which memory will be allocated
@@ -190,7 +190,7 @@ public:
 	/// @param mem specify which external memory to allocate from
 	/// @param useDma when true, DMA is used for SPI port, else transfers block until complete
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = false);
+	bool requestMemory(ExtMemSlot *slot, float delayMilliseconds, BALibrary::MemSelect mem = BALibrary::MemSelect::MEM0, bool useDma = false);
 
 	/// Request memory be allocated for the provided slot
 	/// @param slot a pointer to the global slot object to which memory will be allocated
@@ -198,15 +198,15 @@ public:
 	/// @param mem specify which external memory to allocate from
     /// @param useDma when true, DMA is used for SPI port, else transfers block until complete
 	/// @returns true on success, otherwise false on error
-	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BAGuitar::MemSelect mem = BAGuitar::MemSelect::MEM0, bool useDma = false);
+	bool requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALibrary::MemSelect mem = BALibrary::MemSelect::MEM0, bool useDma = false);
 
 private:
 	static bool m_configured; ///< there should only be one instance of ExternalSramManager in the whole project
-	static MemConfig m_memConfig[BAGuitar::NUM_MEM_SLOTS]; ///< store the configuration information for each external memory
+	static MemConfig m_memConfig[BALibrary::NUM_MEM_SLOTS]; ///< store the configuration information for each external memory
 
 };
 
 
-}
+} // BALibrary
 
-#endif /* __LIBMEMORYMANAGEMENT_H */
+#endif /* __BALIBRARY_LIBMEMORYMANAGEMENT_H */

@@ -21,7 +21,8 @@ using namespace midi;
 
 //#define ENABLE_MEM_TEST // uncomment this line and 'Save As' to a new location to test the SPI memory
 
-using namespace BAGuitar;
+using namespace BALibrary;
+using namespace BAEffects;
 
 AudioInputI2S            i2sIn;
 AudioOutputI2S           i2sOut;

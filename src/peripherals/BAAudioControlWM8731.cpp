@@ -21,7 +21,7 @@
 #include <Wire.h>
 #include "BAAudioControlWM8731.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 // use const instead of define for proper scoping
 constexpr int WM8731_I2C_ADDR = 0x1A;
@@ -341,4 +341,4 @@ bool BAAudioControlWM8731::write(unsigned int reg, unsigned int val)
 	return true;
 }
 
-} /* namespace BAGuitar */
+} /* namespace BALibrary */

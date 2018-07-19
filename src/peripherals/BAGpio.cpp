@@ -21,7 +21,7 @@
 #include "Arduino.h"
 #include "BAGpio.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 BAGpio::BAGpio()
 {
@@ -85,4 +85,4 @@ int BAGpio::toggleLed()
 }
 
 
-} /* namespace BAGuitar */
+} /* namespace BALibrary */

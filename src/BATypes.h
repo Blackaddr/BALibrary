@@ -19,10 +19,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUITAR_BATYPES_H
-#define __BAGUITAR_BATYPES_H
+#ifndef __BALIBRARY_BATYPES_H
+#define __BALIBRARY_BATYPES_H
 
-namespace BAGuitar {
+namespace BALibrary {
 
 #define UNUSED(x) (void)(x)
 
@@ -152,7 +152,7 @@ private:
     const size_t m_maxSize; ///< maximum size of the queue
 };
 
-} // BAGuitar
+} // BALibrary
 
 
-#endif /* __BAGUITAR_BATYPES_H */
+#endif /* __BALIBRARY_BATYPES_H */

@@ -20,12 +20,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUITAR_BAGPIO_H
-#define __BAGUITAR_BAGPIO_H
+#ifndef __BALIBRARY_BAGPIO_H
+#define __BALIBRARY_BAGPIO_H
 
 #include "BAHardware.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 /**************************************************************************//**
  * BAGpio provides a convince class to easily control the direction and state
@@ -71,6 +71,6 @@ private:
 	uint8_t m_ledState;
 };
 
-} /* namespace BAGuitar */
+} /* namespace BALibrary */
 
-#endif /* __BAGUITAR_BAGPIO_H */
+#endif /* __BALIBRARY_BAGPIO_H */

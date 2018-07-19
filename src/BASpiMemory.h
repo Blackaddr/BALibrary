@@ -20,8 +20,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
-#ifndef __BAGUITAR_BASPIMEMORY_H
-#define __BAGUITAR_BASPIMEMORY_H
+#ifndef __BALIBRARY_BASPIMEMORY_H
+#define __BALIBRARY_BASPIMEMORY_H
 
 #include <SPI.h>
 #include <DmaSpi.h>
@@ -29,7 +29,7 @@
 #include "BATypes.h"
 #include "BAHardware.h"
 
-namespace BAGuitar {
+namespace BALibrary {
 
 /**************************************************************************//**
  *  This wrapper class uses the Arduino SPI (Wire) library to access the SPI ram.
@@ -139,35 +139,41 @@ public:
 	/// initialize and configure the SPI peripheral
 	void begin() override;
 
-	/// Write a block of 8-bit data to the specified address
+	/// Write a block of 8-bit data to the specified address. Be check
+    /// isWriteBusy() before sending the next DMA transfer.
 	/// @param address the address in the SPI RAM to write to
 	/// @param src pointer to the source data block
 	/// @param numBytes size of the data block in bytes
 	void write(size_t address, uint8_t *src, size_t numBytes) override;
 
-	/// Write a block of zeros to the specified address
+	/// Write a block of zeros to the specified address. Be check
+    /// isWriteBusy() before sending the next DMA transfer.
 	/// @param address the address in the SPI RAM to write to
 	/// @param numBytes size of the data block in bytes
 	void zero(size_t address, size_t numBytes) override;
 
-	/// Write a block of 16-bit data to the specified address
+	/// Write a block of 16-bit data to the specified address. Be check
+	/// isWriteBusy() before sending the next DMA transfer.
 	/// @param address the address in the SPI RAM to write to
 	/// @param src pointer to the source data block
 	/// @param numWords size of the data block in 16-bit words
 	void write16(size_t address, uint16_t *src, size_t numWords) override;
 
-	/// Write a block of 16-bit zeros to the specified address
+	/// Write a block of 16-bit zeros to the specified address. Be check
+    /// isWriteBusy() before sending the next DMA transfer.
 	/// @param address the address in the SPI RAM to write to
 	/// @param numWords size of the data block in 16-bit words
 	void zero16(size_t address, size_t numWords) override;
 
-	/// Read a block of 8-bit data from the specified address
+	/// Read a block of 8-bit data from the specified address. Be check
+    /// isReadBusy() before sending the next DMA transfer.
 	/// @param address the address in the SPI RAM to write to
 	/// @param dest pointer to the destination
 	/// @param numBytes size of the data block in bytes
 	void read(size_t address, uint8_t *dest, size_t numBytes) override;
 
-	/// read a block 16-bit data word from the specified address
+	/// read a block 16-bit data word from the specified address. Be check
+    /// isReadBusy() before sending the next DMA transfer.
 	/// @param address the address in the SPI RAM to read from
 	/// @param dest the pointer to the destination
 	/// @param numWords the number of 16-bit words to transfer
@@ -210,6 +216,6 @@ private:
 };
 
 
-} /* namespace BAGuitar */
+} /* namespace BALibrary */
 
-#endif /* __BAGUITAR_BASPIMEMORY_H */
+#endif /* __BALIBRARY_BASPIMEMORY_H */

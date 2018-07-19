@@ -20,15 +20,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BAGUTIAR_BAHARDWARE_H
-#define __BAGUTIAR_BAHARDWARE_H
+#ifndef __BALIBRARY_BAHARDWARE_H
+#define __BALIBRARY_BAHARDWARE_H
 
 #include <cstdint>
 
 /**************************************************************************//**
  * BAGuitar is a namespace/Library for Guitar processing from Blackaddr Audio.
  *****************************************************************************/
-namespace BAGuitar {
+namespace BALibrary {
 
 // uncomment the line that corresponds to your hardware
 #define TGA_PRO_REVA
@@ -74,11 +74,17 @@ constexpr size_t MEM_MAX_ADDR[NUM_MEM_SLOTS] = { 131071, 131071 };
 /**************************************************************************//**
  * General Purpose SPI Interfaces
  *****************************************************************************/
-enum SpiDeviceId : unsigned {
+enum class SpiDeviceId : unsigned {
 	SPI_DEVICE0 = 0, ///< Arduino SPI device
 	SPI_DEVICE1 = 1  ///< Arduino SPI1 device
 };
 constexpr int SPI_MAX_ADDR = 131071; ///< Max address size per chip
+constexpr size_t SPI_MEM0_SIZE_BYTES = 131072;
+constexpr size_t SPI_MEM0_MAX_AUDIO_SAMPLES = SPI_MEM0_SIZE_BYTES/sizeof(int16_t);
+
+constexpr size_t SPI_MEM1_SIZE_BYTES = 131072;
+constexpr size_t SPI_MEM1_MAX_AUDIO_SAMPLES = SPI_MEM1_SIZE_BYTES/sizeof(int16_t);
+
 
 
 #else
@@ -87,7 +93,7 @@ constexpr int SPI_MAX_ADDR = 131071; ///< Max address size per chip
 
 #endif
 
-} // namespace BAGuitar
+} // namespace BALibrary
 
 
-#endif /* __BAGUTIAR_BAHARDWARE_H */
+#endif /* __BALIBRARY_BAHARDWARE_H */
