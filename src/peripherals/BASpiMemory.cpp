@@ -381,7 +381,7 @@ void BASpiMemoryDMA::write(size_t address, uint8_t *src, size_t numBytes)
 	uint8_t *srcPtr = src;
 	size_t nextAddress = address;
 	while (bytesRemaining > 0) {
-		m_txXferCount = min(bytesRemaining, MAX_DMA_XFER_SIZE);
+		m_txXferCount = min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE));
 		while ( m_txTransfer[1].busy()) {} // wait until not busy
 		m_setSpiCmdAddr(SPI_WRITE_CMD, nextAddress, m_txCommandBuffer);
 		m_txTransfer[1] = DmaSpi::Transfer(m_txCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
@@ -402,7 +402,7 @@ void BASpiMemoryDMA::zero(size_t address, size_t numBytes)
 	size_t bytesRemaining = numBytes;
 	size_t nextAddress = address;
 	while (bytesRemaining > 0) {
-		m_txXferCount = min(bytesRemaining, MAX_DMA_XFER_SIZE);
+		m_txXferCount = min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE));
 		while ( m_txTransfer[1].busy()) {} // wait until not busy
 		m_setSpiCmdAddr(SPI_WRITE_CMD, nextAddress, m_txCommandBuffer);
 		m_txTransfer[1] = DmaSpi::Transfer(m_txCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
@@ -440,7 +440,7 @@ void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 		m_rxTransfer[1] = DmaSpi::Transfer(m_rxCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
 		m_spiDma->registerTransfer(m_rxTransfer[1]);
 
-		m_rxXferCount = min(bytesRemaining, MAX_DMA_XFER_SIZE);
+		m_rxXferCount = min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE));
 		while ( m_rxTransfer[0].busy()) {}
 		m_rxTransfer[0] = DmaSpi::Transfer(nullptr, m_rxXferCount, destPtr, 0, m_cs, TransferType::NO_START_CS);
 		m_spiDma->registerTransfer(m_rxTransfer[0]);

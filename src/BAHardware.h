@@ -31,10 +31,12 @@
 namespace BALibrary {
 
 // uncomment the line that corresponds to your hardware
+//#define TGA_PRO_REVA
+#if (!defined(TGA_PRO_REVA) && !defined(TGA_PRO_REVB))
 #define TGA_PRO_REVA
-//#define TGA_PRO_REVB // does not exist yet
+#endif
 
-#ifdef TGA_PRO_REVA
+#if defined(TGA_PRO_REVA) || defined(TGA_PRO_REVB)
 
 constexpr uint8_t USR_LED_ID = 16; ///< Teensy IO number for the user LED.
 
@@ -91,6 +93,24 @@ constexpr size_t SPI_MEM1_MAX_AUDIO_SAMPLES = SPI_MEM1_SIZE_BYTES/sizeof(int16_t
 
 #error "No hardware declared"
 
+#endif
+
+#if defined (TGA_PRO_EXPAND_REV2)
+/**************************************************************************//**
+ * Blackaddr Audio Expansion Board
+ *****************************************************************************/
+constexpr unsigned BA_EXPAND_NUM_POT  = 3;
+constexpr unsigned BA_EXPAND_NUM_SW   = 2;
+constexpr unsigned BA_EXPAND_NUM_LED  = 2;
+constexpr unsigned BA_EXPAND_NUM_ENC  = 0;
+
+constexpr uint8_t BA_EXPAND_POT1_PIN = A16; // 35_A16_PWM
+constexpr uint8_t BA_EXPAND_POT2_PIN = A17; // 36_A17_PWM
+constexpr uint8_t BA_EXPAND_POT3_PIN = A18; // 37_SCL1_A18_PWM
+constexpr uint8_t BA_EXPAND_SW1_PIN  = 2;  // 2)PWM
+constexpr uint8_t BA_EXPAND_SW2_PIN  = 3;  // 3_SCL2_PWM
+constexpr uint8_t BA_EXPAND_LED1_PIN = 4;  // 4_SDA2_PWM
+constexpr uint8_t BA_EXPAND_LED2_PIN = 6;  // 6_PWM
 #endif
 
 } // namespace BALibrary

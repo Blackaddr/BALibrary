@@ -32,5 +32,6 @@
 #include "AudioEffectSOS.h"
 #include "LibBasicFunctions.h"
 #include "LibMemoryManagement.h"
+#include "BAPhysicalControls.h"
 
 #endif /* __BATGUITAR_H */
