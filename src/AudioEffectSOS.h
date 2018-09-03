@@ -75,6 +75,9 @@ public:
     /// Activate the gate automation. Input gate will open, then close.
     void trigger() { m_inputGateAuto.trigger(); }
 
+    /// Activate the delay clearing automation. Input signal will mute, gate will open, then close.
+    void clear() { m_clearFeedbackAuto.trigger(); }
+
     /// Set the output volume. This affect both the wet and dry signals.
     /// @details The default is 1.0.
     /// @param vol Sets the output volume between -1.0 and +1.0

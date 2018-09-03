@@ -177,11 +177,11 @@ void AudioEffectAnalogDelay::delay(float milliseconds)
 
 	if (!m_externalMemory) {
 		// internal memory
-		QueuePosition queuePosition = calcQueuePosition(milliseconds);
-		Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
+		//QueuePosition queuePosition = calcQueuePosition(milliseconds);
+		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	} else {
 		// external memory
-		Serial.println(String("CONFIG: delay:") + delaySamples);
+		//Serial.println(String("CONFIG: delay:") + delaySamples);
 		ExtMemSlot *slot = m_memory->getSlot();
 
 		if (!slot) { Serial.println("ERROR: slot ptr is not valid"); }
@@ -200,17 +200,43 @@ void AudioEffectAnalogDelay::delay(size_t delaySamples)
 
 	if (!m_externalMemory) {
 		// internal memory
-		QueuePosition queuePosition = calcQueuePosition(delaySamples);
-		Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
+		//QueuePosition queuePosition = calcQueuePosition(delaySamples);
+		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	} else {
 		// external memory
-		Serial.println(String("CONFIG: delay:") + delaySamples);
+		//Serial.println(String("CONFIG: delay:") + delaySamples);
 		ExtMemSlot *slot = m_memory->getSlot();
 		if (!slot->isEnabled()) {
 			slot->enable();
 		}
 	}
-	m_delaySamples= delaySamples;
+	m_delaySamples = delaySamples;
+}
+
+void AudioEffectAnalogDelay::delayFractionMax(float delayFraction)
+{
+	size_t delaySamples = static_cast<size_t>(static_cast<float>(m_memory->getMaxDelaySamples()) * delayFraction);
+
+	if (delaySamples > m_memory->getMaxDelaySamples()) {
+	    // this exceeds max delay value, limit it.
+	    delaySamples = m_memory->getMaxDelaySamples();
+	}
+
+	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
+
+	if (!m_externalMemory) {
+		// internal memory
+		//QueuePosition queuePosition = calcQueuePosition(delaySamples);
+		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
+	} else {
+		// external memory
+		//Serial.println(String("CONFIG: delay:") + delaySamples);
+		ExtMemSlot *slot = m_memory->getSlot();
+		if (!slot->isEnabled()) {
+			slot->enable();
+		}
+	}
+	m_delaySamples = delaySamples;
 }
 
 void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)

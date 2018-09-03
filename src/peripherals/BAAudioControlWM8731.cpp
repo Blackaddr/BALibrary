@@ -60,6 +60,26 @@ constexpr int WM8731_RIGHT_INPUT_MUTE_SHIFT = 7;
 constexpr int WM8731_LINK_RIGHT_LEFT_IN_ADDR = 1;
 constexpr int WM8731_LINK_RIGHT_LEFT_IN_MASK = 0x100;
 constexpr int WM8731_LINK_RIGHT_LEFT_IN_SHIFT = 8;
+// Register 2
+constexpr int WM8731_LEFT_HEADPHONE_VOL_ADDR = 2;
+constexpr int WM8731_LEFT_HEADPHONE_VOL_MASK = 0x7F;
+constexpr int WM8731_LEFT_HEADPHONE_VOL_SHIFT = 0;
+constexpr int WM8731_LEFT_HEADPHONE_ZCD_ADDR = 2;
+constexpr int WM8731_LEFT_HEADPHONE_ZCD_MASK = 0x80;
+constexpr int WM8731_LEFT_HEADPHONE_ZCD_SHIFT = 7;
+constexpr int WM8731_LEFT_HEADPHONE_LINK_ADDR = 2;
+constexpr int WM8731_LEFT_HEADPHONE_LINK_MASK = 0x100;
+constexpr int WM8731_LEFT_HEADPHONE_LINK_SHIFT = 8;
+// Register 3
+constexpr int WM8731_RIGHT_HEADPHONE_VOL_ADDR = 3;
+constexpr int WM8731_RIGHT_HEADPHONE_VOL_MASK = 0x7F;
+constexpr int WM8731_RIGHT_HEADPHONE_VOL_SHIFT = 0;
+constexpr int WM8731_RIGHT_HEADPHONE_ZCD_ADDR = 3;
+constexpr int WM8731_RIGHT_HEADPHONE_ZCD_MASK = 0x80;
+constexpr int WM8731_RIGHT_HEADPHONE_ZCD_SHIFT = 7;
+constexpr int WM8731_RIGHT_HEADPHONE_LINK_ADDR = 3;
+constexpr int WM8731_RIGHT_HEADPHONE_LINK_MASK = 0x100;
+constexpr int WM8731_RIGHT_HEADPHONE_LINK_SHIFT = 8;
 // Register 4
 constexpr int WM8731_ADC_BYPASS_ADDR = 4;
 constexpr int WM8731_ADC_BYPASS_MASK = 0x8;
@@ -157,11 +177,11 @@ void BAAudioControlWM8731::enable(void)
 	setRightInMute(false);
 	setDacMute(false); // unmute the DAC
 
-	// mute the headphone outputs
-	write(WM8731_REG_LHEADOUT, 0x00);      // volume off
-	regArray[WM8731_REG_LHEADOUT] = 0x00;
-	write(WM8731_REG_RHEADOUT, 0x00);
-	regArray[WM8731_REG_RHEADOUT] = 0x00;
+	// link, but mute the headphone outputs
+	regArray[WM8731_REG_LHEADOUT] = WM8731_LEFT_HEADPHONE_LINK_MASK;
+	write(WM8731_REG_LHEADOUT, regArray[WM8731_REG_LHEADOUT]);      // volume off
+	regArray[WM8731_REG_RHEADOUT] = WM8731_RIGHT_HEADPHONE_LINK_MASK;
+	write(WM8731_REG_RHEADOUT, regArray[WM8731_REG_RHEADOUT]);
 
 	/// Configure the audio interface
 	write(WM8731_REG_INTERFACE, 0x02); // I2S, 16 bit, MCLK slave
@@ -249,6 +269,25 @@ void BAAudioControlWM8731::setLeftRightSwap(bool val)
 		regArray[WM8731_LRSWAP_ADDR] &= ~WM8731_LRSWAP_MASK;
 	}
 	write(WM8731_LRSWAP_ADDR, regArray[WM8731_LRSWAP_ADDR]);
+}
+
+void BAAudioControlWM8731::setHeadphoneVolume(float volume)
+{
+	// the codec volume goes from 0x30 to 0x7F. Anything below 0x30 is mute.
+	// 0dB gain is 0x79. Total range is 0x50 (80) possible values.
+	unsigned vol;
+	constexpr unsigned RANGE = 80.0f;
+	if (volume < 0.0f) {
+		vol = 0;
+	} else if (volume > 1.0f) {
+		vol = 0x7f;
+	} else {
+		vol = 0x2f + static_cast<unsigned>(volume * RANGE);
+	}
+	regArray[WM8731_LEFT_HEADPHONE_VOL_ADDR] &= ~WM8731_LEFT_HEADPHONE_VOL_MASK; // clear the volume first
+	regArray[WM8731_LEFT_HEADPHONE_VOL_ADDR] |=
+			((vol << WM8731_LEFT_HEADPHONE_VOL_SHIFT) & WM8731_LEFT_HEADPHONE_VOL_MASK);
+	write(WM8731_LEFT_HEADPHONE_VOL_ADDR, regArray[WM8731_LEFT_HEADPHONE_VOL_ADDR]);
 }
 
 // Dac output mute control

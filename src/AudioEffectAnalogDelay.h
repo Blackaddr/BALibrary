@@ -86,10 +86,21 @@ public:
 	/// @param delaySamples the request delay in audio samples. Must be less than max delay.
 	void delay(size_t delaySamples);
 
+	/// Set the delay as a fraction of the maximum delay.
+	/// The value should be between 0.0f and 1.0f
+	void delayFractionMax(float delayFraction);
+
 	/// Bypass the effect.
 	/// @param byp when true, bypass wil disable the effect, when false, effect is enabled.
     /// Note that audio still passes through when bypass is enabled.
 	void bypass(bool byp) { m_bypass = byp; }
+
+	/// Get if the effect is bypassed
+	/// @returns true if bypassed, false if not bypassed
+	bool isBypass() { return m_bypass; }
+
+	/// Toggle the bypass effect
+	void toggleBypass() { m_bypass = !m_bypass; }
 
 	/// Set the amount of echo feedback (a.k.a regeneration).
 	/// @param feedback a floating point number between 0.0 and 1.0.

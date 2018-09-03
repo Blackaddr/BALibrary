@@ -4,7 +4,7 @@
  *  @company Blackaddr Audio
  *
  *  BAPhysicalControls is a general purpose class for handling an array of
- *  pots and switches.
+ *  pots, switches, rotary encoders and outputs (for LEDs or relays).
  *
  *  @copyright This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,58 +28,115 @@
 
 namespace BALibrary {
 
+constexpr bool SWAP_DIRECTION = true;    ///< Use when specifying direction should be swapped
+constexpr bool NOSWAP_DIRECTION = false; ///< Use when specifying direction should not be swapped
+
+/// Convenience class for handling a digital output with regard to setting and toggling stage
 class DigitalOutput {
 public:
+	DigitalOutput() = delete; // delete the default constructor
+
+	/// Construct an object to control the specified pin
+	/// @param pin the "Logical Arduino" pin number (not the physical pin number
 	DigitalOutput(uint8_t pin) : m_pin(pin) {}
+
+	/// Set the output value
+	/// @param val when zero output is low, otherwise output his high
 	void set(int val);
+
+	/// Toggle the output value current state
 	void toggle(void);
 
 private:
-	uint8_t m_pin;
-	int m_val = 0;
+	uint8_t m_pin; ///< store the pin associated with this output
+	int m_val = 0; ///< store the value to support toggling
 };
 
+/// Convenience class for handling an analog pot as a control. When calibrated,
+/// returns a float between 0.0 and 1.0.
 class Potentiometer {
 public:
+	/// Calibration data for a pot includes it's min and max value, as well as whether
+	/// direction should be swapped. Swapping depends on the physical orientation of the
+	/// pot.
 	struct Calib {
-		unsigned min;
-		unsigned max;
-		bool swap;
+		unsigned min; ///< The value from analogRead() when the pot is fully counter-clockwise (normal orientation)
+		unsigned max; ///< The value from analogRead() when the pot is fully clockwise (normal orientation)
+		bool swap;    ///< when orientation is such that fully clockwise would give max reading, swap changes it to the min
 	};
-	Potentiometer(uint8_t pin, unsigned minCalibration, unsigned maxCalibration)
-        : m_pin(pin), m_swapDirection(false), m_minCalibration(minCalibration), m_maxCalibration(maxCalibration) {}
 
-	Potentiometer(uint8_t pin, unsigned minCalibration, unsigned maxCalibration, bool swapDirection)
-        : m_pin(pin), m_swapDirection(swapDirection), m_minCalibration(minCalibration), m_maxCalibration(maxCalibration) {}
+	Potentiometer() = delete; // delete the default constructor
 
+	/// Construction requires the Arduino analog pin number, as well as calibration values.
+	/// @param analogPin The analog Arduino pin literal. This the number on the Teensy pinout preceeeded by an A in the local pin name. E.g. "A17".
+	/// @param minCalibration See Potentiometer::calibrate()
+	/// @param maxCalibration See Potentiometer::calibrate()
+	/// @param swapDirection Optional param. See Potentiometer::calibrate()
+	Potentiometer(uint8_t analogPin, unsigned minCalibration, unsigned maxCalibration, bool swapDirection = false)
+        : m_pin(analogPin), m_swapDirection(swapDirection), m_minCalibration(minCalibration), m_maxCalibration(maxCalibration) {}
+
+	/// Get new value from the pot.
+	/// @param value reference to a float, the new value will be written here. Value is between 0.0 and 1.0f.
+	/// @returns true if the value has changed, false if it has not
 	bool getValue(float &value);
+
+	/// Get the raw int value directly from analogRead()
+	/// @returns an integer between 0 and 1023.
 	int getRawValue();
+
+	/// Adjust the calibrate threshold. This is a factor that shrinks the calibration range slightly to
+	/// ensure the full range from 0.0f to 1.0f can be obtained.
+	/// @details temperature change can slightly alter the calibration values. This factor causes the value
+	/// to hit min or max just before the end of the pots travel to compensate.
+	/// @param thresholdFactor typical value is 0.01f to 0.05f
 	void adjustCalibrationThreshold(float thresholdFactor);
-	static Calib calibrate(uint8_t pin);
+
+	/// Set the amount of feedback in the IIR filter used to smooth the pot readings
+	/// @details actual filter reponse deptnds on the rate you call getValue()
+	/// @param filterValue typical values are 0.80f to 0.95f
+	void setFeedbackFitlerValue(float fitlerValue);
+
+	/// Call this static function before creating the object to obtain calibration data. The sequence
+	/// involves prompts over the Serial port.
+	/// @details E.g. call Potentiometer::calibrate(PIN). See BAExpansionCalibrate.ino in the library examples.
+	/// @param analogPin the Arduino analog pin number connected to the pot you wish to calibraate.
+	/// @returns populated Potentiometer::Calib structure
+	static Calib calibrate(uint8_t analogPin);
 
 private:
-    uint8_t m_pin;
-	bool m_swapDirection;
-	unsigned m_minCalibration;
-	unsigned m_maxCalibration;
-	unsigned m_lastValue = 0;
-	unsigned m_lastValue2 = 0;
+    uint8_t m_pin;                      ///< store the Arduino pin literal, e.g. A17
+	bool m_swapDirection;               ///< swap when pot orientation is upside down
+	unsigned m_minCalibration;          ///< stores the min pot value
+	unsigned m_maxCalibration;          ///< stores the max pot value
+	unsigned m_lastValue = 0;           ///< stores previous value
+	float m_feedbackFitlerValue = 0.9f; ///< feedback value for POT filter
 };
 
-constexpr bool ENCODER_SWAP = true;
-constexpr bool ENCODER_NOSWAP = false;
-
+/// Convenience class for rotary (quadrature) encoders. Uses Arduino Encoder under the hood.
 class RotaryEncoder : public Encoder {
 public:
+  RotaryEncoder() = delete; // delete default constructor
+
+  /// Constructor an encoder with the specified pins. Optionally swap direction and divide down the number of encoder ticks
+  /// @param pin1 the Arduino logical pin number for the 'A' on the encoder.
+  /// @param pin2 the Arduino logical pin number for the 'B' on the encoder.
+  /// @param swapDirection (OPTIONAL) set to true or false to obtain clockwise increments the counter-clockwise decrements
+  /// @param divider (OPTIONAL) controls the sensitivity of the divider. Use powers of 2. E.g. 1, 2, 4, 8, etc.
   RotaryEncoder(uint8_t pin1, uint8_t pin2, bool swapDirection = false, int divider = 1) : Encoder(pin1,pin2), m_swapDirection(swapDirection), m_divider(divider) {}
 
+  /// Get the delta (as a positive or negative number) since last call
+  /// @returns an integer representing the net change since last call
   int getChange();
+
+  /// Set the divider on the internal counter. High resolution encoders without detents can be overly sensitive.
+  /// This will helf reduce sensisitive by increasing the divider. Default = 1.
+  /// @pram divider controls the sensitivity of the divider. Use powers of 2. E.g. 1, 2, 4, 8, etc.
   void setDivider(int divider);
 
 private:
-  bool m_swapDirection;
-  int32_t m_lastPosition = 0;
-  int32_t m_divider;
+  bool m_swapDirection;       ///< specifies if increment/decrement should be swapped
+  int32_t m_lastPosition = 0; ///< store the last recorded position
+  int32_t m_divider;          ///< divides down the magnitude of change read by the encoder.
 };
 
 /// Specifies the type of control
@@ -91,9 +148,17 @@ enum class ControlType : unsigned {
   UNDEFINED        = 255 ///< undefined or uninitialized
 };
 
+/// Tjis class provides convenient interface for combinary an arbitrary number of controls of different types into
+/// one object. Supports switches, pots, encoders and digital outputs (useful for LEDs, relays).
 class BAPhysicalControls {
 public:
 	BAPhysicalControls() = delete;
+
+	/// Construct an object and reserve memory for the specified number of controls. Encoders and outptus are optional params.
+	/// @param numSwitches the number of switches or buttons
+	/// @param numPots the number of analog potentiometers
+	/// @param numEncoders the number of quadrature encoders
+	/// @param numOutputs the number of digital outputs. E.g. LEDs, relays, etc.
 	BAPhysicalControls(unsigned numSwitches, unsigned numPots, unsigned numEncoders = 0, unsigned numOutputs = 0);
 	~BAPhysicalControls() {}
 
@@ -124,22 +189,53 @@ public:
 	/// @param swapDirection reverses the which direction is considered pot minimum value
 	/// @param range the pot raw value will be mapped into a range of 0 to range
 	unsigned addPot(uint8_t pin, unsigned minCalibration, unsigned maxCalibration, bool swapDirection);
+
+	/// add an output to the controls
+	/// @param pin the pin number connected to the Arduino output
+	/// @returns a handle (unsigned) to the added output. Use this to access the output.
 	unsigned addOutput(uint8_t pin);
-	void setOutput(unsigned index, int val);
-	void toggleOutput(unsigned index);
-	int getRotaryAdjustUnit(unsigned index);
-	bool checkPotValue(unsigned index, float &value);
-    bool isSwitchToggled(unsigned index);
+
+	/// Set the output specified by the provided handle
+	/// @param handle the handle that was provided previously by calling addOutput()
+	/// @param val the value to set the output. 0 is low, not zero is high.
+	void setOutput(unsigned handle, int val);
+
+	/// Toggle the output specified by the provided handle
+	/// @param handle the handle that was provided previously by calling addOutput()
+	void toggleOutput(unsigned handle);
+
+	/// Retrieve the change in position on the specified rotary encoder
+	/// @param handle the handle that was provided previously by calling addRotary()
+	/// @returns an integer value. Positive is clockwise, negative is counter-clockwise rotation.
+	int getRotaryAdjustUnit(unsigned handle);
+
+	/// Check if the pot specified by the handle has been updated.
+	/// @param handle the handle that was provided previously by calling addPot()
+	/// @param value a reference to a float, the pot value will be written to this variable.
+	/// @returns true if the pot value has changed since previous check, otherwise false
+	bool checkPotValue(unsigned handle, float &value);
+
+	/// Check if the switch has been toggled since last call
+	/// @param handle the handle that was provided previously by calling addSwitch()
+	/// @returns true if the switch changed state, otherwise false
+    bool isSwitchToggled(unsigned handle);
+
+    /// Check if the switch is currently being pressed (held)
+	/// @param handle the handle that was provided previously by calling addSwitch()
+	/// @returns true if the switch is held in a pressed or closed state
+    bool isSwitchHeld(unsigned handle);
+
+    /// Get the value of the switch
+	/// @param handle the handle that was provided previously by calling addSwitch()
+    /// @returns the value at the switch pin, either 0 or 1.
+    int getSwitchValue(unsigned handle);
 
 private:
-  std::vector<Potentiometer> m_pots;
-  std::vector<RotaryEncoder> m_encoders;
-  std::vector<Bounce>  m_switches;
-  std::vector<DigitalOutput> m_outputs;
+  std::vector<Potentiometer> m_pots;     ///< a vector of all added pots
+  std::vector<RotaryEncoder> m_encoders; ///< a vector of all added encoders
+  std::vector<Bounce>  m_switches;       ///< a vector of all added switches
+  std::vector<DigitalOutput> m_outputs;  ///< a vector of all added outputs
 };
-
-
-
 
 
 } // BALibrary

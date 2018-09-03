@@ -1,11 +1,22 @@
-#include <MIDI.h>
-
-#define TGA_PRO_REVB
-#define TGA_PRO_EXPAND_REV2
+/*************************************************************************
+ * This demo uses the BAGuitar library to provide enhanced control of
+ * the TGA Pro board.
+ * 
+ * The latest copy of the BA Guitar library can be obtained from
+ * https://github.com/Blackaddr/BAGuitar
+ * 
+ * This demo combines the Blackaddr Audio Expansion board to add physical controls
+ * to the BAAudioEffectAnalogDelay.
+ * 
+ * You can control the amount of delay, feedback and mix in realtime, as well as cycle
+ * through the various analog filters built into the effect.
+ * 
+ */
+#define TGA_PRO_REVB // Set which hardware revision of the TGA Pro we're using
+#define TGA_PRO_EXPAND_REV2 // pull in the pin definitions for the Blackaddr Audio Expansion Board.
 
 #include "BAGuitar.h"
 
-using namespace midi;
 using namespace BAEffects;
 using namespace BALibrary;
 
@@ -16,7 +27,7 @@ BAAudioControlWM8731 codec;
 //#define USE_EXT // uncomment this line to use External MEM0
 
 #ifdef USE_EXT
-// If using external SPI memory, we will instantiance an SRAM
+// If using external SPI memory, we will instantiate a SRAM
 // manager and create an external memory slot to use as the memory
 // for our audio delay
 ExternalSramManager externalSram;
@@ -42,30 +53,60 @@ AudioConnection delayOut(analogDelay, 0, cabFilter, 0);
 AudioConnection leftOut(cabFilter,0, i2sOut, 0);
 AudioConnection rightOut(cabFilter,0, i2sOut, 1);
 
+
 //////////////////////////////////////////
 // SETUP PHYSICAL CONTROLS
+// - POT1 (left) will control the amount of delay
+// - POT2 (right) will control the amount of feedback
+// - POT3 (centre) will control the wet/dry mix.
+// - SW1  (left) will be used as a bypass control
+// - LED1 (left) will be illuminated when the effect is ON (not bypass)
+// - SW2  (right) will be used to cycle through the three built in analog filter styles available.
+// - LED2 (right) will illuminate when pressing SW2.
 //////////////////////////////////////////
-BAPhysicalControls controls(BA_EXPAND_NUM_SW, BA_EXPAND_NUM_POT, 0);
+// To get the calibration values for your particular board, first run the
+// BAExpansionCalibrate.ino example and 
+constexpr int  potCalibMin = 1;
+constexpr int  potCalibMax = 1018;
+constexpr bool potSwapDirection = true;
+
+// Create a control object using the number of switches, pots, encoders and outputs on the
+// Blackaddr Audio Expansion Board.
+BAPhysicalControls controls(BA_EXPAND_NUM_SW, BA_EXPAND_NUM_POT, BA_EXPAND_NUM_ENC, BA_EXPAND_NUM_LED);
 
 int loopCount = 0;
+unsigned filterIndex = 0; // variable for storing which analog filter we're currently using.
+constexpr unsigned MAX_HEADPHONE_VOL = 10;
+unsigned headphoneVolume = MAX_HEADPHONE_VOL; // control headphone volume from 0 to 10.
+
+// BAPhysicalControls returns a handle when you register a new control. We'll uses these handles when working with the controls.
+int bypassHandle, filterHandle, delayHandle, feedbackHandle, mixHandle, led1Handle, led2Handle; // Handles for the various controls
 
 void setup() {
-  delay(100);
+  delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100);
 
-  // Setup the controls
-  controls.addSwitch(BA_EXPAND_SW1_PIN);
-  controls.addSwitch(BA_EXPAND_SW2_PIN);
-  controls.addPot(BA_EXPAND_POT1_PIN, 
+  // Setup the controls. The return value is the handle to use when checking for control changes, etc.
+  // pushbuttons
+  bypassHandle = controls.addSwitch(BA_EXPAND_SW1_PIN); // will be used for bypass control
+  filterHandle = controls.addSwitch(BA_EXPAND_SW2_PIN); // will be used for stepping through filters
+  // pots
+  delayHandle    = controls.addPot(BA_EXPAND_POT1_PIN, potCalibMin, potCalibMax, potSwapDirection); // control the amount of delay
+  feedbackHandle = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection); 
+  mixHandle      = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection); 
+  // leds
+  led1Handle = controls.addOutput(BA_EXPAND_LED1_PIN);
+  led2Handle = controls.addOutput(BA_EXPAND_LED2_PIN); // will illuminate when pressing SW2
 
-  // Disable the codec first
+  // Disable the audio codec first
   codec.disable();
   AudioMemory(128);
 
-  // Enable the codec
+  // Enable and configure the codec
   Serial.println("Enabling codec...\n");
   codec.enable();
+  codec.setHeadphoneVolume(1.0f); // Max headphone volume
 
   // If using external memory request request memory from the manager
   // for the slot
@@ -77,8 +118,8 @@ void setup() {
   Serial.println("Using INTERNAL memory");
   #endif
 
-  // Besure to enable the delay. When disabled, audio is is completely blocked
-  // to minimize resources to nearly zero.
+  // Besure to enable the delay. When disabled, audio is is completely blocked by the effect
+  // to minimize resource usage to nearly to nearly zero.
   analogDelay.enable(); 
 
   // Set some default values.
@@ -89,18 +130,79 @@ void setup() {
 
   //////////////////////////////////
   // AnalogDelay filter selection //
-  // Uncomment to tryout the 3 different built-in filters.
+  // These are commented out, in this example we'll use SW2 to cycle through the different filters
   //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::DM3); // The default filter. Naturally bright echo (highs stay, lows fade away)
   //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::WARM); // A warm filter with a smooth frequency rolloff above 2Khz
   //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::DARK); // A very dark filter, with a sharp rolloff above 1Khz
 
-  // Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
+  // Guitar cabinet: Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
   cabFilter.setLowpass(1, 4500, .7071);
 }
 
 void loop() {
 
+  float potValue;
+
+  // Check if SW1 has been toggled (pushed)
+  if (controls.isSwitchToggled(bypassHandle)) {
+    bool bypass = analogDelay.isBypass(); // get the current state
+    bypass = !bypass; // change it
+    analogDelay.bypass(bypass); // set the new state
+    controls.setOutput(led1Handle, !bypass); // Set the LED when NOT bypassed  
+    Serial.println(String("BYPASS is ") + bypass);
+  }
+
+  // Use SW2 to cycle through the filters
+  controls.setOutput(led2Handle, controls.getSwitchValue(led2Handle));
+  if (controls.isSwitchToggled(filterHandle)) {
+    filterIndex = (filterIndex + 1) % 3; // update and potentionall roll the counter 0, 1, 2, 0, 1, 2, ...
+    // cast the index between 0 to 2 to the enum class AudioEffectAnalogDelay::Filter
+    analogDelay.setFilter(static_cast<AudioEffectAnalogDelay::Filter>(filterIndex)); // will cycle through 0 to 2
+    Serial.println(String("Filter set to ") + filterIndex);
+  }
+
+  // Use POT1 (left) to control the delay setting
+  if (controls.checkPotValue(delayHandle, potValue)) {
+    // Pot has changed
+    Serial.println(String("New DELAY setting: ") + potValue);
+    analogDelay.delayFractionMax(potValue);
+  }
+
+  // Use POT2 (right) to control the feedback setting
+  if (controls.checkPotValue(feedbackHandle, potValue)) {
+    // Pot has changed
+    Serial.println(String("New FEEDBACK setting: ") + potValue);
+    analogDelay.feedback(potValue);
+  }
+
+  // Use POT3 (centre) to control the mix setting
+  if (controls.checkPotValue(mixHandle, potValue)) {
+    // Pot has changed
+    Serial.println(String("New MIX setting: ") + potValue);
+    analogDelay.mix(potValue);
+  }
+
+  // Use the 'u' and 'd' keys to adjust volume across ten levels.
+  if (Serial) {
+    if (Serial.available() > 0) {
+      while (Serial.available()) {
+        char key = Serial.read();
+        if (key == 'u') { 
+          headphoneVolume = (headphoneVolume + 1) % MAX_HEADPHONE_VOL;
+          Serial.println(String("Increasing HEADPHONE volume to ") + headphoneVolume);
+        }
+        else if (key == 'd') { 
+          headphoneVolume = (headphoneVolume - 1) % MAX_HEADPHONE_VOL;
+          Serial.println(String("Decreasing HEADPHONE volume to ") + headphoneVolume);
+        }
+        codec.setHeadphoneVolume(static_cast<float>(headphoneVolume) / static_cast<float>(MAX_HEADPHONE_VOL));
+      }
+    }
+  }
+
+  // Use the loopCounter to roughly measure human timescales. Every few seconds, print the CPU usage
+  // to the serial port. About 500,000 loops!
   if (loopCount % 524288 == 0) {
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
     Serial.print("% ");
@@ -108,6 +210,5 @@ void loop() {
     Serial.println("%");
   }
   loopCount++;
-
 
 }

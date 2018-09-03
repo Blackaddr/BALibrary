@@ -78,21 +78,21 @@ unsigned BAPhysicalControls::addOutput(uint8_t pin) {
 	return m_outputs.size()-1;
 }
 
-void BAPhysicalControls::setOutput(unsigned index, int val) {
-	if (index >= m_outputs.size()) { return; }
-	m_outputs[index].set(val);
+void BAPhysicalControls::setOutput(unsigned handle, int val) {
+	if (handle >= m_outputs.size()) { return; }
+	m_outputs[handle].set(val);
 }
 
-void BAPhysicalControls::toggleOutput(unsigned index) {
-	if (index >= m_outputs.size()) { return; }
-	m_outputs[index].toggle();
+void BAPhysicalControls::toggleOutput(unsigned handle) {
+	if (handle >= m_outputs.size()) { return; }
+	m_outputs[handle].toggle();
 }
 
 
-int BAPhysicalControls::getRotaryAdjustUnit(unsigned index) {
-	if (index >= m_encoders.size()) { return 0; } // index is greater than number of encoders
+int BAPhysicalControls::getRotaryAdjustUnit(unsigned handle) {
+	if (handle >= m_encoders.size()) { return 0; } // handle is greater than number of encoders
 
-	int encoderAdjust = m_encoders[index].getChange();
+	int encoderAdjust = m_encoders[handle].getChange();
 	if (encoderAdjust != 0) {
 		  // clip the adjust to maximum abs value of 1.
 		  int encoderAdjust = (encoderAdjust > 0) ? 1 : -1;
@@ -101,20 +101,40 @@ int BAPhysicalControls::getRotaryAdjustUnit(unsigned index) {
 	return encoderAdjust;
 }
 
-bool BAPhysicalControls::checkPotValue(unsigned index, float &value) {
-	if (index >= m_pots.size()) { return false;} // index is greater than number of pots
-	return m_pots[index].getValue(value);
+bool BAPhysicalControls::checkPotValue(unsigned handle, float &value) {
+	if (handle >= m_pots.size()) { return false;} // handle is greater than number of pots
+	return m_pots[handle].getValue(value);
 }
 
-bool BAPhysicalControls::isSwitchToggled(unsigned index) {
-	if (index >= m_switches.size()) { return 0; } // index is greater than number of switches
-	Bounce &sw = m_switches[index];
+bool BAPhysicalControls::isSwitchToggled(unsigned handle) {
+	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
+	Bounce &sw = m_switches[handle];
 
 	if (sw.update() && sw.fallingEdge()) {
 	  return true;
 	} else {
 	  return false;
 	}
+}
+
+bool BAPhysicalControls::isSwitchHeld(unsigned handle)
+{
+	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
+	Bounce &sw = m_switches[handle];
+
+	if (sw.read()) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+int BAPhysicalControls::getSwitchValue(unsigned handle)
+{
+	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
+	Bounce &sw = m_switches[handle];
+
+	return sw.read();
 }
 
 ///////////////////////////
@@ -129,25 +149,31 @@ void DigitalOutput::toggle(void) {
 	digitalWriteFast(m_pin, m_val);
 }
 
+void Potentiometer::setFeedbackFitlerValue(float fitlerValue)
+{
+	m_feedbackFitlerValue = fitlerValue;
+}
 
 bool Potentiometer::getValue(float &value) {
 
-	unsigned val = analogRead(m_pin); // read the raw value
-	// Return false if the value is the same as the last sample, or 2 samples ago. The second check is to
-	// prevent oscillating between two values.
-	if ((val == m_lastValue) || (val == m_lastValue2)) {
-		return false;
-	}
+	bool newValue = true;
 
-	// Otherwise update the last value
-	m_lastValue = val;
+	unsigned val = analogRead(m_pin); // read the raw value
+	// Use an IIR filter to smooth out the noise in the pot readings
+	unsigned valFilter = ( (1.0f - m_feedbackFitlerValue)*val + m_feedbackFitlerValue*m_lastValue);
+
 	// constrain it within the calibration values, them map it to the desired range.
-	val = constrain(val, m_minCalibration, m_maxCalibration);
-	value = static_cast<float>(val - m_minCalibration) / static_cast<float>(m_maxCalibration);
+	valFilter = constrain(valFilter, m_minCalibration, m_maxCalibration);
+	if (valFilter == m_lastValue) {
+		newValue = false;
+	}
+	m_lastValue = valFilter;
+
+	value = static_cast<float>(valFilter - m_minCalibration) / static_cast<float>(m_maxCalibration);
 	if (m_swapDirection) {
 		value = 1.0f - value;
 	}
-    return true;
+    return newValue;
 }
 
 int Potentiometer::getRawValue() {

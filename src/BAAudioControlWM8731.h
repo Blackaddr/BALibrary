@@ -72,6 +72,10 @@ public:
 	///param val when true, channels are swapped, else normal.
 	void setLeftRightSwap(bool val);
 
+	/// Set the volume for the codec's built-in headphone amp
+	/// @param volume the input volume level from 0.0f to 1.0f;
+	void setHeadphoneVolume(float volume);
+
 	/// Mute/unmute the output DAC, affects both Left and Right output channels.
 	/// @param when true, output DAC is muted, when false, unmuted.
 	void setDacMute(bool val);
