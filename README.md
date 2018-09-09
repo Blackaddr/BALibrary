@@ -5,7 +5,7 @@ Last tested with:
 Arduino IDE: v1.8.5
 Teensyduino: v1.41*
 
-![](TGAPro.jpg)
+![](TGA_PRO_revb.jpg)
 
 *The Arduino MIDI library has recently undergone changes to it's interface. You must have Teensyduino v1.41 or higher for the library and it's examples to work correctly.
 
