@@ -64,11 +64,13 @@ unsigned BAPhysicalControls::addSwitch(uint8_t pin, unsigned long intervalMillis
 
 unsigned BAPhysicalControls::addPot(uint8_t pin, unsigned minCalibration, unsigned maxCalibration) {
 	m_pots.emplace_back(pin, minCalibration, maxCalibration);
+	pinMode(pin, INPUT);
 	return m_pots.size()-1;
 }
 
 unsigned BAPhysicalControls::addPot(uint8_t pin, unsigned minCalibration, unsigned maxCalibration, bool swapDirection) {
 	m_pots.emplace_back(pin, minCalibration, maxCalibration, swapDirection);
+	pinMode(pin, INPUT);
 	return m_pots.size()-1;
 }
 
