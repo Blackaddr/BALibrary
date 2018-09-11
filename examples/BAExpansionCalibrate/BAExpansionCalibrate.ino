@@ -1,7 +1,7 @@
 #define TGA_PRO_REVB
 #define TGA_PRO_EXPAND_REV2
 
-#include "BAGuitar.h"
+#include "BALibrary.h"
 
 using namespace BALibrary;
 

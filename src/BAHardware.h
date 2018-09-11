@@ -23,10 +23,12 @@
 #ifndef __BALIBRARY_BAHARDWARE_H
 #define __BALIBRARY_BAHARDWARE_H
 
+#include <Arduino.h>
 #include <cstdint>
+#include <cstddef>
 
 /**************************************************************************//**
- * BAGuitar is a namespace/Library for Guitar processing from Blackaddr Audio.
+ * BALibrary is a namespace/Library for Guitar processing from Blackaddr Audio.
  *****************************************************************************/
 namespace BALibrary {
 

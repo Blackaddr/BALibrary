@@ -1,5 +1,5 @@
 #include <MIDI.h>
-#include "BAGuitar.h"
+#include "BALibrary.h"
 
 using namespace midi;
 using namespace BAEffects;

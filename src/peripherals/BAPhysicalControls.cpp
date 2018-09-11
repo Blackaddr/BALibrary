@@ -85,6 +85,12 @@ void BAPhysicalControls::setOutput(unsigned handle, int val) {
 	m_outputs[handle].set(val);
 }
 
+void BAPhysicalControls::setOutput(unsigned handle, bool val) {
+	if (handle >= m_outputs.size()) { return; }
+	unsigned value = val ? true : false;
+	m_outputs[handle].set(value);
+}
+
 void BAPhysicalControls::toggleOutput(unsigned handle) {
 	if (handle >= m_outputs.size()) { return; }
 	m_outputs[handle].toggle();

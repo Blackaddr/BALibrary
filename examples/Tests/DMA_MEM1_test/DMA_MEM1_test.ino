@@ -1,9 +1,9 @@
 /*************************************************************************
- * This demo uses the BAGuitar library to provide enhanced control of
+ * This demo uses the BALibrary to provide enhanced control of
  * the TGA Pro board.
  * 
- * The latest copy of the BA Guitar library can be obtained from
- * https://github.com/Blackaddr/BAGuitar
+ * The latest copy of the BALibrary can be obtained from
+ * https://github.com/Blackaddr/BALibrary
  * 
  * This demo will perform a DMA memory test on MEM1 attached
  * to SPI1.
@@ -13,9 +13,9 @@
  * 
  */
 #include <Wire.h>
-#include "BAGuitar.h"
+#include "BALibrary.h"
 
-using namespace BAGuitar;
+using namespace BALibrary;
 
 //#define SANITY
 #define DMA_SIZE 256
@@ -30,10 +30,8 @@ using namespace BAGuitar;
 SPISettings memSettings(20000000, MSBFIRST, SPI_MODE0);
 const int cs0pin = 15;
 
-BAGpio                    gpio;  // access to User LED
-BASpiMemoryDMA               spiMem1(SpiDeviceId::SPI_DEVICE1);
-
-
+BAGpio           gpio;  // access to User LED
+BASpiMemoryDMA   spiMem1(SpiDeviceId::SPI_DEVICE1);
 
 bool compareBuffers(uint8_t *a, uint8_t *b, size_t numBytes)
 {
@@ -64,7 +62,7 @@ void setup() {
   while (!Serial) {}
   delay(5);
 
-  Serial.println("Enabling SPI");
+  Serial.println("Enabling SPI, testing MEM1");
   spiMem1.begin();
 }
 
@@ -310,6 +308,7 @@ void loop() {
 
   spi8BitTest();
   spi16BitTest();
+  Serial.println("\nTEST DONE!");
   while(true) {}
 
 }

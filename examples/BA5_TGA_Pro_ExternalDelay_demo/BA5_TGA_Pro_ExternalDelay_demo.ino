@@ -1,9 +1,9 @@
 /*************************************************************************
- * This demo uses the BAGuitar library to provide enhanced control of
+ * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
  * 
  * The latest copy of the BA Guitar library can be obtained from
- * https://github.com/Blackaddr/BAGuitar
+ * https://github.com/Blackaddr/BALibrary
  * 
  * This demo shows to use the BAAudioEffectDelayExternal audio class
  * to create long delays using external SPI RAM.
@@ -12,7 +12,7 @@
  * 
  */
 
-#include "BAGuitar.h"
+#include "BALibrary.h"
 
 using namespace BAEffects;
 using namespace BALibrary;

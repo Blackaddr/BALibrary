@@ -1,9 +1,9 @@
 /*************************************************************************
- * This demo uses the BAGuitar library to provide enhanced control of
+ * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
  * 
  * The latest copy of the BA Guitar library can be obtained from
- * https://github.com/Blackaddr/BAGuitar
+ * https://github.com/Blackaddr/BALibrary
  * 
  * This demo combines the Blackaddr Audio Expansion board to add physical controls
  * to the BAAudioEffectAnalogDelay.
@@ -15,7 +15,7 @@
 #define TGA_PRO_REVB // Set which hardware revision of the TGA Pro we're using
 #define TGA_PRO_EXPAND_REV2 // pull in the pin definitions for the Blackaddr Audio Expansion Board.
 
-#include "BAGuitar.h"
+#include "BALibrary.h"
 
 using namespace BAEffects;
 using namespace BALibrary;
@@ -154,7 +154,7 @@ void loop() {
   }
 
   // Use SW2 to cycle through the filters
-  controls.setOutput(led2Handle, controls.getSwitchValue(led2Handle));
+  controls.setOutput(led2Handle, !controls.getSwitchValue(led2Handle));
   if (controls.isSwitchToggled(filterHandle)) {
     filterIndex = (filterIndex + 1) % 3; // update and potentionall roll the counter 0, 1, 2, 0, 1, 2, ...
     // cast the index between 0 to 2 to the enum class AudioEffectAnalogDelay::Filter

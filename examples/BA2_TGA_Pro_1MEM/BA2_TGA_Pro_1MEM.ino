@@ -1,9 +1,9 @@
 /*************************************************************************
- * This demo uses the BAGuitar library to provide enhanced control of
+ * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
  * 
  * The latest copy of the BA Guitar library can be obtained from
- * https://github.com/Blackaddr/BAGuitar
+ * https://github.com/Blackaddr/BALibrary
  * 
  * This demo will provide an audio passthrough, as well as exercise the
  * MIDI interface.
@@ -18,7 +18,7 @@
 #include <Wire.h>
 #include <Audio.h>
 #include <MIDI.h>
-#include "BAGuitar.h"
+#include "BALibrary.h"
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 using namespace midi;

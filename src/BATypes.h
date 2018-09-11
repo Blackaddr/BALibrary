@@ -3,7 +3,7 @@
  *  @author Steve Lascos
  *  @company Blackaddr Audio
  *
- *  This file contains some custom types used by the rest of the BAGuitar library.
+ *  This file contains some custom types used by the rest of the BALibrary library.
  *
  *  @copyright This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
+#include <Arduino.h>
 
 #ifndef __BALIBRARY_BATYPES_H
 #define __BALIBRARY_BATYPES_H

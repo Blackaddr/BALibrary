@@ -200,6 +200,11 @@ public:
 	/// @param val the value to set the output. 0 is low, not zero is high.
 	void setOutput(unsigned handle, int val);
 
+	/// Set the output specified by the provided handle
+	/// @param handle the handle that was provided previously by calling addOutput()
+	/// @param val the value to set the output. True is high, false is low.
+	void setOutput(unsigned handle, bool val);
+
 	/// Toggle the output specified by the provided handle
 	/// @param handle the handle that was provided previously by calling addOutput()
 	void toggleOutput(unsigned handle);

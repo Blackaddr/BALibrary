@@ -2,20 +2,20 @@
  * This demo uses only the built-in libraries provided with the Arudino
  * Teensy libraries. 
  * 
- * IT IS STRONGLY RECOMMENDED to use the BAGuitar Library located at
- * https://github.com/Blackaddr/BAGuitar
- * The BAGuitar library will made it easier to use the features of your
+ * IT IS STRONGLY RECOMMENDED to use the BALibrary Library located at
+ * https://github.com/Blackaddr/BALibrary
+ * The BALibrary library will made it easier to use the features of your
  * GTA Pro board, as well and configure it correctly to eliminate
  * unneccesary noise.
  * 
  * The built-in support for the WM8731 codec in the Teensy Library is very
  * limited. Without proper configuration, the codec will produce a noisy
  * output. This is caused by the default configuration the WM8731 powers
- * up in. This can easily be corrected by installing the BAGuitar library
+ * up in. This can easily be corrected by installing the BALibrary library
  * 
  * For instructions on installing additional libraries follow the
  * instructions at https://www.arduino.cc/en/Guide/Libraries after downloading
- * the BAGuitar repo from github as a zip file.
+ * the BALibrary repo from github as a zip file.
  * 
  */
 

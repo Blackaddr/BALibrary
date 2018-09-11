@@ -1,9 +1,9 @@
 /*************************************************************************
- * This demo uses the BAGuitar library to provide enhanced control of
+ * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
  * 
  * The latest copy of the BA Guitar library can be obtained from
- * https://github.com/Blackaddr/BAGuitar
+ * https://github.com/Blackaddr/BALibrary
  * 
  * This demo provides an example guitar tone consisting of some slap-back delay,
  * followed by a reverb and a low-pass cabinet filter.
@@ -12,7 +12,7 @@
 #include <Wire.h>
 #include <Audio.h>
 #include <MIDI.h>
-#include "BAGuitar.h"
+#include "BALibrary.h"
 
 using namespace BAEffects;
 using namespace BALibrary;

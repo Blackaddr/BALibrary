@@ -1,5 +1,5 @@
 /*
- * BAGuitar.h
+ * BALibrary.h
  *
  *  Created on: May 22, 2017
  *      Author: slascos
@@ -17,9 +17,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef __BATGUITAR_H
-#define __BATGUITAR_H
+#ifndef __BALIBRARY_H
+#define __BALIBRARY_H
 
 #include "BAHardware.h" // contains the Blackaddr hardware board definitions
 
@@ -27,11 +26,8 @@
 #include "BAAudioControlWM8731.h" // Codec Control
 #include "BASpiMemory.h"
 #include "BAGpio.h"
-#include "BAAudioEffectDelayExternal.h"
-#include "AudioEffectAnalogDelay.h"
-#include "AudioEffectSOS.h"
 #include "LibBasicFunctions.h"
 #include "LibMemoryManagement.h"
 #include "BAPhysicalControls.h"
 
-#endif /* __BATGUITAR_H */
+#endif /* __BALIBRARY_H */
