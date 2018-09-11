@@ -1,14 +1,15 @@
+<<<<<<< HEAD
 ## BALibrary Library
+=======
+## BALibrary
+>>>>>>> 1babb0786fb0954d86b8c7ab05485a09d2b401d3
 This library is under active development as of 2018.
-
-**REQUIREMENTS**
-This library uses a forked (modified) version of [DmaSpi](https://github.com/Blackaddr/DmaSpi) for Teensy, a library that extends SPI functionality to support DMA. This allows audio programs to use external SPI RAM with very little processor overhead.
-
-**YOU MUST DOWNLOAD AND INSTALL THE DMA SPI LIBRARY FROM THE LINK ABOVE SEPARATELY TO USE THIS BAGUITAR LIBRARY. IT IS NOT AUTOMATICALLY INSTALLED AS PART OF THE BAGUITAR LIBRARY**
 
 Last tested with:
 Arduino IDE: v1.8.5
 Teensyduino: v1.41*
+
+![](TGA_PRO_revb.jpg)
 
 *The Arduino MIDI library has recently undergone changes to it's interface. You must have Teensyduino v1.41 or higher for the library and it's examples to work correctly.
 
@@ -25,15 +26,21 @@ In order to use BALibrary, you should:
  1. Install the Arduino IDE. This is where you write and compile your software, called 'sketches'. See [here](https://www.arduino.cc/en/Main/Software).
  2. Install the Teensyduino plugin for the Arduino IDE. This provides support for programming Teensy boards over USB, as well as access to the plethora of helpful libraries and examples it provides. See [here](https://www.pjrc.com/teensy/td_download.html).
  3. Download the BALibrary library, and use the Library Manager in the Arduino IDE to install it. See [here](https://www.arduino.cc/en/Guide/Libraries) for details..
+<<<<<<< HEAD
  4. Include "BALibrary.h" in your sketch.
+=======
+ 4. Include "BALibrary.h" for access to general purpose classes.
+ 5. Include "BAEffects.h" for access to Blackaddr Audio custom audio effect classes.
+>>>>>>> 1babb0786fb0954d86b8c7ab05485a09d2b401d3
 
 **HARDWARE**
 The audio primitives and effects provided in the BALibrary library require no special hardware other than a Teensy 3.x series board. However, in order to use the external RAM features provided in some effects, the SPI pins used must be the same as those used on the Blackaddr [TGA-Pro audio shield](http://blackaddr.com/products/).
 
-**BAGUITAR CONTENTS**
+**BALibrary CONTENTS**
  - WM871 advanced codec control
  - analog delay modelling effect
  - digital delay effect
+ - Sound-on-Sound effect
  - external SRAM manager
  - more on the way!
 
