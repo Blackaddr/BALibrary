@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <Encoder.h>
-#include <Bounce.h>
+#include <Bounce2.h>
 
 namespace BALibrary {
 
@@ -50,6 +50,27 @@ public:
 private:
 	uint8_t m_pin; ///< store the pin associated with this output
 	int m_val = 0; ///< store the value to support toggling
+};
+
+/// Convenience class for handling digital inputs. This wraps Bounce with the abilty
+/// to invert the polarity of the pin.
+class DigitalInput : public Bounce {
+public:
+	/// Create an input where digital low is return true. Most switches ground when pressed.
+	DigitalInput() : m_isPolarityInverted(true) {}
+	/// Create an input and specify if input polarity is inverted.
+	/// @param isPolarityInverted when false, a high voltage on the pin returns true, 0V returns false.
+	DigitalInput(bool isPolarityInverted) : m_isPolarityInverted(isPolarityInverted) {}
+	/// Read the state of the pin according to the polarity
+	/// @returns true when the input should be interpreted as the switch is closed, else false.
+	bool read() { return Bounce::read() != m_isPolarityInverted; } // logical XOR to conditionally invert polarity
+
+	/// Set whether the input pin polarity
+	/// @param polarity when true, a low voltage on the pin is considered true by read(), else false.
+	void setPolarityInverted(bool polarity) { m_isPolarityInverted = polarity; }
+
+private:
+	bool m_isPolarityInverted;
 };
 
 /// Convenience class for handling an analog pot as a control. When calibrated,
@@ -238,7 +259,7 @@ public:
 private:
   std::vector<Potentiometer> m_pots;     ///< a vector of all added pots
   std::vector<RotaryEncoder> m_encoders; ///< a vector of all added encoders
-  std::vector<Bounce>  m_switches;       ///< a vector of all added switches
+  std::vector<DigitalInput>  m_switches;       ///< a vector of all added switches
   std::vector<DigitalOutput> m_outputs;  ///< a vector of all added outputs
 };
 

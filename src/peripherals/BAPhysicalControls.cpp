@@ -57,7 +57,10 @@ unsigned BAPhysicalControls::addRotary(uint8_t pin1, uint8_t pin2, bool swapDire
 }
 
 unsigned BAPhysicalControls::addSwitch(uint8_t pin, unsigned long intervalMilliseconds) {
-	m_switches.emplace_back(pin, intervalMilliseconds);
+	//m_switches.emplace_back(pin, intervalMilliseconds);'
+	m_switches.emplace_back();
+	m_switches.back().attach(pin);
+	m_switches.back().interval(10);
 	pinMode(pin, INPUT);
 	return m_switches.size()-1;
 }
@@ -87,7 +90,7 @@ void BAPhysicalControls::setOutput(unsigned handle, int val) {
 
 void BAPhysicalControls::setOutput(unsigned handle, bool val) {
 	if (handle >= m_outputs.size()) { return; }
-	unsigned value = val ? true : false;
+	unsigned value = val ? 1 : 0;
 	m_outputs[handle].set(value);
 }
 
@@ -116,7 +119,7 @@ bool BAPhysicalControls::checkPotValue(unsigned handle, float &value) {
 
 bool BAPhysicalControls::isSwitchToggled(unsigned handle) {
 	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
-	Bounce &sw = m_switches[handle];
+	DigitalInput &sw = m_switches[handle];
 
 	if (sw.update() && sw.fallingEdge()) {
 	  return true;
@@ -128,8 +131,9 @@ bool BAPhysicalControls::isSwitchToggled(unsigned handle) {
 bool BAPhysicalControls::isSwitchHeld(unsigned handle)
 {
 	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
-	Bounce &sw = m_switches[handle];
+	DigitalInput &sw = m_switches[handle];
 
+	sw.update();
 	if (sw.read()) {
 		return true;
 	} else {
@@ -140,7 +144,7 @@ bool BAPhysicalControls::isSwitchHeld(unsigned handle)
 int BAPhysicalControls::getSwitchValue(unsigned handle)
 {
 	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
-	Bounce &sw = m_switches[handle];
+	DigitalInput &sw = m_switches[handle];
 
 	return sw.read();
 }
