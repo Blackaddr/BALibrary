@@ -22,12 +22,8 @@ In order to use BALibrary, you should:
  1. Install the Arduino IDE. This is where you write and compile your software, called 'sketches'. See [here](https://www.arduino.cc/en/Main/Software).
  2. Install the Teensyduino plugin for the Arduino IDE. This provides support for programming Teensy boards over USB, as well as access to the plethora of helpful libraries and examples it provides. See [here](https://www.pjrc.com/teensy/td_download.html).
  3. Download the BALibrary library, and use the Library Manager in the Arduino IDE to install it. See [here](https://www.arduino.cc/en/Guide/Libraries) for details..
-<<<<<<< HEAD
- 4. Include "BALibrary.h" in your sketch.
-=======
  4. Include "BALibrary.h" for access to general purpose classes.
  5. Include "BAEffects.h" for access to Blackaddr Audio custom audio effect classes.
->>>>>>> 1babb0786fb0954d86b8c7ab05485a09d2b401d3
 
 **HARDWARE**
 The audio primitives and effects provided in the BALibrary library require no special hardware other than a Teensy 3.x series board. However, in order to use the external RAM features provided in some effects, the SPI pins used must be the same as those used on the Blackaddr [TGA-Pro audio shield](http://blackaddr.com/products/).
