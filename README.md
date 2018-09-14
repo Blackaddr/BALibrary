@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-## BALibrary Library
-=======
 ## BALibrary
->>>>>>> 1babb0786fb0954d86b8c7ab05485a09d2b401d3
 This library is under active development as of 2018.
 
 Last tested with:
