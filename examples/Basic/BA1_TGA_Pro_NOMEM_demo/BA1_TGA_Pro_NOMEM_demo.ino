@@ -1,70 +1,56 @@
 /*************************************************************************
- * This demo uses only the built-in libraries provided with the Arudino
- * Teensy libraries. 
+ * This demo uses the BALibrary library to provide enhanced control of
+ * the TGA Pro board.
  * 
- * IT IS STRONGLY RECOMMENDED to use the BALibrary Library located at
+ * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * The BALibrary library will made it easier to use the features of your
- * GTA Pro board, as well and configure it correctly to eliminate
- * unneccesary noise.
  * 
- * The built-in support for the WM8731 codec in the Teensy Library is very
- * limited. Without proper configuration, the codec will produce a noisy
- * output. This is caused by the default configuration the WM8731 powers
- * up in. This can easily be corrected by installing the BALibrary library
+ * This demo will provide an audio passthrough, as well as exercise the
+ * MIDI interface.
  * 
- * For instructions on installing additional libraries follow the
- * instructions at https://www.arduino.cc/en/Guide/Libraries after downloading
- * the BALibrary repo from github as a zip file.
+ * It can optionally exercise the SPI MEM0 if installed on the TGA Pro board.
  * 
  */
-
 #include <Wire.h>
 #include <Audio.h>
 #include <MIDI.h>
+#include "BALibrary.h"
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 using namespace midi;
+using namespace BALibrary;
 
 AudioInputI2S            i2sIn;
 AudioOutputI2S           i2sOut;
 
-// Audio connections, just connect the I2S input directly to the I2S output.
+// Audio Thru Connection
 AudioConnection      patch0(i2sIn,0, i2sOut, 0);
 AudioConnection      patch1(i2sIn,1, i2sOut, 1);
 
-AudioControlWM8731      codecControl; // needed to enable the codec
+BAAudioControlWM8731      codecControl;
+BAGpio                    gpio;  // access to User LED
 
 unsigned long t=0;
-const int usrLED = 16; // the location of the GTA Pro user LED (not the LED on the Teensy itself)
-int usrLEDState = 0;
 
 void setup() {
 
-  // Configure the user LED pin as output
-  pinMode(usrLED, OUTPUT);
-  digitalWrite(usrLED, usrLEDState);
-
-  // Enable the MIDI to listen on all channels
-  MIDI.begin(MIDI_CHANNEL_OMNI);  
-  Serial.begin(57600); // Enable the serial monitor
-  Wire.begin(); // Enable the I2C bus for controlling the codec
+  MIDI.begin(MIDI_CHANNEL_OMNI);
+  Serial.begin(57600);
   delay(5);
-  
-  delay(100);
-  codecControl.disable(); // Turn off the codec first (in case it was in an unknown state)
+
+  // If the codec was already powered up (due to reboot) power itd own first
+  codecControl.disable();
   delay(100);
   AudioMemory(24);
 
   Serial.println("Enabling codec...\n");
-  codecControl.enable(); // Enable the codec
+  codecControl.enable();
   delay(100);
   
-
 }
 
 void loop() {  
-  
+
   ///////////////////////////////////////////////////////////////////////
   // MIDI TESTING
   // Connect a loopback cable between the MIDI IN and MIDI OUT on the
@@ -109,16 +95,14 @@ void loop() {
     }
     t = millis();
   }
-
-  // If no MIDI IN activity, print a message every 10 seconds
+  
   if (millis() - t > 10000) {
     t += 10000;
     Serial.println("(no MIDI activity, check cables)");
   }
 
   // Toggle the USR LED state
-  usrLEDState = ~usrLEDState;
-  digitalWrite(usrLED, usrLEDState);
+  gpio.toggleLed();
 
 }
 

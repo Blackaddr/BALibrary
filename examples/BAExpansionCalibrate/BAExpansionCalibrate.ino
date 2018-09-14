@@ -1,5 +1,20 @@
-#define TGA_PRO_REVB
-#define TGA_PRO_EXPAND_REV2
+/*************************************************************************
+ * This demo uses the BALibrary library to provide enhanced control of
+ * the TGA Pro board.
+ * 
+ * The latest copy of the BA Guitar library can be obtained from
+ * https://github.com/Blackaddr/BALibrary
+ * 
+ * This program can be used to find out the calibration values for each of your POTs
+ * on the Blackaddr Audio Expansion Control Board.
+ * 
+ * USE THE ARDUINO SERIAL MONITOR TO PERFORM THE CALIBRATION
+ * 
+ * When prompted turn the appropriate POT in the specified direction and
+ * enter any character on the terminal input line and press enter to send the character.
+ */
+#define TGA_PRO_REVB // Specify our hardware revision
+#define TGA_PRO_EXPAND_REV2 // Specify we are using the EXPANSION CONTROL BOARD REV2
 
 #include "BALibrary.h"
 

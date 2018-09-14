@@ -1,5 +1,23 @@
-#include <MIDI.h>
+/*************************************************************************
+ * This demo uses the BALibrary library to provide enhanced control of
+ * the TGA Pro board.
+ * 
+ * The latest copy of the BA Guitar library can be obtained from
+ * https://github.com/Blackaddr/BALibrary
+ * 
+ * This example demonstrates teh BAAudioEffectsAnalogDelay effect. It can
+ * be controlled using USB MIDI. You can get a free USB MIDI Controller
+ * appliation at 
+ * http://www.blackaddr.com/downloads/BAMidiTester/
+ * or the source code at
+ * https://github.com/Blackaddr/BAMidiTester
+ * 
+ * Even if you don't control the guitar effect with USB MIDI, you must set
+ * the Arduino IDE USB-Type under Tools to "Serial + MIDI"
+ */
+ #include <MIDI.h>
 #include "BALibrary.h"
+#include "BAEffects.h"
 
 using namespace midi;
 using namespace BAEffects;
@@ -14,7 +32,6 @@ BAAudioControlWM8731 codec;
 // YOU MUST COMPILE THIS DEMO USING Serial + Midi
 
 //#define USE_EXT // uncomment this line to use External MEM0
-
 #define MIDI_DEBUG // uncomment to see raw MIDI info in terminal
 
 #ifdef USE_EXT
@@ -32,13 +49,11 @@ AudioEffectAnalogDelay analogDelay(&delaySlot);
 // by passing it the maximum amount of delay we will use in millseconds. Note that
 // audio delay lengths are very limited when using internal memory due to limited
 // internal RAM size.
-AudioEffectAnalogDelay analogDelay(200.0f); // max delay of 200 ms.
+AudioEffectAnalogDelay analogDelay(200.0f); // max delay of 200 ms or internal.
+// If you use external SPI memory you can get up to 1485.0f ms of delay!
 #endif
 
 AudioFilterBiquad cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
-
-// Record the audio to the PC
-//AudioOutputUSB usb;
 
 // Simply connect the input to the delay, and the output
 // to both i2s channels
@@ -46,8 +61,6 @@ AudioConnection input(i2sIn,0, analogDelay,0);
 AudioConnection delayOut(analogDelay, 0, cabFilter, 0);
 AudioConnection leftOut(cabFilter,0, i2sOut, 0);
 AudioConnection rightOut(cabFilter,0, i2sOut, 1);
-//AudioConnection leftOutUSB(cabFilter,0, usb, 0);
-//AudioConnection rightOutUSB(cabFilter,0, usb, 1);
 
 int loopCount = 0;
 

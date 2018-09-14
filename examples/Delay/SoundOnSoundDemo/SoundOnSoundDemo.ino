@@ -5,10 +5,13 @@
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
  * 
- * This demo will provide an audio passthrough, as well as exercise the
- * MIDI interface.
+ * THIS DEMO REQUIRES THE EXTERNAL SRAM MEM0
  * 
- * It can optionally exercise the SPI MEM0 if installed on the TGA Pro board.
+ * This demo combines MIDI control with the BAAudioEffectSoundOnSound. You can use
+ * the BAMidiTester to control the effect but it's best to use external MIDI footswitch
+ * or the Blackaddr Audio Expansion Control Board.
+ * 
+ * Use must set the Arduino IDE USB-Type to "Serial + MIDI" in the Tools menu.
  * 
  */
 #include <Wire.h>
@@ -16,6 +19,7 @@
 #include <MIDI.h>
 #include <SPI.h>
 #include "BALibrary.h"
+#include "BAEffects.h"
 
 #include <midi_UsbTransport.h>
 static const unsigned sUsbTransportBufferSize = 16;

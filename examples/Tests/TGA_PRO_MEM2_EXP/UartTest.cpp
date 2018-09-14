@@ -3,18 +3,17 @@
 
 using namespace BALibrary;
 
-constexpr unsigned LOW_RATE = 2400;
 constexpr unsigned MIDI_RATE = 31250;
 constexpr unsigned HIGH_RATE = 250000; 
 constexpr unsigned TEST_TIME = 5; // 5 second test each
 
-static unsigned baudRate = LOW_RATE; // start with low speed
+static unsigned baudRate = MIDI_RATE; // start with low speed
 static uint8_t writeData = 0;
 static unsigned loopCounter = 0;
 static unsigned errorCount = 0;
 static bool testFailed = false;
 static bool testDone = false;
-static unsigned testPhase = 0; // 0 for low speed, 1 for MIDI speed, 2 for high speed.
+static unsigned testPhase = 0; // 0 for MIDI speed, 1 for high speed.
 
 bool uartTest(void)
 {
@@ -32,12 +31,9 @@ bool uartTest(void)
       // next test
       switch (testPhase) {
         case 0 :
-          baudRate = MIDI_RATE;
-          break;
-        case 1 :
           baudRate = HIGH_RATE;
           break;
-        case 2 :
+        case 1 :
           testDone = true;
       }
 

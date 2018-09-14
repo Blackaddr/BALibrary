@@ -11,8 +11,9 @@
  * Eight delay taps are configured from a single SRAM device.
  * 
  */
-
+#include <Audio.h>
 #include "BALibrary.h"
+#include "BAEffects.h"
 
 using namespace BAEffects;
 using namespace BALibrary;
@@ -50,13 +51,13 @@ void setup() {
   Serial.begin(57600);
   AudioMemory(128);
   
-  delay(3000);
+  delay(100);
   Serial.println(String("Starting...\n"));
-  delay(1000);
+  delay(100);
 
   Serial.println("Enabling codec...\n");
   codecControl.enable();
-  delay(1000);
+  delay(100);
 
   // Set up 8 delay taps, each with evenly spaced, longer delays
   longDelay.delay(0, 150.0f);

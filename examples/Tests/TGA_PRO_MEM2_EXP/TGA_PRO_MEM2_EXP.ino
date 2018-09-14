@@ -1,15 +1,52 @@
 /*************************************************************************
- * This demo is used for manufacturing tests on the TGA Pro Expansion
- * Control Board. Pushing the buttons turns on the LEDs. Adjusting
- * any know will adjust the volume.
+ * This demo is used for manufacturing testing on the TGA Pro Expansion
+ * Control Board.
+ * 
+ * This will test the following on the TGA Pro:
+ * 
+ * - Audio INPUT and OUTPUT JACKS
+ * - Midi INPUT and Midi OUTPUT jacks
+ * - MEM0 (if installed)
+ * - MEM1 (if installed)
+ * - User LED
+ * 
+ * This will also test the Expansion Control Board (if installed):
+ * 
+ * - three POT knobs
+ * - two pushbutton SWitches
+ * - two LEDs
+ * - headphone output
+ * 
+ * SETUP INSTRUCTIONS:
+ * 
+ * 1) Connect an audio source to AUDIO INPUT.
+ * 2) Connect AUDIO OUTPUT to amp, stereo, headphone amplifier, etc.
+ * 3) if testing the MIDI ports, connect a MIDI cable between MIDI INPUT and MIDI OUTPUT
+ * 4) comment out any tests you want to skip
+ * 5) Compile and run the demo on your Teensy with TGA Pro.
+ * 6) Launch the Arduino Serial Monitor to see results.
+ * 
+ * TESTING INSTRUCTIONS:
+ * 
+ * 1) Check the Serial Monitor for the results of the MIDI testing, and external memory testing.
+ * 2) Confirm that the audio sent to the INPUT is coming out the OUTPUT.
+ * 3) Confirm the User LED is blinking every 1 or 2 seconds
+ * 
+ * If using the Expansion Control Board:
+ * 
+ * 1) Try pushing the pushbuttons. When pushed, they should turn on their corresponding LED.
+ * 2) Try turn each of the knobs one at a time. They should adjust the volume.
  * 
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
  * 
  */
-#include <Wire.h>
+
+#define RUN_MIDI_TEST // Comment out or delete this line to skip the MIDI test.
+#define RUN_MEMO_TEST // Comment out or delete this line to skip the MEM0 test.
+#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Comment out or delete this line to skip the MEM1 test.
+
 #include <Audio.h>
-#include <SPI.h>
 
 #define TGA_PRO_EXPAND_REV2
 #include "BALibrary.h"
@@ -26,8 +63,13 @@ AudioConnection      patch1(i2sIn,1, i2sOut, 1);
 BAAudioControlWM8731      codec;
 BAGpio                    gpio;  // access to User LED
 
+#if defined(RUN_MEMO_TEST)
 BASpiMemoryDMA spiMem0(SpiDeviceId::SPI_DEVICE0);
+#endif
+
+#if defined(RUN_MEM1_TEST)
 BASpiMemoryDMA spiMem1(SpiDeviceId::SPI_DEVICE1);
+#endif
 
 // Create a control object using the number of switches, pots, encoders and outputs on the
 // Blackaddr Audio Expansion Board.
@@ -39,11 +81,10 @@ void checkSwitch(unsigned id);
 bool spiTest(BASpiMemoryDMA *mem); // returns true if passed
 bool uartTest();                   // returns true if passed
 
+unsigned loopCounter = 0;
+
 void setup() {
   Serial.begin(57600);
-  
-  spiMem0.begin();
-  spiMem1.begin();
 
   // Disable the audio codec first
   codec.disable();
@@ -54,13 +95,25 @@ void setup() {
   configPhysicalControls(controls, codec);
 
   // Run the initial Midi connectivity and SPI memory tests.
+#if defined(RUN_MIDI_TEST)
   if (uartTest()) { Serial.println("MIDI Ports testing PASSED!"); }
+#endif
+
+#if defined(RUN_MEMO_TEST)
+  spiMem0.begin(); delay(10);
   if (spiTest(&spiMem0)) { Serial.println("SPI0 testing PASSED!");}
+#endif
+
+#if defined(RUN_MEM1_TEST)
+  spiMem1.begin(); delay(10);
   if (spiTest(&spiMem1)) { Serial.println("SPI1 testing PASSED!");}
+#endif
+
+  Serial.println("Now monitoring for input from Expansion Control Board");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  
   checkPot(0);
   checkPot(1);
   checkPot(2);
@@ -68,4 +121,8 @@ void loop() {
   checkSwitch(1);
 
   delay(10);
+  loopCounter++;
+  if ((loopCounter % 100) == 0) {
+    gpio.toggleLed();
+  }
 }

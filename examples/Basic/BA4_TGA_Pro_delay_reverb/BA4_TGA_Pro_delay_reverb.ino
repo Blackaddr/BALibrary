@@ -14,7 +14,6 @@
 #include <MIDI.h>
 #include "BALibrary.h"
 
-using namespace BAEffects;
 using namespace BALibrary;
 
 BAAudioControlWM8731      codecControl;

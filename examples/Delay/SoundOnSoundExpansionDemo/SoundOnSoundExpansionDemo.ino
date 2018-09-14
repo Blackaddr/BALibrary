@@ -13,11 +13,18 @@
  * 
  * The pots control the feedback, as well as the gate opening and close times.
  * 
+ * POT1 - Gate open time. Middle position (detent) is about 2100 ms.
+ * POT2 - gate close time. Middle position (detent) is about 2100 ms.
+ * POT3 - Effect volume. Controls the volume of the SOS effect separate from the normal volume
+ * SW1 - Strum and hold a chord then push this button. Continue holding the button until the LED1 light goes out.
+ * SW2 - Push this button to clear out the sound circulating in the delay.
+ * 
  */
 #define TGA_PRO_REVB // Set which hardware revision of the TGA Pro we're using
 #define TGA_PRO_EXPAND_REV2 // pull in the pin definitions for the Blackaddr Audio Expansion Board.
 
 #include "BALibrary.h"
+#include "BAEffects.h"
 
 using namespace BAEffects;
 using namespace BALibrary;

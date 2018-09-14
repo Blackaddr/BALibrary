@@ -5,17 +5,28 @@
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
  * 
- * This demo combines the Blackaddr Audio Expansion board to add physical controls
- * to the BAAudioEffectAnalogDelay.
+ * This example demonstrates teh BAAudioEffectsAnalogDelay effect. It can
+ * be controlled using the Blackaddr Audio "Expansion Control Board".
  * 
- * You can control the amount of delay, feedback and mix in realtime, as well as cycle
- * through the various analog filters built into the effect.
+ * POT1 (left) controls amount of delay
+ * POT2 (right) controls amount of feedback
+ * POT3 (center) controls the wet/dry mix
+ * SW1 will enable/bypass the audio effect. LED1 will be on when effect is enabled.
+ * SW2 will cycle through the 3 pre-programmed analog filters. LED2 will be on when SW2 is pressed.
  * 
+ * !!! SET POTS TO REASONABLE VALUES BEFORE STARTING TO AVOID SCREECHING FEEDBACK!!!!
+ * - set POT1 (delay) fully counter-clockwise then increase it slowly.
+ * - set POT2 (feedback) fully counter-clockwise, then increase it slowly
+ * - set POT3 (wet/dry mix) to half-way at the detent.
+ * 
+ * Using the Serial Montitor, send 'u' and 'd' characters to increase or decrease
+ * the headphone volume between values of 0 and 9.
  */
 #define TGA_PRO_REVB // Set which hardware revision of the TGA Pro we're using
 #define TGA_PRO_EXPAND_REV2 // pull in the pin definitions for the Blackaddr Audio Expansion Board.
 
 #include "BALibrary.h"
+#include "BAEffects.h"
 
 using namespace BAEffects;
 using namespace BALibrary;
@@ -41,7 +52,8 @@ AudioEffectAnalogDelay analogDelay(&delaySlot);
 // by passing it the maximum amount of delay we will use in millseconds. Note that
 // audio delay lengths are very limited when using internal memory due to limited
 // internal RAM size.
-AudioEffectAnalogDelay analogDelay(200.0f); // max delay of 200 ms.
+AudioEffectAnalogDelay analogDelay(200.0f); // set the max delay of 200 ms.
+// If you use external SPI memory you can get up to 1485.0f ms of delay!
 #endif
 
 AudioFilterBiquad cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
@@ -77,7 +89,7 @@ BAPhysicalControls controls(BA_EXPAND_NUM_SW, BA_EXPAND_NUM_POT, BA_EXPAND_NUM_E
 int loopCount = 0;
 unsigned filterIndex = 0; // variable for storing which analog filter we're currently using.
 constexpr unsigned MAX_HEADPHONE_VOL = 10;
-unsigned headphoneVolume = MAX_HEADPHONE_VOL; // control headphone volume from 0 to 10.
+unsigned headphoneVolume = 8; // control headphone volume from 0 to 10.
 
 // BAPhysicalControls returns a handle when you register a new control. We'll uses these handles when working with the controls.
 int bypassHandle, filterHandle, delayHandle, feedbackHandle, mixHandle, led1Handle, led2Handle; // Handles for the various controls
@@ -154,7 +166,7 @@ void loop() {
   }
 
   // Use SW2 to cycle through the filters
-  controls.setOutput(led2Handle, !controls.getSwitchValue(led2Handle));
+  controls.setOutput(led2Handle, controls.getSwitchValue(led2Handle));
   if (controls.isSwitchToggled(filterHandle)) {
     filterIndex = (filterIndex + 1) % 3; // update and potentionall roll the counter 0, 1, 2, 0, 1, 2, ...
     // cast the index between 0 to 2 to the enum class AudioEffectAnalogDelay::Filter

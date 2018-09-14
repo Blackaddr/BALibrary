@@ -15,7 +15,6 @@
  * pins.
  * 
  */
-//#include <i2c_t3.h>
 #include <Wire.h>
 #include <Audio.h>
 #include <MIDI.h>
@@ -23,8 +22,6 @@
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 using namespace midi;
-
-using namespace BAEffects;
 using namespace BALibrary;
 
 AudioInputI2S            i2sIn;
