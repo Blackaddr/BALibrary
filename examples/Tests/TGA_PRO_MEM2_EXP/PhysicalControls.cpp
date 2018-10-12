@@ -72,6 +72,10 @@ void checkSwitch(unsigned id)
       ledHandle = led1Handle;
   }
 
+  if (controlPtr->isSwitchToggled(swHandle)) {
+    Serial.println(String("Button ") + id + String(" pressed"));
+  }
+
   bool pressed = controlPtr->isSwitchHeld(swHandle);
   controlPtr->setOutput(ledHandle, pressed);
 }

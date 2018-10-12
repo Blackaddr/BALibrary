@@ -42,9 +42,9 @@
  * 
  */
 
-#define RUN_MIDI_TEST // Comment out or delete this line to skip the MIDI test.
-#define RUN_MEMO_TEST // Comment out or delete this line to skip the MEM0 test.
-#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Comment out or delete this line to skip the MEM1 test.
+//#define RUN_MIDI_TEST // Uncomment this line to skip the MIDI test.
+//#define RUN_MEMO_TEST // Uncomment this line to skip the MEM0 test.
+//#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Comment out or delete this line to skip the MEM1 test.
 
 #include <Audio.h>
 
