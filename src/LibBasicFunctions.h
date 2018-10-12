@@ -396,6 +396,61 @@ private:
     bool m_running = false;
 };
 
+/// Supported LFO waveforms
+enum class Waveform : unsigned {
+	SINE,     ///< sinewave
+	TRIANGLE, ///< triangle wave
+	SQUARE,   ///< square wave
+	SAWTOOTH, ///< sawtooth wave
+	RANDOM,   ///< a non-repeating random waveform
+	NUM_WAVEFORMS, ///< the number of defined waveforms
+};
+
+
+/**************************************************************************//**
+ * The LFO is commonly used on modulation effects where some parameter (delay,
+ * volume, etc.) is modulated via  waveform at a frequency below 20 Hz. Waveforms
+ * vary between -1.0f and +1.0f.
+ *****************************************************************************/
+template <class T>
+class LowFrequencyOscillator {
+public:
+
+//	/// Supported waveform precisions
+//	enum class Precision {
+//		FLOAT,  ///< single-precision floating point
+//		DOUBLE, ///< double-precision floating point
+//		INT16,  ///< Q15 integer precision
+//		INT32,  ///< Q31 integer precision
+//	};
+
+	// TODO: permit changing the mode/rate without destruction
+	LowFrequencyOscillator() = delete;
+	LowFrequencyOscillator(Waveform mode, unsigned frequencyHz);
+    ~LowFrequencyOscillator();
+
+	/// Reset the waveform back to initial phase
+	void reset();
+
+	/// Get the next waveform value
+	/// @returns the next value as a float
+	T  getNext();
+
+	/// Get a vector of the next AUDIO_BLOCK_SAMPLES waveform samples as
+	/// q15, a signed fixed point number form -1 to +0.999..
+	T getVector(T *targetVector);
+
+private:
+	void updatePhase();
+	Waveform m_mode;
+	T *m_waveformLut = nullptr;
+	size_t m_periodSamples = 0;
+	float m_radiansPerSample = 0.0f;
+	float m_phase = 0.0f;
+	float m_volume = 1.0f;
+
+};
+
 } // BALibrary
 
 
