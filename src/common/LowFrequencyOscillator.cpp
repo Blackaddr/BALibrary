@@ -24,75 +24,122 @@
 
 namespace BALibrary {
 
-constexpr float TWO_PI_F = 2.0f*3.1415927;
-
 template <class T>
-LowFrequencyOscillator<T>::LowFrequencyOscillator(Waveform mode, unsigned frequencyHz)
+void LowFrequencyOscillatorVector<T>::m_initPhase(T radiansPerSample)
 {
-	// Given the fixed sample rate, determine how many samples are in the waveform.
-	m_periodSamples = AUDIO_SAMPLE_RATE_EXACT / frequencyHz;
-	m_radiansPerSample = (float)TWO_PI_F / (float)m_periodSamples;
-	m_mode = mode;
+	// Initialize the phase vector starting at 0 radians, and incrementing
+	// by radiansPerSample for each element in the vector.
+	T initialPhase[AUDIO_BLOCK_SAMPLES];
+	for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+		initialPhase[i] = (T)i * radiansPerSample;
+	}
+	m_radiansPerBlock = radiansPerSample * (T)AUDIO_BLOCK_SAMPLES;
 
-	switch(mode) {
+	// there could be different threads controlling the LFO rate and consuming
+	// the LFO output, so we need to protected the m_phaseVec for thread-safety.
+	while (m_phaseLock.test_and_set()) {}
+	memcpy(m_phaseVec, initialPhase, sizeof(T)*AUDIO_BLOCK_SAMPLES);
+	m_phaseLock.clear();
+}
+
+// This function takes in the frequency of the LFO in hertz and uses knowledge
+// about the the audio sample rate to calcuate the correct radians per sample.
+template <class T>
+void LowFrequencyOscillatorVector<T>::setRateAudio(float frequencyHz)
+{
+	T radiansPerSample;
+	if (frequencyHz == 0) {
+		radiansPerSample = 0;
+	} else {
+		T periodSamples = AUDIO_SAMPLE_RATE_EXACT / frequencyHz;
+		radiansPerSample = (T)TWO_PI_F / periodSamples;
+	}
+	m_initPhase(radiansPerSample);
+}
+
+
+// This function is used when the LFO is being called at some rate other than
+// the audio rate. Here you can manually set the radians per sample as a fraction
+// of 2*PI
+template <class T>
+void LowFrequencyOscillatorVector<T>::setRateRatio(float ratio)
+{
+	T radiansPerSample;
+	if (ratio == 0) {
+		radiansPerSample = 0;
+	} else {
+		radiansPerSample = (T)TWO_PI_F * ratio;
+	}
+	m_initPhase(radiansPerSample);
+}
+
+// When this function is called, it will update the phase vector by incrementing by
+// radians per block which is radians per sample * block size.
+template <class T>
+inline void LowFrequencyOscillatorVector<T>::m_updatePhase()
+{
+	if (m_phaseLock.test_and_set()) { return; }
+
+	if (m_phaseVec[0] > TWO_PI_F) {
+		arm_offset_f32(m_phaseVec, -TWO_PI_F + m_radiansPerBlock, m_phaseVec, AUDIO_BLOCK_SAMPLES);
+	} else {
+		arm_offset_f32(m_phaseVec, m_radiansPerBlock, m_phaseVec, AUDIO_BLOCK_SAMPLES);
+	}
+	m_phaseLock.clear();
+}
+
+// This function will compute the vector of samples for the output waveform using
+// the current phase vector.
+template <class T>
+T *LowFrequencyOscillatorVector<T>::getNextVector()
+{
+	switch(m_waveform) {
 	case Waveform::SINE :
+		for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+			m_outputVec[i] = arm_sin_f32(m_phaseVec[i]);
+		}
 		break;
 	case Waveform::SQUARE :
+		for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+			if (m_phaseVec[i] > 3*PI_F) {
+				m_outputVec[i] = 0.0f;
+			}
+			else if (m_phaseVec[i] > 2*PI_F) {
+				m_outputVec[i] = 1.0f;
+			}
+			else if (m_phaseVec[i] > PI_F) {
+				m_outputVec[i] = 0.0f;
+			} else {
+				m_outputVec[i] = 1.0f;
+			}
+		}
 		break;
 	case Waveform::TRIANGLE :
+//		for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+//			if (m_phaseVec[i] > 3*PI_F) {
+//				m_outputVec[i] = ;
+//			}
+//			else if (m_phaseVec[i] > 2*PI_F) {
+//				m_outputVec[i] = 1.0f;
+//			}
+//			else if (m_phaseVec[i] > PI_F) {
+//				m_outputVec[i] = 0.0f;
+//			} else {
+//				m_outputVec[i] = 1.0f;
+//			}
+//		}
 		break;
 	case Waveform::RANDOM :
 		break;
 	default :
 		assert(0); // This occurs if a Waveform type is missing from the switch statement
 	}
+
+	m_updatePhase();
+	return m_outputVec;
 }
 
-template <class T>
-LowFrequencyOscillator<T>::~LowFrequencyOscillator()
-{
-
-}
-
-template <class T>
-void LowFrequencyOscillator<T>::reset()
-{
-	m_phase = 0;
-}
-
-template <class T>
-inline void LowFrequencyOscillator<T>::updatePhase()
-{
-	//if (m_phase < m_periodSamples-1) { m_phase++; }
-	//else { m_phase = 0; }
-	m_phase +=  m_radiansPerSample;
-	//if (m_phase < (TWO_PI_F-m_radiansPerSample)) { m_phase +=  m_radiansPerSample; }
-	//else { m_phase = 0.0f; }
-}
-
-template <class T>
-T LowFrequencyOscillator<T>::getNext()
-{
-	T value = 0.0f;
-	updatePhase();
-	switch(m_mode) {
-	case Waveform::SINE :
-		value = sin(m_phase);
-		break;
-	case Waveform::SQUARE :
-		break;
-	case Waveform::TRIANGLE :
-		break;
-	case Waveform::RANDOM :
-		break;
-	default :
-		assert(0); // This occurs if a Waveform type is missing from the switch statement
-	}
-
-	return value;
-}
-
-template class LowFrequencyOscillator<float>;
+template class LowFrequencyOscillatorVector<float>;
 
 } // namespace BALibrary
 

@@ -180,7 +180,8 @@ void loop() {
 
   // Use the loopCounter to roughly measure human timescales. Every few seconds, print the CPU usage
   // to the serial port. About 500,000 loops!
-  if (loopCount % 524288 == 0) {
+  //if (loopCount % 524288 == 0) {
+  if (loopCount % 25000 == 0) {
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
     Serial.print("% ");
     Serial.print(" tremolo: "); Serial.print(tremolo.processorUsage());

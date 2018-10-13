@@ -22,6 +22,7 @@
 
 #include <cstddef>
 #include <new>
+#include <atomic>
 
 #include <arm_math.h>
 #include "Arduino.h"
@@ -411,44 +412,47 @@ enum class Waveform : unsigned {
  * The LFO is commonly used on modulation effects where some parameter (delay,
  * volume, etc.) is modulated via  waveform at a frequency below 20 Hz. Waveforms
  * vary between -1.0f and +1.0f.
+ * @details this LFO is for operating on vectors of audio block samples.
  *****************************************************************************/
 template <class T>
-class LowFrequencyOscillator {
+class LowFrequencyOscillatorVector {
 public:
+	/// Default constructor, uses SINE as default waveform
+	LowFrequencyOscillatorVector() {}
 
-//	/// Supported waveform precisions
-//	enum class Precision {
-//		FLOAT,  ///< single-precision floating point
-//		DOUBLE, ///< double-precision floating point
-//		INT16,  ///< Q15 integer precision
-//		INT32,  ///< Q31 integer precision
-//	};
+	/// Specifies the desired waveform at construction time.
+	/// @param waveform specifies desired waveform
+	LowFrequencyOscillatorVector(Waveform waveform) : m_waveform(waveform) {};
+	/// Default destructor
+    ~LowFrequencyOscillatorVector() {}
 
-	// TODO: permit changing the mode/rate without destruction
-	LowFrequencyOscillator() = delete;
-	LowFrequencyOscillator(Waveform mode, unsigned frequencyHz);
-    ~LowFrequencyOscillator();
+    /// Change the waveform
+	/// @param waveform specifies desired waveform
+	void setWaveform(Waveform waveform) { m_waveform = waveform; }
 
-	/// Reset the waveform back to initial phase
-	void reset();
+	/// Set the LFO rate in Hertz
+	/// @param frequencyHz the LFO frequency in Hertz
+	void setRateAudio(float frequencyHz);
+
+	/// Set the LFO rate as a fraction
+	/// @param ratio the radians/sample will be 2*pi*ratio
+	void setRateRatio(float ratio);
 
 	/// Get the next waveform value
-	/// @returns the next value as a float
-	T  getNext();
-
-	/// Get a vector of the next AUDIO_BLOCK_SAMPLES waveform samples as
-	/// q15, a signed fixed point number form -1 to +0.999..
-	T getVector(T *targetVector);
+	/// @returns the next vector of phase values
+	T *getNextVector();
 
 private:
-	void updatePhase();
-	Waveform m_mode;
-	T *m_waveformLut = nullptr;
-	size_t m_periodSamples = 0;
-	float m_radiansPerSample = 0.0f;
-	float m_phase = 0.0f;
-	float m_volume = 1.0f;
-
+	void m_updatePhase(); ///< called internally when updating the phase vector
+	void m_initPhase(T radiansPerSample); ///< called internally to reset phase upon rate change
+	Waveform m_waveform = Waveform::SINE; ///< LFO waveform
+	T m_phaseVec[AUDIO_BLOCK_SAMPLES]; ///< the vector of next phase values
+	T m_radiansPerBlock = 0.0f; ///< stores the change in radians over one block of data
+	T m_outputVec[AUDIO_BLOCK_SAMPLES]; ///< stores the output LFO values
+	std::atomic_flag m_phaseLock = ATOMIC_FLAG_INIT; ///< used for thread-safety on m_phaseVec
+	const T PI_F = 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899; ///< 2*PI
+	const T TWO_PI_F = 2.0 *  3.14159265358979323846264338327950288419716939937510582097494459230781640628620899; ///< 2*PI
+	const T PI_DIV2_F = 0.5 *  3.14159265358979323846264338327950288419716939937510582097494459230781640628620899; ///< PI/2
 };
 
 } // BALibrary

@@ -49,7 +49,7 @@ public:
 	virtual ~AudioEffectTremolo(); ///< Destructor
 
 	// *** PARAMETERS ***
-	void rate(float rateValue) { m_rate = rateValue; }
+	void rate(float rateValue);
 
 	void depth(float depthValue) { m_depth = depthValue; }
 
@@ -108,7 +108,7 @@ public:
 
 private:
 	audio_block_t *m_inputQueueArray[1];
-	BALibrary::LowFrequencyOscillator<float> *m_osc = nullptr;
+	BALibrary::LowFrequencyOscillatorVector<float> m_osc;
 	int m_midiConfig[NUM_CONTROLS][2]; // stores the midi parameter mapping
 	bool m_isOmni = false;
 	bool m_bypass = true;
