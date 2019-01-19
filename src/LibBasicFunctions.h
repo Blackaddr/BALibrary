@@ -168,6 +168,9 @@ public:
     /// @param numSamples default value is AUDIO_BLOCK_SAMPLES, so typically you don't have to specify this parameter.
     /// @returns true on success, false on error.
     bool getSamples(audio_block_t *dest, size_t offsetSamples, size_t numSamples = AUDIO_BLOCK_SAMPLES);
+    bool getSamples(int16_t *dest, size_t offsetSamples, size_t numSamples);
+
+    bool interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBuffer, float fraction, size_t numSamples = AUDIO_BLOCK_SAMPLES);
 
     /// When using EXTERNAL memory, this function can return a pointer to the underlying ExtMemSlot object associated
     /// with the buffer.
@@ -192,7 +195,8 @@ private:
     MemType m_type;                                      ///< when 0, INTERNAL memory, when 1, external MEMORY.
     RingBuffer<audio_block_t *> *m_ringBuffer = nullptr; ///< When using INTERNAL memory, a RingBuffer will be created.
     ExtMemSlot *m_slot = nullptr;                        ///< When using EXTERNAL memory, an ExtMemSlot must be provided.
-    size_t m_maxDelaySamples = 0;                             ///< stores the number of audio samples in the AudioDelay.
+    size_t m_maxDelaySamples = 0;                        ///< stores the number of audio samples in the AudioDelay.
+    bool m_getSamples(int16_t *dest, size_t offsetSamples, size_t numSamples); ///< operates directly on int16_y buffers
 };
 
 /**************************************************************************//**
