@@ -198,7 +198,11 @@ bool AudioDelay::interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBu
 	int16_t frac1 = static_cast<int16_t>(32767.0f * fraction);
 	int16_t frac2 = 32767 - frac1;
 
-	// TODO optimize this later
+	if ((fraction < 0.0f) || (fraction > 1.0f) ) {
+	    return false;
+	}
+
+	/// @todo optimize this later
 	for (int i=0; i<numSamples; i++) {
 		destBuffer[i] =  ((frac1*extendedSourceBuffer[i]) >> 16) +  ((frac2*extendedSourceBuffer[i+1]) >> 16);
 	}
