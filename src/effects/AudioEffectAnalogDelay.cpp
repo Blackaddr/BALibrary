@@ -10,6 +10,8 @@
 
 using namespace BALibrary;
 
+#define INTERPOLATED_DELAY
+
 namespace BAEffects {
 
 constexpr int MIDI_CHANNEL = 0;
@@ -124,7 +126,13 @@ void AudioEffectAnalogDelay::update(void)
 
     // get the data. If using external memory with DMA, this won't be filled until
     // later.
+#ifdef INTERPOLATED_DELAY
+    int16_t extendedBuffer[AUDIO_BLOCK_SAMPLES+1]; // need one more sample for intepolating between 128th and 129th (last sample)
+    m_memory->getSamples(extendedBuffer, m_delaySamples, AUDIO_BLOCK_SAMPLES+1);
+#else
     m_memory->getSamples(blockToOutput, m_delaySamples);
+#endif
+
 
     // If using DMA, we need something else to do while that read executes, so
     // move on to input preprocessing
@@ -145,6 +153,13 @@ void AudioEffectAnalogDelay::update(void)
 	    // Using DMA
 		while (m_memory->getSlot()->isReadBusy()) {}
 	}
+
+#ifdef INTERPOLATED_DELAY
+	// TODO: partial delay testing
+	// extendedBuffer is oversized
+	//memcpy(blockToOutput->data, &extendedBuffer[1], sizeof(int16_t)*AUDIO_BLOCK_SAMPLES);
+	m_memory->interpolateDelay(extendedBuffer, blockToOutput->data, 0.1f, AUDIO_BLOCK_SAMPLES);
+#endif
 
 	// perform the wet/dry mix mix
 	m_postProcessing(blockToOutput, inputAudioBlock, blockToOutput);

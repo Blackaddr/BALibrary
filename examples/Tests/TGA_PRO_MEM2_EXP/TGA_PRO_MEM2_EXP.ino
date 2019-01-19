@@ -85,6 +85,7 @@ unsigned loopCounter = 0;
 
 void setup() {
   Serial.begin(57600);
+  delay(500);
 
   // Disable the audio codec first
   codec.disable();
