@@ -160,7 +160,7 @@ public:
     /// @returns the maximum delay offset in units of samples.
     size_t getMaxDelaySamples();
 
-    /// Retrieve an audio block (or samples) from the buffer.
+    /// Retrieve an audio block (or samples) from the buffer into a destination block
     /// @details when using INTERNAL memory, only supported size is AUDIO_BLOCK_SAMPLES. When using
     /// EXTERNAL, a size smaller than AUDIO_BLOCK_SAMPLES can be requested.
     /// @param dest pointer to the target audio block to write the samples to.
@@ -168,8 +168,27 @@ public:
     /// @param numSamples default value is AUDIO_BLOCK_SAMPLES, so typically you don't have to specify this parameter.
     /// @returns true on success, false on error.
     bool getSamples(audio_block_t *dest, size_t offsetSamples, size_t numSamples = AUDIO_BLOCK_SAMPLES);
+
+    /// Retrieve an audio block (or samples) from the buffer into a destination sample array
+    /// @details when using INTERNAL memory, only supported size is AUDIO_BLOCK_SAMPLES. When using
+    /// EXTERNAL, a size smaller than AUDIO_BLOCK_SAMPLES can be requested.
+    /// @param dest pointer to the target sample array to write the samples to.
+    /// @param offsetSamples data will start being transferred offset samples from the start of the audio buffer
+    /// @param numSamples number of samples to transfer
+    /// @returns true on success, false on error.
     bool getSamples(int16_t *dest, size_t offsetSamples, size_t numSamples);
 
+
+    /// Provides linearly interpolated samples between discrete samples in the sample buffer. The SOURCE buffer MUST BE OVERSIZED
+    /// to numSamples+1. This is because the last output sample is interpolated from between NUM_SAMPLES and NUM_SAMPLES+1.
+    /// @details this function is typically not used with audio blocks directly since you need AUDIO_BLOCK_SAMPLES+1 as the source size
+    /// even though output size is still only AUDIO_BLOCK_SAMPLES. Manually create an oversized buffer and fill it with AUDIO_BLOCK_SAMPLES+1.
+    /// e.g. 129 instead of 128 samples. The destBuffer does not need to be oversized.
+    /// @param extendedSourceBuffer A source array that contains one more input sample than output samples needed.
+    /// @param dest pointer to the target sample array to write the samples to.
+    /// @param fraction a value between 0.0f and 1.0f that sets the interpolation point between the discrete samples.
+    /// @param numSamples number of samples to transfer
+    /// @returns true on success, false on error.
     bool interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBuffer, float fraction, size_t numSamples = AUDIO_BLOCK_SAMPLES);
 
     /// When using EXTERNAL memory, this function can return a pointer to the underlying ExtMemSlot object associated
