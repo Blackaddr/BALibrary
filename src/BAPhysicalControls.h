@@ -58,9 +58,11 @@ class DigitalInput : public Bounce {
 public:
 	/// Create an input where digital low is return true. Most switches ground when pressed.
 	DigitalInput() : m_isPolarityInverted(true) {}
+
 	/// Create an input and specify if input polarity is inverted.
 	/// @param isPolarityInverted when false, a high voltage on the pin returns true, 0V returns false.
 	DigitalInput(bool isPolarityInverted) : m_isPolarityInverted(isPolarityInverted) {}
+
 	/// Read the state of the pin according to the polarity
 	/// @returns true when the input should be interpreted as the switch is closed, else false.
 	bool read() { return Bounce::read() != m_isPolarityInverted; } // logical XOR to conditionally invert polarity
@@ -69,8 +71,26 @@ public:
 	/// @param polarity when true, a low voltage on the pin is considered true by read(), else false.
 	void setPolarityInverted(bool polarity) { m_isPolarityInverted = polarity; }
 
+	/// Check if input has toggled from low to high to low by looking for falling edges
+	/// @returns true if the switch has toggled
+	bool hasInputToggled();
+
+	/// Check if the input is asserted
+	/// @returns true if the switch is held
+	bool isInputAssert();
+
+	/// Get the raw input value (ignores polarity inversion)
+	/// @returns returns true is physical pin is high, else false
+	bool getPinInputValue();
+
+	/// Store the current switch state and return true if it has changed.
+	/// @param switchState variable to store switch state in
+	/// @returns true when switch stage has changed since last check
+	bool hasInputChanged(bool &switchState);
+
 private:
 	bool m_isPolarityInverted;
+	bool m_isPushed;
 };
 
 /// Convenience class for handling an analog pot as a control. When calibrated,
@@ -93,8 +113,7 @@ public:
 	/// @param minCalibration See Potentiometer::calibrate()
 	/// @param maxCalibration See Potentiometer::calibrate()
 	/// @param swapDirection Optional param. See Potentiometer::calibrate()
-	Potentiometer(uint8_t analogPin, unsigned minCalibration, unsigned maxCalibration, bool swapDirection = false)
-        : m_pin(analogPin), m_swapDirection(swapDirection), m_minCalibration(minCalibration), m_maxCalibration(maxCalibration) {}
+	Potentiometer(uint8_t analogPin, unsigned minCalibration, unsigned maxCalibration, bool swapDirection = false);
 
 	/// Get new value from the pot.
 	/// @param value reference to a float, the new value will be written here. Value is between 0.0 and 1.0f.
@@ -117,6 +136,8 @@ public:
 	/// @param filterValue typical values are 0.80f to 0.95f
 	void setFeedbackFitlerValue(float fitlerValue);
 
+	void setCalibrationValues(unsigned min, unsigned max, bool swapDirection);
+
 	/// Call this static function before creating the object to obtain calibration data. The sequence
 	/// involves prompts over the Serial port.
 	/// @details E.g. call Potentiometer::calibrate(PIN). See BAExpansionCalibrate.ino in the library examples.
@@ -131,6 +152,10 @@ private:
 	unsigned m_maxCalibration;          ///< stores the max pot value
 	unsigned m_lastValue = 0;           ///< stores previous value
 	float m_feedbackFitlerValue = 0.9f; ///< feedback value for POT filter
+	float m_thresholdFactor = 0.05f;    ///< threshold factor causes values pot to saturate faster at the limits, default is 5%
+    unsigned m_minCalibrationThresholded; ///< stores the min pot value after thresholding
+    unsigned m_maxCalibrationThresholded; ///< stores the max pot value after thresholding
+    unsigned m_rangeThresholded;          ///< stores the range of max - min after thresholding
 };
 
 /// Convenience class for rotary (quadrature) encoders. Uses Arduino Encoder under the hood.
@@ -241,6 +266,18 @@ public:
 	/// @returns true if the pot value has changed since previous check, otherwise false
 	bool checkPotValue(unsigned handle, float &value);
 
+	/// Get the raw uncalibrated value from the pot
+	/// @returns uncalibrated pot value
+	int getPotRawValue(unsigned handle);
+
+	/// Override the calibration values with new values
+	/// @param handle handle the handle that was provided previously by calling addPot()
+	/// @param min the min raw value for the pot
+	/// @param max the max raw value for the pot
+	/// @param swapDirection when true, max raw value will mean min control value
+	/// @returns false when handle is out of range
+	bool setCalibrationValues(unsigned handle, unsigned min, unsigned max, bool swapDirection);
+
 	/// Check if the switch has been toggled since last call
 	/// @param handle the handle that was provided previously by calling addSwitch()
 	/// @returns true if the switch changed state, otherwise false
@@ -254,7 +291,13 @@ public:
     /// Get the value of the switch
 	/// @param handle the handle that was provided previously by calling addSwitch()
     /// @returns the value at the switch pin, either 0 or 1.
-    int getSwitchValue(unsigned handle);
+    bool getSwitchValue(unsigned handle);
+
+    /// Determine if a switch has changed value
+    /// @param handle the handle that was provided previously by calling addSwitch()
+    /// @param switchValue a boolean to store the new switch value
+    /// @returns true if the switch has changed
+    bool hasSwitchChanged(unsigned handle, bool &switchValue);
 
 private:
   std::vector<Potentiometer> m_pots;     ///< a vector of all added pots

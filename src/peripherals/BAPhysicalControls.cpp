@@ -117,15 +117,24 @@ bool BAPhysicalControls::checkPotValue(unsigned handle, float &value) {
 	return m_pots[handle].getValue(value);
 }
 
+int BAPhysicalControls::getPotRawValue(unsigned handle)
+{
+    if (handle >= m_pots.size()) { return false;} // handle is greater than number of pots
+    return m_pots[handle].getRawValue();
+}
+
+bool BAPhysicalControls::setCalibrationValues(unsigned handle, unsigned min, unsigned max, bool swapDirection)
+{
+    if (handle >= m_pots.size()) { return false;} // handle is greater than number of pots
+    m_pots[handle].setCalibrationValues(min, max, swapDirection);
+    return true;
+}
+
 bool BAPhysicalControls::isSwitchToggled(unsigned handle) {
 	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
 	DigitalInput &sw = m_switches[handle];
 
-	if (sw.update() && sw.fallingEdge()) {
-	  return true;
-	} else {
-	  return false;
-	}
+	return sw.hasInputToggled();
 }
 
 bool BAPhysicalControls::isSwitchHeld(unsigned handle)
@@ -133,15 +142,10 @@ bool BAPhysicalControls::isSwitchHeld(unsigned handle)
 	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
 	DigitalInput &sw = m_switches[handle];
 
-	sw.update();
-	if (sw.read()) {
-		return true;
-	} else {
-		return false;
-	}
+	return sw.isInputAssert();
 }
 
-int BAPhysicalControls::getSwitchValue(unsigned handle)
+bool BAPhysicalControls::getSwitchValue(unsigned handle)
 {
 	if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
 	DigitalInput &sw = m_switches[handle];
@@ -149,8 +153,66 @@ int BAPhysicalControls::getSwitchValue(unsigned handle)
 	return sw.read();
 }
 
-///////////////////////////
+bool BAPhysicalControls::hasSwitchChanged(unsigned handle, bool &switchValue)
+{
+    if (handle >= m_switches.size()) { return 0; } // handle is greater than number of switches
+    DigitalInput &sw = m_switches[handle];
 
+    return sw.hasInputChanged(switchValue);
+}
+
+///////////////////////////
+// DigitalInput
+///////////////////////////
+bool DigitalInput::hasInputToggled() {
+
+    update();
+    if (fell() && (m_isPolarityInverted == false)) {
+        // switch fell and polarity is not inverted
+        return true;
+    } else if (rose() && (m_isPolarityInverted == true)) {
+        // switch rose and polarity is inveretd
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool DigitalInput::isInputAssert()
+{
+    update();
+    // if polarity is inverted, return the opposite state
+    bool retValue = Bounce::read() ^ m_isPolarityInverted;
+    return retValue;
+}
+
+bool DigitalInput::getPinInputValue()
+{
+    update();
+    return Bounce::read();
+}
+
+bool DigitalInput::hasInputChanged(bool &switchState)
+{
+    update();
+    if (rose()) {
+        // return true if not inverted
+        switchState = m_isPolarityInverted ? false : true;
+        return true;
+    } else if (fell()) {
+        // return false if not inverted
+        switchState = m_isPolarityInverted ? true : false;
+        return true;
+    } else {
+        // return current value
+        switchState = Bounce::read() != m_isPolarityInverted;
+        return false;
+    }
+}
+
+///////////////////////////
+// DigitalOutput
+///////////////////////////
 void DigitalOutput::set(int val) {
 	m_val = val;
 	digitalWriteFast(m_pin, m_val);
@@ -161,6 +223,16 @@ void DigitalOutput::toggle(void) {
 	digitalWriteFast(m_pin, m_val);
 }
 
+///////////////////////////
+// Potentiometer
+///////////////////////////
+Potentiometer::Potentiometer(uint8_t analogPin, unsigned minCalibration, unsigned maxCalibration, bool swapDirection)
+        : m_pin(analogPin), m_swapDirection(swapDirection), m_minCalibration(minCalibration), m_maxCalibration(maxCalibration)
+{
+    adjustCalibrationThreshold(m_thresholdFactor); // Calculate the thresholded values
+}
+
+
 void Potentiometer::setFeedbackFitlerValue(float fitlerValue)
 {
 	m_feedbackFitlerValue = fitlerValue;
@@ -168,23 +240,31 @@ void Potentiometer::setFeedbackFitlerValue(float fitlerValue)
 
 bool Potentiometer::getValue(float &value) {
 
-	bool newValue = true;
+    bool newValue = true;
 
-	unsigned val = analogRead(m_pin); // read the raw value
-	// Use an IIR filter to smooth out the noise in the pot readings
-	unsigned valFilter = ( (1.0f - m_feedbackFitlerValue)*val + m_feedbackFitlerValue*m_lastValue);
+    unsigned val = analogRead(m_pin); // read the raw value
 
-	// constrain it within the calibration values, them map it to the desired range.
-	valFilter = constrain(valFilter, m_minCalibration, m_maxCalibration);
-	if (valFilter == m_lastValue) {
-		newValue = false;
-	}
-	m_lastValue = valFilter;
+    // constrain it within the calibration values, them map it to the desired range.
+    val = constrain(val, m_minCalibration, m_maxCalibration);
 
-	value = static_cast<float>(valFilter - m_minCalibration) / static_cast<float>(m_maxCalibration);
-	if (m_swapDirection) {
-		value = 1.0f - value;
-	}
+    // Use an IIR filter to smooth out the noise in the pot readings
+    unsigned valFilter = static_cast<unsigned>( (1.0f - m_feedbackFitlerValue)*val + (m_feedbackFitlerValue*m_lastValue));
+
+    if (valFilter == m_lastValue) {
+        newValue = false;
+    }
+    m_lastValue = valFilter;
+
+    //
+    if      (valFilter < m_minCalibrationThresholded)      { value = 0.0f; }
+    else if (valFilter > m_maxCalibrationThresholded) { value = 1.0f; }
+    else {
+        value = static_cast<float>(valFilter - m_minCalibrationThresholded) / static_cast<float>(m_rangeThresholded);
+    }
+
+    if (m_swapDirection) {
+        value = 1.0f - value;
+    }
     return newValue;
 }
 
@@ -192,11 +272,25 @@ int Potentiometer::getRawValue() {
 	return analogRead(m_pin);
 }
 
+// Recalculate thresholded limits based on thresholdFactor
 void Potentiometer::adjustCalibrationThreshold(float thresholdFactor)
 {
-	float threshold = m_maxCalibration * thresholdFactor;
-	m_maxCalibration -= static_cast<unsigned>(threshold);
-	m_minCalibration += static_cast<unsigned>(threshold);
+    m_thresholdFactor = thresholdFactor;
+    // the threshold is specificed as a fraction of the min/max range.
+	unsigned threshold = static_cast<unsigned>((m_maxCalibration - m_minCalibration) * thresholdFactor);
+
+	// Update the thresholded values
+	m_minCalibrationThresholded = m_minCalibration + threshold;
+	m_maxCalibrationThresholded = m_maxCalibration - threshold;
+	m_rangeThresholded = m_maxCalibrationThresholded - m_minCalibrationThresholded;
+}
+
+void Potentiometer::setCalibrationValues(unsigned min, unsigned max, bool swapDirection)
+{
+    m_minCalibration = min;
+    m_maxCalibration = max;
+    m_swapDirection = swapDirection;
+    adjustCalibrationThreshold(m_thresholdFactor);
 }
 
 Potentiometer::Calib Potentiometer::calibrate(uint8_t pin) {
