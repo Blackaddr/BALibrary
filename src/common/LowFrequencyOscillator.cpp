@@ -116,13 +116,20 @@ T *LowFrequencyOscillatorVector<T>::getNextVector()
 		for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
             if (m_phaseVec[i] < PI_F) {
                 // y = (-2/pi)*x + 1.0
-                m_outputVec[i] = TRIANGE_NEG_SLOPE * m_phaseVec[i] + 1.0f;
+                m_outputVec[i] = (TRIANGE_NEG_SLOPE * m_phaseVec[i]) + 1.0f;
             } else {
                 // y = (2/pi)*x -1.0
-                m_outputVec[i] = TRIANGE_POS_SLOPE * (m_phaseVec[i]-PI_F) - 1.0f;
+                m_outputVec[i] = (TRIANGE_POS_SLOPE * (m_phaseVec[i]-PI_F)) - 1.0f;
             }
 		}
 		break;
+	case Waveform::SAWTOOTH :
+	    // A sawtooth is made up of a single equation of the form y=mx+b
+	    // where m = -pi + 1.0
+	    for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+	        m_outputVec[i] = (SAWTOOTH_SLOPE * m_phaseVec[i]) + 1.0f;
+	    }
+	    break;
 	case Waveform::RANDOM :
 		break;
 	default :
