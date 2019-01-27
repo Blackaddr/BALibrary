@@ -101,34 +101,35 @@ T *LowFrequencyOscillatorVector<T>::getNextVector()
 		break;
 	case Waveform::SQUARE :
 		for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
-			if (m_phaseVec[i] > 3*PI_F) {
-				m_outputVec[i] = 0.0f;
-			}
-			else if (m_phaseVec[i] > 2*PI_F) {
-				m_outputVec[i] = 1.0f;
-			}
-			else if (m_phaseVec[i] > PI_F) {
-				m_outputVec[i] = 0.0f;
-			} else {
-				m_outputVec[i] = 1.0f;
-			}
+
+		    if (m_phaseVec[i] < PI_F) {
+		        m_outputVec[i] = -1.0f;
+		    } else {
+		        m_outputVec[i] = 1.0f;
+		    }
 		}
 		break;
 	case Waveform::TRIANGLE :
-//		for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
-//			if (m_phaseVec[i] > 3*PI_F) {
-//				m_outputVec[i] = ;
-//			}
-//			else if (m_phaseVec[i] > 2*PI_F) {
-//				m_outputVec[i] = 1.0f;
-//			}
-//			else if (m_phaseVec[i] > PI_F) {
-//				m_outputVec[i] = 0.0f;
-//			} else {
-//				m_outputVec[i] = 1.0f;
-//			}
-//		}
+	    // A triangle is made up from two different line equations of form y=mx+b
+	    // where m = +2/pi or -2/pi. A "Triangle Cos" starts at +1.0 and moves to
+	    // -1.0 from angles 0 to PI radians.
+		for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+            if (m_phaseVec[i] < PI_F) {
+                // y = (-2/pi)*x + 1.0
+                m_outputVec[i] = (TRIANGE_NEG_SLOPE * m_phaseVec[i]) + 1.0f;
+            } else {
+                // y = (2/pi)*x -1.0
+                m_outputVec[i] = (TRIANGE_POS_SLOPE * (m_phaseVec[i]-PI_F)) - 1.0f;
+            }
+		}
 		break;
+	case Waveform::SAWTOOTH :
+	    // A sawtooth is made up of a single equation of the form y=mx+b
+	    // where m = -pi + 1.0
+	    for (auto i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
+	        m_outputVec[i] = (SAWTOOTH_SLOPE * m_phaseVec[i]) + 1.0f;
+	    }
+	    break;
 	case Waveform::RANDOM :
 		break;
 	default :
