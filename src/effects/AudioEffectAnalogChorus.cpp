@@ -1,40 +1,32 @@
 /*
- * AudioEffectAnalogDelay.cpp
+ * AudioEffectAnalogChorus.cpp
  *
  *  Created on: Jan 7, 2018
  *      Author: slascos
  */
 #include <new>
-#include "AudioEffectAnalogDelayFilters.h"
-#include "AudioEffectAnalogDelay.h"
+#include "AudioEffectAnalogChorusFilters.h"
+#include "AudioEffectAnalogChorus.h"
 
 using namespace BALibrary;
 
-#define INTERPOLATED_DELAY Uncomment this line to test the inteprolated delay which adds 1/10th of a sample
+//#define INTERPOLATED_DELAY Uncomment this line to test the inteprolated delay which adds 1/10th of a sample
 
 namespace BAEffects {
 
 constexpr int MIDI_CHANNEL = 0;
 constexpr int MIDI_CONTROL = 1;
 
-AudioEffectAnalogDelay::AudioEffectAnalogDelay(float maxDelayMs)
+AudioEffectAnalogChorus::AudioEffectAnalogChorus()
 : AudioStream(1, m_inputQueueArray)
 {
-	m_memory = new AudioDelay(maxDelayMs);
-	m_maxDelaySamples = calcAudioSamples(maxDelayMs);
-	m_constructFilter();
-}
-
-AudioEffectAnalogDelay::AudioEffectAnalogDelay(size_t numSamples)
-: AudioStream(1, m_inputQueueArray)
-{
-	m_memory = new AudioDelay(numSamples);
-	m_maxDelaySamples = numSamples;
-	m_constructFilter();
+    m_memory = new AudioDelay(m_DEFAULT_DELAY_MS + m_DELAY_RANGE);
+    m_maxDelaySamples = calcAudioSamples(m_DEFAULT_DELAY_MS + m_DELAY_RANGE);
+    m_constructFilter();
 }
 
 // requires preallocated memory large enough
-AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
+AudioEffectAnalogChorus::AudioEffectAnalogChorus(ExtMemSlot *slot)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(slot);
@@ -43,25 +35,25 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
 	m_constructFilter();
 }
 
-AudioEffectAnalogDelay::~AudioEffectAnalogDelay()
+AudioEffectAnalogChorus::~AudioEffectAnalogChorus()
 {
 	if (m_memory) delete m_memory;
 	if (m_iir) delete m_iir;
 }
 
 // This function just sets up the default filter and coefficients
-void AudioEffectAnalogDelay::m_constructFilter(void)
+void AudioEffectAnalogChorus::m_constructFilter(void)
 {
-	// Use DM3 coefficients by default
-	m_iir = new IirBiQuadFilterHQ(DM3_NUM_STAGES, reinterpret_cast<const int32_t *>(&DM3), DM3_COEFF_SHIFT);
+	// Use CE2 coefficients by default
+	m_iir = new IirBiQuadFilterHQ(CE2_NUM_STAGES, reinterpret_cast<const int32_t *>(&CE2), CE2_COEFF_SHIFT);
 }
 
-void AudioEffectAnalogDelay::setFilterCoeffs(int numStages, const int32_t *coeffs, int coeffShift)
+void AudioEffectAnalogChorus::setFilterCoeffs(int numStages, const int32_t *coeffs, int coeffShift)
 {
 	m_iir->changeFilterCoeffs(numStages, coeffs, coeffShift);
 }
 
-void AudioEffectAnalogDelay::setFilter(Filter filter)
+void AudioEffectAnalogChorus::setFilter(Filter filter)
 {
 	switch(filter) {
 	case Filter::WARM :
@@ -70,14 +62,14 @@ void AudioEffectAnalogDelay::setFilter(Filter filter)
 	case Filter::DARK :
 		m_iir->changeFilterCoeffs(DARK_NUM_STAGES, reinterpret_cast<const int32_t *>(&DARK), DARK_COEFF_SHIFT);
 		break;
-	case Filter::DM3 :
+	case Filter::CE2 :
 	default:
-		m_iir->changeFilterCoeffs(DM3_NUM_STAGES, reinterpret_cast<const int32_t *>(&DM3), DM3_COEFF_SHIFT);
+		m_iir->changeFilterCoeffs(CE2_NUM_STAGES, reinterpret_cast<const int32_t *>(&CE2), CE2_COEFF_SHIFT);
 		break;
 	}
 }
 
-void AudioEffectAnalogDelay::update(void)
+void AudioEffectAnalogChorus::update(void)
 {
 	audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
@@ -179,92 +171,18 @@ void AudioEffectAnalogDelay::update(void)
 	m_blockToRelease = blockToRelease;
 }
 
-void AudioEffectAnalogDelay::delay(float milliseconds)
+void AudioEffectAnalogChorus::m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
 {
-	size_t delaySamples = calcAudioSamples(milliseconds);
-
-	if (delaySamples > m_memory->getMaxDelaySamples()) {
-	    // this exceeds max delay value, limit it.
-	    delaySamples = m_memory->getMaxDelaySamples();
-	}
-
-	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
-
-	if (!m_externalMemory) {
-		// internal memory
-		//QueuePosition queuePosition = calcQueuePosition(milliseconds);
-		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
-	} else {
-		// external memory
-		//Serial.println(String("CONFIG: delay:") + delaySamples);
-		ExtMemSlot *slot = m_memory->getSlot();
-
-		if (!slot) { Serial.println("ERROR: slot ptr is not valid"); }
-		if (!slot->isEnabled()) {
-			slot->enable();
-			Serial.println("WEIRD: slot was not enabled");
-		}
-	}
-
-	m_delaySamples = delaySamples;
+    memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
+//	if ( out && dry && wet) {
+//		alphaBlend(out, dry, wet, m_feedback);
+//		m_iir->process(out->data, out->data, AUDIO_BLOCK_SAMPLES);
+//	} else if (dry) {
+//		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
+//	}
 }
 
-void AudioEffectAnalogDelay::delay(size_t delaySamples)
-{
-	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
-
-	if (!m_externalMemory) {
-		// internal memory
-		//QueuePosition queuePosition = calcQueuePosition(delaySamples);
-		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
-	} else {
-		// external memory
-		//Serial.println(String("CONFIG: delay:") + delaySamples);
-		ExtMemSlot *slot = m_memory->getSlot();
-		if (!slot->isEnabled()) {
-			slot->enable();
-		}
-	}
-	m_delaySamples = delaySamples;
-}
-
-void AudioEffectAnalogDelay::delayFractionMax(float delayFraction)
-{
-	size_t delaySamples = static_cast<size_t>(static_cast<float>(m_memory->getMaxDelaySamples()) * delayFraction);
-
-	if (delaySamples > m_memory->getMaxDelaySamples()) {
-	    // this exceeds max delay value, limit it.
-	    delaySamples = m_memory->getMaxDelaySamples();
-	}
-
-	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
-
-	if (!m_externalMemory) {
-		// internal memory
-		//QueuePosition queuePosition = calcQueuePosition(delaySamples);
-		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
-	} else {
-		// external memory
-		//Serial.println(String("CONFIG: delay:") + delaySamples);
-		ExtMemSlot *slot = m_memory->getSlot();
-		if (!slot->isEnabled()) {
-			slot->enable();
-		}
-	}
-	m_delaySamples = delaySamples;
-}
-
-void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
-{
-	if ( out && dry && wet) {
-		alphaBlend(out, dry, wet, m_feedback);
-		m_iir->process(out->data, out->data, AUDIO_BLOCK_SAMPLES);
-	} else if (dry) {
-		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
-	}
-}
-
-void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
+void AudioEffectAnalogChorus::m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
 {
 	if (!out) return; // no valid output buffer
 
@@ -280,43 +198,97 @@ void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t 
 
 }
 
+void AudioEffectAnalogChorus::setDelayConfig(float averageDelayMs, float delayRangeMs)
+{
+    size_t delaySamples = calcAudioSamples(averageDelayMs + delayRangeMs);
 
-void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
+    if (delaySamples > m_memory->getMaxDelaySamples()) {
+        // this exceeds max delay value, limit it.
+        delaySamples = m_memory->getMaxDelaySamples();
+    }
+
+    if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
+
+    if (!m_externalMemory) {
+        // internal memory
+        // Do nothing
+    } else {
+        // external memory
+        ExtMemSlot *slot = m_memory->getSlot();
+
+        if (!slot) { Serial.println("ERROR: slot ptr is not valid"); }
+        if (!slot->isEnabled()) {
+            slot->enable();
+            Serial.println("WEIRD: slot was not enabled");
+        }
+    }
+}
+
+void AudioEffectAnalogChorus::setDelayConfig(size_t averageDelayNumSamples, size_t delayRangeNumSamples)
+{
+    size_t delaySamples = averageDelayNumSamples + delayRangeNumSamples;
+
+    if (delaySamples > m_memory->getMaxDelaySamples()) {
+        // this exceeds max delay value, limit it.
+        delaySamples = m_memory->getMaxDelaySamples();
+    }
+
+    if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
+
+    if (!m_externalMemory) {
+        // internal memory
+        // Do nothing
+    } else {
+        // external memory
+        ExtMemSlot *slot = m_memory->getSlot();
+
+        if (!slot) { Serial.println("ERROR: slot ptr is not valid"); }
+        if (!slot->isEnabled()) {
+            slot->enable();
+            Serial.println("WEIRD: slot was not enabled");
+        }
+    }
+}
+
+void AudioEffectAnalogChorus::rate(float rate)
+{
+    // update the LFO by mapping the rate into the MIN/MAX range, pass to LFO in milliseconds
+    m_lfo.setRateAudio(m_LFO_MIN_RATE + (rate * m_LFO_RANGE));
+}
+
+void AudioEffectAnalogChorus::processMidi(int channel, int control, int value)
 {
 
 	float val = (float)value / 127.0f;
 
-	if ((m_midiConfig[DELAY][MIDI_CHANNEL] == channel) &&
-        (m_midiConfig[DELAY][MIDI_CONTROL] == control)) {
-		// Delay
-		if (m_externalMemory) { m_maxDelaySamples = m_memory->getSlot()->size() / sizeof(int16_t); }
-		size_t delayVal = (size_t)(val * (float)m_maxDelaySamples);
-		delay(delayVal);
-		Serial.println(String("AudioEffectAnalogDelay::delay (ms): ") + calcAudioTimeMs(delayVal)
-				+ String(" (samples): ") + delayVal + String(" out of ") + m_maxDelaySamples);
-		return;
+	if ((m_midiConfig[RATE][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[RATE][MIDI_CONTROL] == control)) {
+		// Rate
+        Serial.println(String("AudioEffectAnalogChorus::rate: ") + 100*val + String("%"));
+        rate(val);
+        return;
 	}
 
 	if ((m_midiConfig[BYPASS][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[BYPASS][MIDI_CONTROL] == control)) {
 		// Bypass
-		if (value >= 65) { bypass(false); Serial.println(String("AudioEffectAnalogDelay::not bypassed -> ON") + value); }
-		else { bypass(true); Serial.println(String("AudioEffectAnalogDelay::bypassed -> OFF") + value); }
+		if (value >= 65) { bypass(false); Serial.println(String("AudioEffectAnalogChorus::not bypassed -> ON") + value); }
+		else { bypass(true); Serial.println(String("AudioEffectAnalogChorus::bypassed -> OFF") + value); }
 		return;
 	}
 
-	if ((m_midiConfig[FEEDBACK][MIDI_CHANNEL] == channel) &&
-        (m_midiConfig[FEEDBACK][MIDI_CONTROL] == control)) {
-		// Feedback
-		Serial.println(String("AudioEffectAnalogDelay::feedback: ") + 100*val + String("%"));
-		feedback(val);
+	if ((m_midiConfig[DEPTH][MIDI_CHANNEL] == channel) &&
+        (m_midiConfig[DEPTH][MIDI_CONTROL] == control)) {
+		// depth
+		Serial.println(String("AudioEffectAnalogChorus::depth: ") + 100*val + String("%"));
+		depth(val);
 		return;
 	}
 
 	if ((m_midiConfig[MIX][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[MIX][MIDI_CONTROL] == control)) {
 		// Mix
-		Serial.println(String("AudioEffectAnalogDelay::mix: Dry: ") + 100*(1-val) + String("% Wet: ") + 100*val );
+		Serial.println(String("AudioEffectAnalogChorus::mix: Dry: ") + 100*(1-val) + String("% Wet: ") + 100*val );
 		mix(val);
 		return;
 	}
@@ -324,14 +296,14 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[VOLUME][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[VOLUME][MIDI_CONTROL] == control)) {
 		// Volume
-		Serial.println(String("AudioEffectAnalogDelay::volume: ") + 100*val + String("%"));
+		Serial.println(String("AudioEffectAnalogChorus::volume: ") + 100*val + String("%"));
 		volume(val);
 		return;
 	}
 
 }
 
-void AudioEffectAnalogDelay::mapMidiControl(int parameter, int midiCC, int midiChannel)
+void AudioEffectAnalogChorus::mapMidiControl(int parameter, int midiCC, int midiChannel)
 {
 	if (parameter >= NUM_CONTROLS) {
 		return ; // Invalid midi parameter
