@@ -209,6 +209,22 @@ bool AudioDelay::interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBu
 	return true;
 }
 
+bool AudioDelay::interpolateDelayVector(int16_t *extendedSourceBuffer, int16_t *destBuffer, float *fractionVector, size_t numSamples)
+{
+    int16_t frac1Vec[numSamples];
+    int16_t frac2Vec[numSamples];
+
+    for (int i=0; i<numSamples; i++) {
+        int16_t fracAsInt = static_cast<int16_t>(32767.0f * fractionVector[i]);
+        frac1Vec[i] = fracAsInt;
+        frac2Vec[i] = 32767-frac1Vec[i];
+
+        destBuffer[i] =  (( frac1Vec[i] * extendedSourceBuffer[i]) >> 16) +  ((frac2Vec[i] * extendedSourceBuffer[i+1]) >> 16);
+    }
+
+    return true;
+}
+
 
 }
 

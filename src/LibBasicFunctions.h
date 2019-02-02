@@ -191,6 +191,20 @@ public:
     /// @returns true on success, false on error.
     bool interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBuffer, float fraction, size_t numSamples = AUDIO_BLOCK_SAMPLES);
 
+    /// Provides linearly interpolated samples between discrete samples in the sample buffer. The interpolation point for each samples
+    /// comes from a provided vector of floats which values between 0.0f and 1.0f;
+    /// The SOURCE buffer MUST BE OVERSIZED
+    /// to numSamples+1. This is because the last output sample is interpolated from between NUM_SAMPLES and NUM_SAMPLES+1.
+    /// @details this function is typically not used with audio blocks directly since you need AUDIO_BLOCK_SAMPLES+1 as the source size
+    /// even though output size is still only AUDIO_BLOCK_SAMPLES. Manually create an oversized buffer and fill it with AUDIO_BLOCK_SAMPLES+1.
+    /// e.g. 129 instead of 128 samples. The destBuffer does not need to be oversized.
+    /// @param extendedSourceBuffer A source array that contains one more input sample than output samples needed.
+    /// @param dest pointer to the target sample array to write the samples to.
+    /// @param fraction a vector of values between 0.0f and 1.0f that sets the interpolation point between the discrete samples.
+    /// @param numSamples number of samples to transfer
+    /// @returns true on success, false on error.
+    bool interpolateDelayVector(int16_t *extendedSourceBuffer, int16_t *destBuffer, float *fractionVector, size_t numSamples = AUDIO_BLOCK_SAMPLES);
+
     /// When using EXTERNAL memory, this function can return a pointer to the underlying ExtMemSlot object associated
     /// with the buffer.
     /// @returns pointer to the underlying ExtMemSlot.

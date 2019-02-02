@@ -43,8 +43,8 @@ public:
 	///< List of AudioEffectAnalogChorus MIDI controllable parameters
 	enum {
 		BYPASS = 0,  ///<  controls effect bypass
-		RATE,       ///< controls the modulate rate of the LFO
-		DEPTH,    ///< controls the depth of modulation of the LFO
+		RATE,        ///< controls the modulate rate of the LFO
+		DEPTH,       ///< controls the depth of modulation of the LFO
 		MIX,         ///< controls the the mix of input and chorus signals
 		VOLUME,      ///< controls the output volume level
 		NUM_CONTROLS ///< this can be used as an alias for the number of MIDI controls
@@ -89,6 +89,10 @@ public:
 
 	/// Toggle the bypass effect
 	void toggleBypass() { m_bypass = !m_bypass; }
+
+	/// Set the LFO waveform
+	/// @param waveform the LFO waveform to modulate chorus delay with
+	void setWaveform(BALibrary::Waveform waveform);
 
     /// Set the LFO frequency where 0.0f is MIN and 1.0f is MAX
     void rate(float rate);
@@ -160,7 +164,7 @@ public:
 	virtual void update(void); ///< update automatically called by the Teesny Audio Library
 
 private:
-	static constexpr float m_DEFAULT_DELAY_MS = 20.0f; ///< default average delay of chorus in milliseconds
+	static constexpr float m_DEFAULT_AVERAGE_DELAY_MS = 20.0f; ///< default average delay of chorus in milliseconds
 	static constexpr float m_DELAY_RANGE      = 15.0f; ///< default range of delay variation in milliseconds
 	static constexpr float m_LFO_MIN_RATE     = 2.0f;  ///< slowest possible LFO rate in milliseconds
 	static constexpr float m_LFO_RANGE        = 8.0f;  ///< fastest possible LFO rate in milliseconds
@@ -171,20 +175,24 @@ private:
 	bool m_enable = false;
 	bool m_externalMemory = false;
 	BALibrary::AudioDelay *m_memory = nullptr;
+    audio_block_t *m_previousBlock = nullptr;
+    audio_block_t *m_blockToRelease  = nullptr;
+
 	BALibrary::LowFrequencyOscillatorVector<float> m_lfo;
 	size_t m_maxDelaySamples = 0;
-	audio_block_t *m_previousBlock = nullptr;
-	audio_block_t *m_blockToRelease  = nullptr;
+	//size_t m_currentDelayOffset = 0;
+	float m_delayRange = 0;
+
 	BALibrary::IirBiQuadFilterHQ *m_iir = nullptr;
 
 	// Controls
 	int m_midiConfig[NUM_CONTROLS][2]; // stores the midi parameter mapping
-	size_t m_delaySamples = 0;
+	float m_averageDelaySamples = 0;
 	float m_lfoDepth = 0.0f;
 	float m_mix = 0.0f;
 	float m_volume = 1.0f;
 
-	void m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
+	void m_preProcessing (audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
 	void m_postProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet);
 
 	// Coefficients

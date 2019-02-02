@@ -87,7 +87,7 @@ int bypassHandle, filterHandle, rateHandle, depthHandle, mixHandle, led1Handle, 
 void setup() {
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
-  delay(100);
+  delay(500);
 
   // Setup the controls. The return value is the handle to use when checking for control changes, etc.
   // pushbuttons
@@ -137,6 +137,7 @@ void setup() {
   //analogChorus.setFilter(AudioEffectAnalogChorus::Filter::CE2); // The default filter. Naturally bright echo (highs stay, lows fade away)
   //analogChorus.setFilter(AudioEffectAnalogChorus::Filter::WARM); // A warm filter with a smooth frequency rolloff above 2Khz
   //analogChorus.setFilter(AudioEffectAnalogChorus::Filter::DARK); // A very dark filter, with a sharp rolloff above 1Khz
+  analogChorus.setFilter(AudioEffectAnalogChorus::Filter::WARM); // A very dark filter, with a sharp rolloff above 1Khz
 
   // Guitar cabinet: Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
@@ -157,30 +158,39 @@ void loop() {
   }
 
   // Use SW2 to cycle through the filters
+//  controls.setOutput(led2Handle, controls.getSwitchValue(led2Handle));
+//  if (controls.isSwitchToggled(filterHandle)) {
+//    filterIndex = (filterIndex + 1) % 3; // update and potentionall roll the counter 0, 1, 2, 0, 1, 2, ...
+//    // cast the index between 0 to 2 to the enum class AudioEffectAnalogChorus::Filter
+//    analogChorus.setFilter(static_cast<AudioEffectAnalogChorus::Filter>(filterIndex)); // will cycle through 0 to 2
+//    Serial.println(String("Filter set to ") + filterIndex);
+//  }
+
+  // Use SW2 to cycle through the waveforms
   controls.setOutput(led2Handle, controls.getSwitchValue(led2Handle));
   if (controls.isSwitchToggled(filterHandle)) {
-    filterIndex = (filterIndex + 1) % 3; // update and potentionall roll the counter 0, 1, 2, 0, 1, 2, ...
-    // cast the index between 0 to 2 to the enum class AudioEffectAnalogChorus::Filter
-    analogChorus.setFilter(static_cast<AudioEffectAnalogChorus::Filter>(filterIndex)); // will cycle through 0 to 2
-    Serial.println(String("Filter set to ") + filterIndex);
+    filterIndex = (filterIndex + 1) % 4; // update and potentionall roll the counter 0, 1, 2, 0, 1, 2, ...
+    // cast the index between 0 to 3 to the enum class AudioEffectAnalogChorus::Filter
+    analogChorus.setWaveform(static_cast<Waveform>(filterIndex)); // will cycle through 0 to 2
+    Serial.println(String("Waveform set to ") + filterIndex);
   }
 
   // Use POT1 (left) to control the rate setting
-  if (controls.checkPotValue(rateHandle, potValue)) {
+  if ( (controls.checkPotValue(rateHandle, potValue)) || (loopCount == 0) ) {
     // Pot has changed
     Serial.println(String("New RATE setting: ") + potValue);
     analogChorus.rate(potValue);
   }
 
   // Use POT2 (right) to control the depth setting
-  if (controls.checkPotValue(depthHandle, potValue)) {
+  if ( (controls.checkPotValue(depthHandle, potValue)) || (loopCount == 0) ) {
     // Pot has changed
     Serial.println(String("New DEPTH setting: ") + potValue);
     analogChorus.depth(potValue);
   }
 
   // Use POT3 (centre) to control the mix setting
-  if (controls.checkPotValue(mixHandle, potValue)) {
+  if ( (controls.checkPotValue(mixHandle, potValue)) || (loopCount == 0) ) {
     // Pot has changed
     Serial.println(String("New MIX setting: ") + potValue);
     analogChorus.mix(potValue);
