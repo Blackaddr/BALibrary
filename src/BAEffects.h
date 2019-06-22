@@ -26,5 +26,7 @@
 #include "AudioEffectAnalogDelay.h"
 #include "AudioEffectSOS.h"
 #include "AudioEffectTremolo.h"
+#include "AudioEffectPitchShift.h"
+#include "AudioEffectTemplate.h"
 
 #endif /* __BAEFFECTS_H */
