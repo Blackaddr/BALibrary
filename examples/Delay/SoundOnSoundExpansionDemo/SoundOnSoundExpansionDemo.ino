@@ -183,7 +183,7 @@ void loop() {
     Serial.println(String("New OPEN GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS));
   }
 
-  // Use POT2 (right) to control the feedback setting
+  // Use POT2 (right) to control the CLOSE GATE time
   if (controls.checkPotValue(closeHandle, potValue)) {
     // Pot has changed
     sos.gateCloseTime(potValue * MAX_GATE_TIME_MS);
