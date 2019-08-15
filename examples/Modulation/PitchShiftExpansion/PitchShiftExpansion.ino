@@ -45,7 +45,7 @@ AudioConnection rightOut(cabFilter,0, i2sOut, 1);
 
 //////////////////////////////////////////
 // SETUP PHYSICAL CONTROLS
-// - POT1 (left) will control the rate
+// - POT1 (left) will control the pitch
 // - POT2 (right) will control the depth
 // - POT3 (centre) will control the volume
 // - SW1  (left) will be used as a bypass control
@@ -68,7 +68,7 @@ constexpr unsigned MAX_HEADPHONE_VOL = 10;
 unsigned headphoneVolume = 8; // control headphone volume from 0 to 10.
 
 // BAPhysicalControls returns a handle when you register a new control. We'll uses these handles when working with the controls.
-int bypassHandle, volumeHandle, led1Handle, led2Handle; // Handles for the various controls
+int bypassHandle, volumeHandle, pitchHandle, led1Handle, led2Handle; // Handles for the various controls
 
 void setup() {
   delay(100); // wait a bit for serial to be available
@@ -80,7 +80,7 @@ void setup() {
   bypassHandle = controls.addSwitch(BA_EXPAND_SW1_PIN); // will be used for bypass control
   //button2Handle = controls.addSwitch(BA_EXPAND_SW2_PIN); // will be used for stepping through filters
   // pots
-  //rateHandle   = controls.addPot(BA_EXPAND_POT1_PIN, potCalibMin, potCalibMax, potSwapDirection); // control the amount of delay
+  pitchHandle   = controls.addPot(BA_EXPAND_POT1_PIN, potCalibMin, potCalibMax, potSwapDirection); // control the amount of delay
   //depthHandle  = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection); 
   volumeHandle = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection); 
   // leds
@@ -102,6 +102,7 @@ void setup() {
 
   // Set some default values.
   // These can be changed using the controls on the Blackaddr Audio Expansion Board
+  pitchShift.setPitchShiftCents(0);
   pitchShift.bypass(false);
 
   // Guitar cabinet: Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
@@ -127,12 +128,13 @@ void loop() {
 //  if (controls.isSwitchToggled(waveformHandle)) {
 //  }
 
-//  // Use POT1 (left) to control the rate setting
-//  if (controls.checkPotValue(rateHandle, potValue)) {
-//    // Pot has changed
-//    Serial.println(String("New RATE setting: ") + potValue);
-//    pitchShift.rate(potValue);
-//  }
+  // Use POT1 (left) to control the rate setting
+  if (controls.checkPotValue(pitchHandle, potValue)) {
+    // Pot has changed
+    
+    float pitch = pitchShift.setPitchKnob(potValue);
+    Serial.println(String("New PITCH setting: ") + potValue + String(" / ") + pitch);
+  }
 
 //  // Use POT2 (right) to control the depth setting
 //  if (controls.checkPotValue(depthHandle, potValue)) {

@@ -26,6 +26,22 @@
 #include "BATypes.h"
 #include "LibBasicFunctions.h"
 
+//#define USE_INT32
+#define USE_FLOAT
+//#define USE_INT16
+
+#ifdef USE_FLOAT
+using fftType_t = float;
+using fftInstance_t = arm_cfft_radix4_instance_f32;
+#define fftInit(A,B,C,D) arm_cfft_radix4_init_f32(A,B,C,D);
+#define int16ToFft(A,B,C) arm_q15_to_float(A,B,C)
+#define fftToInt16(A,B,C) arm_float_to_q15(A,B,C)
+#define fft(A,B) arm_cfft_radix4_f32(A,B)
+#define fastCos(X) arm_cos_f32(X)
+#define fastSin(X) arm_sin_f32(X)
+#endif
+
+
 namespace BAEffects {
 
 /**************************************************************************//**
@@ -35,16 +51,21 @@ class AudioEffectPitchShift : public AudioStream {
 public:
 
     static constexpr unsigned ANALYSIS_SIZE = 1024;
+    static constexpr float    ANALYSIS_SIZE_F = (float)ANALYSIS_SIZE;
+
     static constexpr unsigned FFT_OVERSAMPLE_FACTOR = 1;
-    static constexpr float    FFT_OVERSAMPLE_FACTOR_F = 1.0f;
+    static constexpr float    FFT_OVERSAMPLE_FACTOR_F = (float)(FFT_OVERSAMPLE_FACTOR);
+
     static constexpr unsigned SYNTHESIS_SIZE = ANALYSIS_SIZE * FFT_OVERSAMPLE_FACTOR;
-    static constexpr float    SYNTHESIS_SIZE_F =  (float)(ANALYSIS_SIZE * FFT_OVERSAMPLE_FACTOR);
+    static constexpr float    SYNTHESIS_SIZE_F =  (float)(SYNTHESIS_SIZE);
+
     static constexpr float OVERLAP_FACTOR_F = (float)ANALYSIS_SIZE / (float)AUDIO_BLOCK_SAMPLES;
 
 	///< List of AudioEffectTremolo MIDI controllable parameters
 	enum {
 		BYPASS = 0,  ///<  controls effect bypass
 		VOLUME,      ///< controls the output volume level
+		PITCH,       ///< controls the pitch scaling factor
 		NUM_CONTROLS ///< this can be used as an alias for the number of MIDI controls
 	};
 
@@ -71,6 +92,11 @@ public:
 	/// @details The default is 1.0.
 	/// @param vol Sets the output volume between -1.0 and +1.0
 	void volume(float vol) {m_volume = vol; }
+
+	float setPitchKnob(float val);
+	float setPitchShiftCents(int shiftCents);
+
+	//void pitch(float pitchScale) { m_pitchScale = pitchScale; }
 
 	// ** ENABLE  / DISABLE **
 
@@ -107,18 +133,28 @@ public:
 
 private:
 	audio_block_t *m_inputQueueArray[1];
-	//BALibrary::RingBuffer<audio_block_t*> m_inputFifo = BALibrary::RingBuffer<audio_block_t*>(ANALYSIS_SIZE/AUDIO_BLOCK_SAMPLES);
-	float m_analysisBuffer[ANALYSIS_SIZE];
-	float m_analysisFreqBuffer[2*ANALYSIS_SIZE];
-	float m_synthesisFreqBuffer[2*SYNTHESIS_SIZE];
-	float m_synthesisBuffer[SYNTHESIS_SIZE];
+
+	//fftType_t m_analysisBuffer[ANALYSIS_SIZE];
+	//float m_windowFunction[ANALYSIS_SIZE];
+
+	//fftType_t m_analysisFreqBuffer[2*SYNTHESIS_SIZE];
+	//fftType_t m_synthesisFreqBuffer[2*SYNTHESIS_SIZE];
+	//fftType_t m_synthesisBuffer[SYNTHESIS_SIZE];
+
+	fftType_t *m_analysisBuffer = nullptr;
+	fftType_t *m_windowFunction = nullptr;
+	fftType_t *m_analysisFreqBuffer = nullptr;
+	fftType_t *m_synthesisFreqBuffer = nullptr;
+	fftType_t *m_synthesisBuffer = nullptr;
+	fftType_t *m_windowBuffer = nullptr;
+	fftType_t *m_outputBuffer = nullptr;
 
 	bool m_initFailed = false;
 
 	unsigned m_frameIndex = 0;
 
-//	arm_rfft_instance_f32 fftFwdReal, fftInvReal;
-//    arm_cfft_radix4_instance_f32 fftFwdComplex, fftInvComplex;
+	arm_rfft_instance_f32 fftFwdReal, fftInvReal;
+    arm_cfft_radix4_instance_f32 fftFwdComplex, fftInvComplex;
 //    float32_t *bufInputReal;
 //    float32_t *bufInputComplex;
 //    float32_t *bufOutputReal;
@@ -126,7 +162,7 @@ private:
 
     //arm_cfft_radix4_instance_f32 fft_inst_fwd, fft_inst_inv;
 	//arm_rfft_instance_f32 rfftForwardInst, rfftInverseInst;
-	arm_cfft_radix4_instance_f32 cfftForwardInst, cfftInverseInst;
+	fftInstance_t cfftForwardInst, cfftInverseInst;
 
     //uint8_t ifftFlag = 0; // 0 is FFT, 1 is IFFT
     //uint8_t doBitReverse = 1;
@@ -138,8 +174,10 @@ private:
 
 	float m_volume = 1.0f;
 	float m_pitchScale = 1.0f;
+	int m_shiftCents = 0;
 
-	void m_ocean(float *inputFreq, float *outputFreq, float frameIndex, float pitchScale);
+	void m_ocean(fftType_t *inputFreq, fftType_t *outputFreq, float frameIndex, float pitchScale);
+	//void m_ocean16(int16_t* inputFreq, int16_t* outputFreq, float frameIndex, float pitchScale);
 
 };
 
