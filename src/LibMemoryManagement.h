@@ -203,6 +203,7 @@ public:
 private:
 	static bool m_configured; ///< there should only be one instance of ExternalSramManager in the whole project
 	static MemConfig m_memConfig[BALibrary::NUM_MEM_SLOTS]; ///< store the configuration information for each external memory
+	void m_configure(void); ///< configure the memory manager
 
 };
 

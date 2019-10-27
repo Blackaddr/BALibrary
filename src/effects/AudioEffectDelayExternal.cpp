@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include "BAHardware.h"
 #include "BAAudioEffectDelayExternal.h"
 
 using namespace BALibrary;
@@ -25,17 +25,6 @@ using namespace BALibrary;
 namespace BAEffects {
 
 #define SPISETTING SPISettings(20000000, MSBFIRST, SPI_MODE0)
-
-struct MemSpiConfig {
-	unsigned mosiPin;
-	unsigned misoPin;
-	unsigned sckPin;
-	unsigned csPin;
-	unsigned memSize;
-};
-
-constexpr MemSpiConfig Mem0Config = {7,  8, 14, 15, 65536 };
-constexpr MemSpiConfig Mem1Config = {21, 5, 20, 31, 65536 };
 
 unsigned BAAudioEffectDelayExternal::m_usingSPICount[2] = {0,0};
 
@@ -149,7 +138,7 @@ unsigned BAAudioEffectDelayExternal::m_allocated[2] = {0, 0};
 void BAAudioEffectDelayExternal::initialize(MemSelect mem, unsigned delayLength)
 {
 	unsigned samples = 0;
-	unsigned memsize, avail;
+	unsigned memsize = 0, avail = 0;
 
 	m_activeMask = 0;
 	m_headOffset = 0;
@@ -158,13 +147,13 @@ void BAAudioEffectDelayExternal::initialize(MemSelect mem, unsigned delayLength)
 	switch (mem) {
 	case MemSelect::MEM0 :
 	{
-		memsize = Mem0Config.memSize;
+		memsize = BAHardwareConfig.getSpiMemSizeBytes(mem) / sizeof(int16_t);
 		m_spi = &SPI;
 		m_spiChannel = 0;
-		m_misoPin = Mem0Config.misoPin;
-		m_mosiPin = Mem0Config.mosiPin;
-		m_sckPin =  Mem0Config.sckPin;
-		m_csPin = Mem0Config.csPin;
+		m_misoPin = SPI0_MISO_PIN;
+		m_mosiPin = SPI0_MOSI_PIN;
+		m_sckPin =  SPI0_SCK_PIN;
+		m_csPin = SPI0_CS_PIN;
 
 		m_spi->setMOSI(m_mosiPin);
 		m_spi->setMISO(m_misoPin);
@@ -175,13 +164,13 @@ void BAAudioEffectDelayExternal::initialize(MemSelect mem, unsigned delayLength)
 	case MemSelect::MEM1 :
 	{
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-		memsize = Mem1Config.memSize;
+		memsize = BAHardwareConfig.getSpiMemSizeBytes(mem) / sizeof(int16_t);
 		m_spi = &SPI1;
 		m_spiChannel = 1;
-		m_misoPin = Mem1Config.misoPin;
-		m_mosiPin = Mem1Config.mosiPin;
-		m_sckPin =  Mem1Config.sckPin;
-		m_csPin = Mem1Config.csPin;
+		m_misoPin = SPI1_MISO_PIN;
+		m_mosiPin = SPI1_MOSI_PIN;
+		m_sckPin =  SPI1_SCK_PIN;
+		m_csPin = SPI1_CS_PIN;
 
 		m_spi->setMOSI(m_mosiPin);
 		m_spi->setMISO(m_misoPin);

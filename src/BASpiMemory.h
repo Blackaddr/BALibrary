@@ -23,6 +23,7 @@
 #ifndef __BALIBRARY_BASPIMEMORY_H
 #define __BALIBRARY_BASPIMEMORY_H
 
+#include <cstdint>
 #include <SPI.h>
 #include <DmaSpi.h>
 
@@ -33,7 +34,7 @@ namespace BALibrary {
 
 /**************************************************************************//**
  *  This wrapper class uses the Arduino SPI (Wire) library to access the SPI ram.
- *  @details The purpose of this class is primilary for functional testing since
+ *  @details The purpose of this class is primarily for functional testing since
  *  it currently support single-word access. High performance access should be
  *  done using DMA techniques in the Teensy library.
  *****************************************************************************/
@@ -43,7 +44,7 @@ public:
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2).
 	/// @details default is 20 Mhz
 	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
-	BASpiMemory(SpiDeviceId memDeviceId);
+	BASpiMemory(SpiDeviceId memDeviceId = SpiDeviceId::SPI_DEVICE0);
 	/// Create an object to control either MEM0 (via SPI1) or MEM1 (via SPI2)
 	/// @param memDeviceId specify which MEM to control with SpiDeviceId.
 	/// @param speedHz specify the desired speed in Hz.
@@ -111,16 +112,36 @@ public:
 	/// @returns true if initialized, false if not yet initialized
     bool isStarted() const { return m_started; }
 
+    /// Dummy function for non-DMA writes
+    virtual bool isWriteBusy() const { return false; }
+
+    /// Dummy function for non-DMA reads
+    virtual bool isReadBusy() const { return false; }
+
 protected:
 	SPIClass *m_spi = nullptr;
 	SpiDeviceId m_memDeviceId; // the MEM device being control with this instance
 	uint8_t m_csPin; // the IO pin number for the CS on the controlled SPI device
 	SPISettings m_settings; // the Wire settings for this SPI port
 	bool m_started = false;
+	size_t m_dieBoundary; // the address at which a SPI memory die rollsover
+
+	size_t m_bytesToXfer(size_t address, size_t numBytes);
+	void m_rawWrite  (size_t address, uint8_t *src, size_t numBytes); // raw function for writing bytes
+	void m_rawZero   (size_t address, size_t numBytes);                // raw function for zeroing memory
+	void m_rawRead   (size_t address, uint8_t *dest, size_t numBytes); // raw function for reading bytes
+    void m_rawWrite16(size_t address, uint16_t *src, size_t numBytes); // raw function for writing words
+    void m_rawZero16 (size_t address, size_t numBytes);                // raw function for zeroing memory words
+    void m_rawRead16 (size_t address, uint16_t *dest, size_t numBytes); // raw function for reading words
 
 };
 
+#if !defined (__IMXRT1062__)
 
+/**************************************************************************//**
+ *  This wrapper class uses the Arduino SPI (Wire) library to access the SPI ram
+ *  via DMA.
+ *****************************************************************************/
 class BASpiMemoryDMA : public BASpiMemory {
 public:
 	BASpiMemoryDMA() = delete;
@@ -181,11 +202,11 @@ public:
 
 	/// Check if a DMA write is in progress
 	/// @returns true if a write DMA is in progress, else false
-	bool isWriteBusy() const;
+	bool isWriteBusy() const override;
 
 	/// Check if a DMA read is in progress
 	/// @returns true if a read DMA is in progress, else false
-	bool isReadBusy() const;
+	bool isReadBusy() const override;
 
 	/// Readout the 8-bit contents of the DMA storage buffer to the specified destination
 	/// @param dest pointer to the destination
@@ -212,8 +233,9 @@ private:
 	uint16_t m_txXferCount;
 	uint16_t m_rxXferCount;
 
-	void m_setSpiCmdAddr(int command, size_t address, uint8_t *dest);
+	void   m_setSpiCmdAddr(int command, size_t address, uint8_t *dest);
 };
+#endif // BASpiMemoryDMA declaration
 
 
 } /* namespace BALibrary */

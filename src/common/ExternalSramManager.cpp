@@ -34,21 +34,9 @@ MemConfig ExternalSramManager::m_memConfig[BALibrary::NUM_MEM_SLOTS];
 
 ExternalSramManager::ExternalSramManager(unsigned numMemories)
 {
-	// Initialize the static memory configuration structs
-	if (!m_configured) {
-		for (unsigned i=0; i < NUM_MEM_SLOTS; i++) {
-			m_memConfig[i].size           = MEM_MAX_ADDR[i]+1;
-			m_memConfig[i].totalAvailable = MEM_MAX_ADDR[i]+1;
-			m_memConfig[i].nextAvailable  = 0;
-
-			m_memConfig[i].m_spi = nullptr;
-		}
-		m_configured = true;
-	}
 }
 
 ExternalSramManager::ExternalSramManager()
-: ExternalSramManager(1)
 {
 
 }
@@ -62,11 +50,13 @@ ExternalSramManager::~ExternalSramManager()
 
 size_t ExternalSramManager::availableMemory(BALibrary::MemSelect mem)
 {
+    if (!m_configured) { m_configure(); }
 	return m_memConfig[mem].totalAvailable;
 }
 
 bool ExternalSramManager::requestMemory(ExtMemSlot *slot, float delayMilliseconds, BALibrary::MemSelect mem, bool useDma)
 {
+    if (!m_configured) { m_configure(); }
 	// convert the time to numer of samples
 	size_t delayLengthInt = (size_t)((delayMilliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f);
 	return requestMemory(slot, delayLengthInt * sizeof(int16_t), mem, useDma);
@@ -74,6 +64,8 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, float delayMillisecond
 
 bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALibrary::MemSelect mem, bool useDma)
 {
+
+    if (!m_configured) { m_configure(); }
 
 	if (m_memConfig[mem].totalAvailable >= sizeBytes) {
 		Serial.println(String("Configuring a slot for mem ") + mem);
@@ -116,6 +108,21 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALi
 	            + m_memConfig[mem].totalAvailable);
 		return false;
 	}
+}
+
+void ExternalSramManager::m_configure(void)
+{
+    // Initialize the static memory configuration structs
+    if (!m_configured) {
+        for (unsigned i=0; i < NUM_MEM_SLOTS; i++) {
+            m_memConfig[i].size           = BAHardwareConfig.getSpiMemSizeBytes(i);
+            m_memConfig[i].totalAvailable = BAHardwareConfig.getSpiMemSizeBytes(i);
+            m_memConfig[i].nextAvailable  = 0;
+
+            m_memConfig[i].m_spi = nullptr;
+        }
+        m_configured = true;
+    }
 }
 
 }

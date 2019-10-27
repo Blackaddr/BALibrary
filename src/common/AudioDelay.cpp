@@ -203,7 +203,7 @@ bool AudioDelay::interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBu
 	}
 
 	/// @todo optimize this later
-	for (int i=0; i<numSamples; i++) {
+	for (unsigned i=0; i<numSamples; i++) {
 		destBuffer[i] =  ((frac1*extendedSourceBuffer[i]) >> 16) +  ((frac2*extendedSourceBuffer[i+1]) >> 16);
 	}
 	return true;

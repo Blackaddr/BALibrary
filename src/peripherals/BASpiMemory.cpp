@@ -17,23 +17,24 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 #include "Arduino.h"
 #include "BASpiMemory.h"
 
 namespace BALibrary {
 
 // MEM0 Settings
-constexpr int SPI_CS_MEM0 = 15;
-constexpr int SPI_MOSI_MEM0 = 7;
-constexpr int SPI_MISO_MEM0 = 8;
-constexpr int SPI_SCK_MEM0 = 14;
+constexpr int SPI_CS_MEM0 = SPI0_CS_PIN;
+constexpr int SPI_MOSI_MEM0 = SPI0_MOSI_PIN;
+constexpr int SPI_MISO_MEM0 = SPI0_MISO_PIN;
+constexpr int SPI_SCK_MEM0 = SPI0_SCK_PIN;
 
+#if defined(SPI1_AVAILABLE)
 // MEM1 Settings
-constexpr int SPI_CS_MEM1 = 31;
-constexpr int SPI_MOSI_MEM1 = 21;
-constexpr int SPI_MISO_MEM1 = 5;
-constexpr int SPI_SCK_MEM1 = 20;
+constexpr int SPI_CS_MEM1 = SPI1_CS_PIN;
+constexpr int SPI_MOSI_MEM1 = SPI1_MOSI_PIN;
+constexpr int SPI_MISO_MEM1 = SPI1_MISO_PIN;
+constexpr int SPI_SCK_MEM1 = SPI1_SCK_PIN;
+#endif
 
 // SPI Constants
 constexpr int SPI_WRITE_MODE_REG = 0x1;
@@ -47,6 +48,7 @@ constexpr int SPI_ADDR_0_MASK = 0x0000FF;
 
 constexpr int CMD_ADDRESS_SIZE = 4;
 constexpr int MAX_DMA_XFER_SIZE = 0x4000;
+
 
 BASpiMemory::BASpiMemory(SpiDeviceId memDeviceId)
 {
@@ -71,6 +73,7 @@ void BASpiMemory::begin()
 		m_spi->setMISO(SPI_MISO_MEM0);
 		m_spi->setSCK(SPI_SCK_MEM0);
 		m_spi->begin();
+		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM0).DIE_BOUNDARY;
 		break;
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
@@ -81,6 +84,7 @@ void BASpiMemory::begin()
 		m_spi->setMISO(SPI_MISO_MEM1);
 		m_spi->setSCK(SPI_SCK_MEM1);
 		m_spi->begin();
+		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM1).DIE_BOUNDARY;
 		break;
 #endif
 
@@ -112,40 +116,28 @@ void BASpiMemory::write(size_t address, uint8_t data)
 	digitalWrite(m_csPin, HIGH);
 }
 
-// Single address write
+// Sequential write
 void BASpiMemory::write(size_t address, uint8_t *src, size_t numBytes)
 {
-	uint8_t *dataPtr = src;
-
-	m_spi->beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
-	m_spi->transfer(SPI_WRITE_CMD);
-	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
-	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
-	m_spi->transfer((address & SPI_ADDR_0_MASK));
-
-	for (size_t i=0; i < numBytes; i++) {
-		m_spi->transfer(*dataPtr++);
-	}
-	m_spi->endTransaction();
-	digitalWrite(m_csPin, HIGH);
+    // Check if this burst will cross the die boundary
+    while (numBytes > 0) {
+        size_t bytesToWrite = m_bytesToXfer(address, numBytes);
+        m_rawWrite(address, src, bytesToWrite);
+        address += bytesToWrite;
+        numBytes -= bytesToWrite;
+        src += bytesToWrite;
+    }
 }
-
 
 void BASpiMemory::zero(size_t address, size_t numBytes)
 {
-	m_spi->beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
-	m_spi->transfer(SPI_WRITE_CMD);
-	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
-	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
-	m_spi->transfer((address & SPI_ADDR_0_MASK));
-
-	for (size_t i=0; i < numBytes; i++) {
-		m_spi->transfer(0);
-	}
-	m_spi->endTransaction();
-	digitalWrite(m_csPin, HIGH);
+    // Check if this burst will cross the die boundary
+    while (numBytes > 0) {
+        size_t bytesToWrite = m_bytesToXfer(address, numBytes);
+        m_rawZero(address, bytesToWrite);
+        address += bytesToWrite;
+        numBytes -= bytesToWrite;
+    }
 }
 
 void BASpiMemory::write16(size_t address, uint16_t data)
@@ -161,35 +153,29 @@ void BASpiMemory::write16(size_t address, uint16_t data)
 
 void BASpiMemory::write16(size_t address, uint16_t *src, size_t numWords)
 {
-	uint16_t *dataPtr = src;
-
-	m_spi->beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
-	m_spi->transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
-	m_spi->transfer16(address & 0xFFFF);
-
-	for (size_t i=0; i<numWords; i++) {
-		m_spi->transfer16(*dataPtr++);
-	}
-
-	m_spi->endTransaction();
-	digitalWrite(m_csPin, HIGH);
+    // Check if this burst will cross the die boundary
+    size_t numBytes = numWords * sizeof(uint16_t);
+    while (numBytes > 0) {
+        size_t bytesToWrite = m_bytesToXfer(address, numBytes);
+        size_t wordsToWrite = bytesToWrite / sizeof(uint16_t);
+        m_rawWrite16(address, src, wordsToWrite);
+        address += bytesToWrite;
+        numBytes -= bytesToWrite;
+        src += wordsToWrite;
+    }
 }
 
 void BASpiMemory::zero16(size_t address, size_t numWords)
 {
-	m_spi->beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
-	m_spi->transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
-	m_spi->transfer16(address & 0xFFFF);
-
-	for (size_t i=0; i<numWords; i++) {
-		m_spi->transfer16(0);
-	}
-
-	m_spi->endTransaction();
-	digitalWrite(m_csPin, HIGH);
-	Serial.println("DONE!");
+    // Check if this burst will cross the die boundary
+    size_t numBytes = numWords * sizeof(uint16_t);
+    while (numBytes > 0) {
+        size_t bytesToWrite = m_bytesToXfer(address, numBytes);
+        size_t wordsToWrite = bytesToWrite / sizeof(uint16_t);
+        m_rawZero16(address, wordsToWrite);
+        address += bytesToWrite;
+        numBytes -= bytesToWrite;
+    }
 }
 
 // single address read
@@ -209,24 +195,16 @@ uint8_t BASpiMemory::read(size_t address)
 	return data;
 }
 
-
 void BASpiMemory::read(size_t address, uint8_t *dest, size_t numBytes)
 {
-	uint8_t *dataPtr = dest;
-
-	m_spi->beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
-	m_spi->transfer(SPI_READ_CMD);
-	m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
-	m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
-	m_spi->transfer((address & SPI_ADDR_0_MASK));
-
-	for (size_t i=0; i<numBytes; i++) {
-		*dataPtr++ = m_spi->transfer(0);
-	}
-
-	m_spi->endTransaction();
-	digitalWrite(m_csPin, HIGH);
+    // Check if this burst will cross the die boundary
+    while (numBytes > 0) {
+        size_t bytesToRead = m_bytesToXfer(address, numBytes);
+        m_rawRead(address, dest, bytesToRead);
+        address += bytesToRead;
+        numBytes -= bytesToRead;
+        dest += bytesToRead;
+    }
 }
 
 uint16_t BASpiMemory::read16(size_t address)
@@ -246,21 +224,137 @@ uint16_t BASpiMemory::read16(size_t address)
 
 void BASpiMemory::read16(size_t address, uint16_t *dest, size_t numWords)
 {
-
-	uint16_t *dataPtr = dest;
-	m_spi->beginTransaction(m_settings);
-	digitalWrite(m_csPin, LOW);
-	m_spi->transfer16((SPI_READ_CMD << 8) | (address >> 16) );
-	m_spi->transfer16(address & 0xFFFF);
-
-	for (size_t i=0; i<numWords; i++) {
-		*dataPtr++ = m_spi->transfer16(0);
-	}
-
-	m_spi->endTransaction();
-	digitalWrite(m_csPin, HIGH);
+    // Check if this burst will cross the die boundary
+    size_t numBytes = numWords * sizeof(uint16_t);
+    while (numBytes > 0) {
+        size_t bytesToRead = m_bytesToXfer(address, numBytes);
+        size_t wordsToRead = bytesToRead / sizeof(uint16_t);
+        m_rawRead16(address, dest, wordsToRead);
+        address += bytesToRead;
+        numBytes -= bytesToRead;
+        dest += wordsToRead;
+    }
 }
 
+// PRIVATE FUNCTIONS
+size_t BASpiMemory::m_bytesToXfer(size_t address, size_t numBytes)
+{
+    // Check if this burst will cross the die boundary
+    size_t bytesToXfer = numBytes;
+    if (m_dieBoundary) {
+        if ((address < m_dieBoundary) && (address+numBytes > m_dieBoundary)) {
+            // split into two xfers
+            bytesToXfer = m_dieBoundary-address;
+        }
+    }
+    return bytesToXfer;
+}
+
+void BASpiMemory::m_rawWrite(size_t address, uint8_t *src, size_t numBytes)
+{
+    uint8_t *dataPtr = src;
+
+    m_spi->beginTransaction(m_settings);
+    digitalWrite(m_csPin, LOW);
+    m_spi->transfer(SPI_WRITE_CMD);
+    m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+    m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+    m_spi->transfer((address & SPI_ADDR_0_MASK));
+
+    for (size_t i=0; i < numBytes; i++) {
+        m_spi->transfer(*dataPtr++);
+    }
+    m_spi->endTransaction();
+    digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::m_rawWrite16(size_t address, uint16_t *src, size_t numWords)
+{
+    uint16_t *dataPtr = src;
+
+    m_spi->beginTransaction(m_settings);
+    digitalWrite(m_csPin, LOW);
+    m_spi->transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
+    m_spi->transfer16(address & 0xFFFF);
+
+    for (size_t i=0; i<numWords; i++) {
+        m_spi->transfer16(*dataPtr++);
+    }
+
+    m_spi->endTransaction();
+    digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::m_rawZero(size_t address, size_t numBytes)
+{
+    m_spi->beginTransaction(m_settings);
+    digitalWrite(m_csPin, LOW);
+    m_spi->transfer(SPI_WRITE_CMD);
+    m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+    m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+    m_spi->transfer((address & SPI_ADDR_0_MASK));
+
+    for (size_t i=0; i < numBytes; i++) {
+        m_spi->transfer(0);
+    }
+    m_spi->endTransaction();
+    digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::m_rawZero16(size_t address, size_t numWords)
+{
+    m_spi->beginTransaction(m_settings);
+    digitalWrite(m_csPin, LOW);
+    m_spi->transfer16((SPI_WRITE_CMD << 8) | (address >> 16) );
+    m_spi->transfer16(address & 0xFFFF);
+
+    for (size_t i=0; i<numWords; i++) {
+        m_spi->transfer16(0);
+    }
+
+    m_spi->endTransaction();
+    digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::m_rawRead(size_t address, uint8_t *dest, size_t numBytes)
+{
+    uint8_t *dataPtr = dest;
+
+    m_spi->beginTransaction(m_settings);
+    digitalWrite(m_csPin, LOW);
+    m_spi->transfer(SPI_READ_CMD);
+    m_spi->transfer((address & SPI_ADDR_2_MASK) >> SPI_ADDR_2_SHIFT);
+    m_spi->transfer((address & SPI_ADDR_1_MASK) >> SPI_ADDR_1_SHIFT);
+    m_spi->transfer((address & SPI_ADDR_0_MASK));
+
+    for (size_t i=0; i<numBytes; i++) {
+        *dataPtr++ = m_spi->transfer(0);
+    }
+
+    m_spi->endTransaction();
+    digitalWrite(m_csPin, HIGH);
+}
+
+void BASpiMemory::m_rawRead16(size_t address, uint16_t *dest, size_t numWords)
+{
+    uint16_t *dataPtr = dest;
+    m_spi->beginTransaction(m_settings);
+    digitalWrite(m_csPin, LOW);
+    m_spi->transfer16((SPI_READ_CMD << 8) | (address >> 16) );
+    m_spi->transfer16(address & 0xFFFF);
+
+    for (size_t i=0; i<numWords; i++) {
+        *dataPtr++ = m_spi->transfer16(0);
+    }
+
+    m_spi->endTransaction();
+    digitalWrite(m_csPin, HIGH);
+}
+
+#if defined (__IMXRT1062__)
+//#if 0
+using BASpiMemoryDMA = BASpiMemory;
+#else
 /////////////////////////////////////////////////////////////////////////////
 // BASpiMemoryDMA
 /////////////////////////////////////////////////////////////////////////////
@@ -342,8 +436,8 @@ void BASpiMemoryDMA::begin(void)
 		m_spi->setMISO(SPI_MISO_MEM0);
 		m_spi->setSCK(SPI_SCK_MEM0);
 		m_spi->begin();
-		//m_spiDma = &DMASPI0;
 		m_spiDma = new DmaSpiGeneric();
+		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM0).DIE_BOUNDARY;
 		break;
 
 #if defined(__MK66FX1M0__) // DMA on SPI1 is only supported on T3.6
@@ -355,7 +449,7 @@ void BASpiMemoryDMA::begin(void)
 		m_spi->setSCK(SPI_SCK_MEM1);
 		m_spi->begin();
 		m_spiDma = new DmaSpiGeneric(1);
-		//m_spiDma = &DMASPI1;
+		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM1).DIE_BOUNDARY;
 		break;
 #endif
 
@@ -366,7 +460,6 @@ void BASpiMemoryDMA::begin(void)
 
     m_spiDma->begin();
     m_spiDma->start();
-
     m_started = true;
 }
 
@@ -380,14 +473,16 @@ void BASpiMemoryDMA::write(size_t address, uint8_t *src, size_t numBytes)
 	size_t bytesRemaining = numBytes;
 	uint8_t *srcPtr = src;
 	size_t nextAddress = address;
+
 	while (bytesRemaining > 0) {
-		m_txXferCount = min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE));
-		while ( m_txTransfer[1].busy()) {} // wait until not busy
+	    m_txXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
+
+		while ( m_txTransfer[1].busy() || m_txTransfer[0].busy()) { yield(); } // wait until not busy
 		m_setSpiCmdAddr(SPI_WRITE_CMD, nextAddress, m_txCommandBuffer);
 		m_txTransfer[1] = DmaSpi::Transfer(m_txCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
 		m_spiDma->registerTransfer(m_txTransfer[1]);
 
-		while ( m_txTransfer[0].busy()) {} // wait until not busy
+		while ( m_txTransfer[0].busy() || m_txTransfer[1].busy()) { yield(); } // wait until not busy
 		m_txTransfer[0] = DmaSpi::Transfer(srcPtr, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS);
 		m_spiDma->registerTransfer(m_txTransfer[0]);
 		bytesRemaining -= m_txXferCount;
@@ -401,15 +496,23 @@ void BASpiMemoryDMA::zero(size_t address, size_t numBytes)
 {
 	size_t bytesRemaining = numBytes;
 	size_t nextAddress = address;
+
+	/// TODO: Why can't the T4 zero the memory when a NULLPTR is passed? It seems to write a constant random value.
+	/// Perhaps there is somewhere we can set a fill value?
+	uint8_t zeroBuffer[MAX_DMA_XFER_SIZE];
+	memset(zeroBuffer, 0, MAX_DMA_XFER_SIZE);
+
 	while (bytesRemaining > 0) {
-		m_txXferCount = min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE));
-		while ( m_txTransfer[1].busy()) {} // wait until not busy
+	    m_txXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
+
+		while ( m_txTransfer[1].busy()) { yield(); } // wait until not busy
 		m_setSpiCmdAddr(SPI_WRITE_CMD, nextAddress, m_txCommandBuffer);
 		m_txTransfer[1] = DmaSpi::Transfer(m_txCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
 		m_spiDma->registerTransfer(m_txTransfer[1]);
 
-		while ( m_txTransfer[0].busy()) {} // wait until not busy
-		m_txTransfer[0] = DmaSpi::Transfer(nullptr, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS);
+		while ( m_txTransfer[0].busy()) { yield(); } // wait until not busy
+		//m_txTransfer[0] = DmaSpi::Transfer(nullptr, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS);
+		m_txTransfer[0] = DmaSpi::Transfer(zeroBuffer, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS);
 		m_spiDma->registerTransfer(m_txTransfer[0]);
 		bytesRemaining -= m_txXferCount;
 		nextAddress += m_txXferCount;
@@ -434,14 +537,15 @@ void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 	uint8_t *destPtr = dest;
 	size_t nextAddress = address;
 	while (bytesRemaining > 0) {
-		m_setSpiCmdAddr(SPI_READ_CMD, nextAddress, m_rxCommandBuffer);
+	    m_rxXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
 
-		while ( m_rxTransfer[1].busy()) {}
+		m_setSpiCmdAddr(SPI_READ_CMD, nextAddress, m_rxCommandBuffer);
+		while ( m_rxTransfer[1].busy() || m_rxTransfer[0].busy()) { yield(); }
 		m_rxTransfer[1] = DmaSpi::Transfer(m_rxCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
 		m_spiDma->registerTransfer(m_rxTransfer[1]);
 
-		m_rxXferCount = min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE));
-		while ( m_rxTransfer[0].busy()) {}
+
+		while ( m_rxTransfer[0].busy() || m_rxTransfer[1].busy()) { yield(); }
 		m_rxTransfer[0] = DmaSpi::Transfer(nullptr, m_rxXferCount, destPtr, 0, m_cs, TransferType::NO_START_CS);
 		m_spiDma->registerTransfer(m_rxTransfer[0]);
 
@@ -467,5 +571,6 @@ bool BASpiMemoryDMA::isReadBusy(void) const
 {
 	return (m_rxTransfer[0].busy() or m_rxTransfer[1].busy());
 }
+#endif // BASpiMemoryDMA definition
 
 } /* namespace BALibrary */
