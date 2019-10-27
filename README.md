@@ -2,8 +2,8 @@
 This library is under active development as of 2019.
 
 Last tested with:
-Arduino IDE: v1.8.5
-Teensyduino: v1.41*
+Arduino IDE: v1.8.10
+Teensyduino: v1.48*
 
 ![](TGA_PRO_revb.jpg)
 
