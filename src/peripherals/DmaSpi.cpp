@@ -1,6 +1,8 @@
 #include "DmaSpi.h"
 
-#if defined(KINETISK)
+#if defined(__IMXRT1062__) // T4.0
+DmaSpi0 DMASPI0;
+#elif defined(KINETISK)
 DmaSpi0 DMASPI0;
 #if defined(__MK66FX1M0__)
 DmaSpi1 DMASPI1;

@@ -38,7 +38,7 @@ BASpiMemory               spiMem0(SpiDeviceId::SPI_DEVICE0);
 unsigned long t=0;
 
 // SPI stuff
-int spiAddress0 = 0;
+unsigned spiAddress0 = 0;
 uint16_t spiData0 = 0xABCD;
 int spiErrorCount0 = 0;
 
@@ -52,8 +52,10 @@ void setup() {
 
   MIDI.begin(MIDI_CHANNEL_OMNI);
   Serial.begin(57600);
-  while (!Serial) {}
+  while (!Serial) { yield(); }
   delay(5);
+
+  SPI_MEM0_1M(); // Set the Spi memory size to 1Mbit
 
   // If the codec was already powered up (due to reboot) power itd own first
   codecControl.disable();
@@ -98,7 +100,7 @@ void loop() {
   // Write test data to the SPI Memory 0
   //////////////////////////////////////////////////////////////////
   maskPhase = 0;
-  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0=spiAddress0+2) {
+  for (spiAddress0=0; spiAddress0 <= BAHardwareConfig.getSpiMemMaxAddr(0); spiAddress0=spiAddress0+2) {
     if ((spiAddress0 % 32768) == 0) {
       //Serial.print("Writing to ");
       //Serial.println(spiAddress0, HEX);
@@ -117,7 +119,7 @@ void loop() {
   spiAddress0 = 0;
   maskPhase = 0;
 
-  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0=spiAddress0+2) {
+  for (spiAddress0=0; spiAddress0 <= BAHardwareConfig.getSpiMemMaxAddr(0); spiAddress0=spiAddress0+2) {
     if ((spiAddress0 % 32768) == 0) {
 //      Serial.print("Reading ");
 //      Serial.print(spiAddress0, HEX);
@@ -205,4 +207,3 @@ void loop() {
   gpio.toggleLed();
 
 }
-

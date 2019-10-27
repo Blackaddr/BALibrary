@@ -101,13 +101,15 @@ delay(100);
   AudioMemory(128);
   delay(5);
 
+  SPI_MEM0_1M(); // Configure the SPI memory size
+
   // Enable the codec
   Serial.println("Enabling codec...\n");
   codec.enable();
   delay(100);
 
   // We have to request memory be allocated to our slot.
-  externalSram.requestMemory(&delaySlot, SPI_MEM0_SIZE_BYTES, MemSelect::MEM0, true);
+  externalSram.requestMemory(&delaySlot, BAHardwareConfig.getSpiMemSizeBytes(MemSelect::MEM0), MemSelect::MEM0, true);
   //externalSram.requestMemory(&delaySlot, 50.0f, MemSelect::MEM0, true);
 
   // Setup MIDI
@@ -192,4 +194,3 @@ void loop() {
 //  }
 
 }
-

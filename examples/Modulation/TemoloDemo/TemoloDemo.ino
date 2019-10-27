@@ -31,7 +31,6 @@ BAAudioControlWM8731 codec;
 // YOU MUST USE TEENSYDUINO 1.41 or greater
 // YOU MUST COMPILE THIS DEMO USING Serial + Midi
 
-//#define USE_EXT // uncomment this line to use External MEM0
 #define MIDI_DEBUG // uncomment to see raw MIDI info in terminal
 
 AudioEffectTremolo tremolo;

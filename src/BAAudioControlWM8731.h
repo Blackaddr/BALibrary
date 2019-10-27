@@ -123,8 +123,12 @@ protected:
 private:
 	// low-level write command
 	bool write(unsigned int reg, unsigned int val);
+
 	// resets the internal shadow register array
 	void resetInternalReg(void);
+
+	// Sets pullups, slew rate and drive strength
+	void setOutputStrength(void);
 
 	bool m_wireStarted = false;
 

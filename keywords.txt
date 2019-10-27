@@ -1,5 +1,5 @@
 #######################################
-# Syntax Coloring Map For ExampleLibrary
+# Syntax Coloring Map For BALibrary
 #######################################
 
 #######################################
@@ -15,11 +15,18 @@ BAAudioEffectDelayExternal	KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
-doSomething	KEYWORD2
+TGA_PRO_REVA	KEYWORD2
+TGA_PRO_REVB    KEYWORD2
+TGA_PRO_EXPAND_REV2    KEYWORD2
+SPI_MEM0_1M    KEYWORD2
+SPI_MEM0_4M    KEYWORD2
+SPI_MEM1_1M    KEYWORD2
+SPI_MEM1_4M    KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
 #######################################
+BAHardwareConfig KEYWORD1
 
 #######################################
 # Constants (LITERAL1)

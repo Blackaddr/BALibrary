@@ -42,13 +42,11 @@
  * 
  */
 
-//#define RUN_MIDI_TEST // Uncomment this line to skip the MIDI test.
-//#define RUN_MEMO_TEST // Uncomment this line to skip the MEM0 test.
-//#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Comment out or delete this line to skip the MEM1 test.
+#define RUN_MIDI_TEST // Uncomment this line to run the MIDI test.
+#define RUN_MEMO_TEST // Uncomment this line to run the MEM0 test.
+//#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Uncomment this line to run the MEM1 test.
 
 #include <Audio.h>
-
-#define TGA_PRO_EXPAND_REV2
 #include "BALibrary.h"
 
 using namespace BALibrary;
@@ -67,7 +65,7 @@ BAGpio                    gpio;  // access to User LED
 BASpiMemoryDMA spiMem0(SpiDeviceId::SPI_DEVICE0);
 #endif
 
-#if defined(RUN_MEM1_TEST)
+#if defined(RUN_MEM1_TEST) && !defined(__IMXRT1062__) // SPI1 not supported on T4.0
 BASpiMemoryDMA spiMem1(SpiDeviceId::SPI_DEVICE1);
 #endif
 
@@ -78,13 +76,14 @@ BAPhysicalControls controls(BA_EXPAND_NUM_SW, BA_EXPAND_NUM_POT, BA_EXPAND_NUM_E
 void configPhysicalControls(BAPhysicalControls &controls, BAAudioControlWM8731 &codec);
 void checkPot(unsigned id);
 void checkSwitch(unsigned id);
-bool spiTest(BASpiMemoryDMA *mem); // returns true if passed
+bool spiTest(BASpiMemory *mem); // returns true if passed
 bool uartTest();                   // returns true if passed
 
 unsigned loopCounter = 0;
 
 void setup() {
   Serial.begin(57600);
+  while (!Serial) { yield(); }
   delay(500);
 
   // Disable the audio codec first
@@ -101,11 +100,13 @@ void setup() {
 #endif
 
 #if defined(RUN_MEMO_TEST)
+  SPI_MEM0_1M();
   spiMem0.begin(); delay(10);
   if (spiTest(&spiMem0)) { Serial.println("SPI0 testing PASSED!");}
 #endif
 
-#if defined(RUN_MEM1_TEST)
+#if defined(RUN_MEM1_TEST) && !defined(__IMXRT1062__)
+  SPI_MEM1_1M();
   spiMem1.begin(); delay(10);
   if (spiTest(&spiMem1)) { Serial.println("SPI1 testing PASSED!");}
 #endif
@@ -121,7 +122,7 @@ void loop() {
   checkSwitch(0);
   checkSwitch(1);
 
-  delay(10);
+  delay(20);
   loopCounter++;
   if ((loopCounter % 100) == 0) {
     gpio.toggleLed();

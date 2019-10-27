@@ -18,8 +18,6 @@
  * Using the Serial Montitor, send 'u' and 'd' characters to increase or decrease
  * the headphone volume between values of 0 and 9.
  */
-#define TGA_PRO_REVB // Set which hardware revision of the TGA Pro we're using
-#define TGA_PRO_EXPAND_REV2 // pull in the pin definitions for the Blackaddr Audio Expansion Board.
 
 #include "BALibrary.h"
 #include "BAEffects.h"
@@ -75,6 +73,8 @@ void setup() {
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100);
+
+  TGA_PRO_EXPAND_REV2(); // Configure the expansion board revision
 
   // Setup the controls. The return value is the handle to use when checking for control changes, etc.
   // pushbuttons

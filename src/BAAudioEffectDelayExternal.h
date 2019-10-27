@@ -45,12 +45,12 @@ public:
 
 	/// Specifiy which external memory to use
 	/// @param type specify which memory to use
-	BAAudioEffectDelayExternal(BALibrary::MemSelect type);
+	BAAudioEffectDelayExternal(BALibrary::MemSelect mem);
 
 	/// Specify external memory, and how much of the memory to use
 	/// @param type specify which memory to use
 	/// @param delayLengthMs maximum delay length in milliseconds
-	BAAudioEffectDelayExternal(BALibrary::MemSelect type, float delayLengthMs);
+	BAAudioEffectDelayExternal(BALibrary::MemSelect mem, float delayLengthMs);
 	virtual ~BAAudioEffectDelayExternal();
 
 	/// set the actual amount of delay on a given delay tap
@@ -67,7 +67,10 @@ public:
 	static unsigned m_usingSPICount[2]; // internal use for all instances
 
 private:
-	void initialize(BALibrary::MemSelect mem, unsigned delayLength = 1e6);
+	bool m_configured = false;
+	unsigned m_requestedDelayLength = 1e6;
+	BALibrary::MemSelect m_mem = BALibrary::MemSelect::MEM0;
+	void initialize(void);
 	void read(uint32_t address, uint32_t count, int16_t *data);
 	void write(uint32_t address, uint32_t count, const int16_t *data);
 	void zero(uint32_t address, uint32_t count);
@@ -79,7 +82,6 @@ private:
 	static unsigned m_allocated[2];
 	audio_block_t *m_inputQueueArray[1];
 
-	BALibrary::MemSelect m_mem;
 	SPIClass *m_spi = nullptr;
 	int m_spiChannel = 0;
 	int m_misoPin = 0;

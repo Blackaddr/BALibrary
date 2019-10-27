@@ -19,6 +19,7 @@
 */
 
 #include <Wire.h>
+#include "BAHardware.h"
 #include "BAAudioControlWM8731.h"
 
 namespace BALibrary {
@@ -132,9 +133,12 @@ BAAudioControlWM8731::~BAAudioControlWM8731()
 // Powerdown and disable the codec
 void BAAudioControlWM8731::disable(void)
 {
-
 	//Serial.println("Disabling codec");
-	if (m_wireStarted == false) { Wire.begin(); m_wireStarted = true; }
+	if (m_wireStarted == false) {
+	    Wire.begin();
+	    m_wireStarted = true;
+	}
+	setOutputStrength();
 
 	// set OUTPD to '1' (powerdown), which is bit 4
 	regArray[WM8731_REG_POWERDOWN] |= 0x10;
@@ -155,9 +159,13 @@ void BAAudioControlWM8731::enable(void)
 	disable(); // disable first in case it was already powered up
 
 	//Serial.println("Enabling codec");
-	if (m_wireStarted == false) { Wire.begin(); m_wireStarted = true; }
-	// Sequence from WAN0111.pdf
+	if (m_wireStarted == false) {
+	    Wire.begin();
+	    m_wireStarted = true;
+	}
+	setOutputStrength();
 
+	// Sequence from WAN0111.pdf
 	// Begin configuring the codec
 	resetCodec();
 	delay(100); // wait for reset
@@ -198,9 +206,6 @@ void BAAudioControlWM8731::enable(void)
 	write(WM8731_REG_POWERDOWN, 0x02); // power up outputs
 	regArray[WM8731_REG_POWERDOWN] = 0x02;
 	delay(500); // wait for output to power up
-
-	//Serial.println("Done codec config");
-
 
 	delay(100); // wait for mute ramp
 
@@ -368,9 +373,9 @@ bool BAAudioControlWM8731::write(unsigned int reg, unsigned int val)
 		Wire.beginTransmission(WM8731_I2C_ADDR);
 		Wire.write((reg << 1) | ((val >> 8) & 1));
 		Wire.write(val & 0xFF);
-		if (byte error = Wire.endTransmission() ) {
-			(void)error; // supress warning about unused variable
-			//Serial.println(String("Wire::Error: ") + error + String(" retrying..."));
+		byte error = Wire.endTransmission();
+		if (error) {
+			Serial.println(String("Wire::Error: ") + error + String(" retrying..."));
 		} else {
 			done = true;
 			//Serial.println("Wire::SUCCESS!");
@@ -378,6 +383,19 @@ bool BAAudioControlWM8731::write(unsigned int reg, unsigned int val)
 	}
 
 	return true;
+}
+
+void BAAudioControlWM8731::setOutputStrength(void)
+{
+#if defined(__IMXRT1062__)
+    // The T4 requires the pads be configured with correct pullups and drive strength
+    SCL_PAD_CTRL   = SCL_SDA_PAD_CFG;
+    SDA_PAD_CTRL   = SCL_SDA_PAD_CFG;
+    MCLK_PAD_CTRL  = I2S_PAD_CFG;
+    BCLK_PAD_CTRL  = I2S_PAD_CFG;
+    LRCLK_PAD_CTRL = I2S_PAD_CFG;
+    DAC_PAD_CTRL   = I2S_PAD_CFG;
+#endif
 }
 
 } /* namespace BALibrary */

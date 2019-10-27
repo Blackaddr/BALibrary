@@ -3,8 +3,8 @@
 #include "BALibrary.h"
 using namespace BALibrary;
 
-constexpr int  potCalibMin = 1;
-constexpr int  potCalibMax = 1018;
+constexpr int  potCalibMin = 8;
+constexpr int  potCalibMax = 1016;
 constexpr bool potSwapDirection = true;
 int pot1Handle, pot2Handle, pot3Handle, sw1Handle, sw2Handle, led1Handle, led2Handle;
 bool mute = false;
@@ -51,6 +51,7 @@ void checkPot(unsigned id)
   if (controlPtr->checkPotValue(handle, potValue)) {
     // Pot has changed
     codecPtr->setHeadphoneVolume(potValue);
+    Serial.println(String("POT") + id + String(" value: ") + potValue);
   } 
 }
 
@@ -79,5 +80,3 @@ void checkSwitch(unsigned id)
   bool pressed = controlPtr->isSwitchHeld(swHandle);
   controlPtr->setOutput(ledHandle, pressed);
 }
-
-

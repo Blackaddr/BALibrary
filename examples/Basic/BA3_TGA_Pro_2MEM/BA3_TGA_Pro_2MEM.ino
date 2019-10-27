@@ -57,7 +57,12 @@ void setup() {
 
   MIDI.begin(MIDI_CHANNEL_OMNI);
   Serial.begin(57600);
+  while (!Serial) { yield(); }
   delay(5);
+
+  // Set the SPI memory sizes
+  SPI_MEM0_1M();
+  SPI_MEM1_1M();
 
   // If the codec was already powered up (due to reboot) power itd own first
   codecControl.disable();
@@ -103,7 +108,7 @@ void loop() {
   // Write test data to the SPI Memory 0
   //////////////////////////////////////////////////////////////////
   maskPhase = 0;
-  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0=spiAddress0+2) {
+  for (spiAddress0=0; spiAddress0 <= BAHardwareConfig.getSpiMemMaxAddr(0); spiAddress0=spiAddress0+2) {
     if ((spiAddress0 % 32768) == 0) {
       //Serial.print("Writing to ");
       //Serial.println(spiAddress0, HEX);
@@ -122,7 +127,7 @@ void loop() {
   spiAddress0 = 0;
   maskPhase = 0;
 
-  for (spiAddress0=0; spiAddress0 <= SPI_MAX_ADDR; spiAddress0=spiAddress0+2) {
+  for (spiAddress0=0; spiAddress0 <= BAHardwareConfig.getSpiMemMaxAddr(0); spiAddress0=spiAddress0+2) {
     if ((spiAddress0 % 32768) == 0) {
 //      Serial.print("Reading ");
 //      Serial.print(spiAddress0, HEX);
@@ -159,7 +164,7 @@ void loop() {
   // Write test data to the SPI Memory 1
   //////////////////////////////////////////////////////////////////
   maskPhase = 0;
-  for (spiAddress1=0; spiAddress1 <= SPI_MAX_ADDR; spiAddress1+=2) {
+  for (spiAddress1=0; spiAddress1 <= BAHardwareConfig.getSpiMemMaxAddr(1); spiAddress1+=2) {
     if ((spiAddress1 % 32768) == 0) {
       //Serial.print("Writing to ");
       //Serial.println(spiAddress1, HEX);
@@ -178,7 +183,7 @@ void loop() {
   spiAddress1 = 0;
 
   maskPhase = 0;
-  for (spiAddress1=0; spiAddress1 <= SPI_MAX_ADDR; spiAddress1+=2) {
+  for (spiAddress1=0; spiAddress1 <= BAHardwareConfig.getSpiMemMaxAddr(1); spiAddress1+=2) {
     if ((spiAddress1 % 32768) == 0) {
       //Serial.print("Reading ");
       //Serial.print(spiAddress1, HEX);
@@ -264,4 +269,3 @@ void loop() {
   gpio.toggleLed();
 
 }
-

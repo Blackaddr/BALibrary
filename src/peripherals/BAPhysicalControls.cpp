@@ -57,7 +57,6 @@ unsigned BAPhysicalControls::addRotary(uint8_t pin1, uint8_t pin2, bool swapDire
 }
 
 unsigned BAPhysicalControls::addSwitch(uint8_t pin, unsigned long intervalMilliseconds) {
-	//m_switches.emplace_back(pin, intervalMilliseconds);'
 	m_switches.emplace_back();
 	m_switches.back().attach(pin);
 	m_switches.back().interval(10);
@@ -240,23 +239,36 @@ void Potentiometer::setFeedbackFitlerValue(float fitlerValue)
 
 bool Potentiometer::getValue(float &value) {
 
-    bool newValue = true;
+    // Check if the minimum sampling time has elapsed
+    if (m_timerMs < m_samplingIntervalMs) {
+        return false;
+    }
 
+    m_timerMs = 0; // reset the sampling timer
     unsigned val = analogRead(m_pin); // read the raw value
 
     // constrain it within the calibration values, them map it to the desired range.
     val = constrain(val, m_minCalibration, m_maxCalibration);
 
     // Use an IIR filter to smooth out the noise in the pot readings
-    unsigned valFilter = static_cast<unsigned>( (1.0f - m_feedbackFitlerValue)*val + (m_feedbackFitlerValue*m_lastValue));
-
-    if (valFilter == m_lastValue) {
-        newValue = false;
-    }
+    unsigned valFilter = static_cast<int>( (1.0f - m_feedbackFitlerValue)*val + (m_feedbackFitlerValue*m_lastValue));
     m_lastValue = valFilter;
 
-    //
-    if      (valFilter < m_minCalibrationThresholded)      { value = 0.0f; }
+    // Apply a hysteresis check
+    if (valFilter == m_lastValidValue) { // check if value hasn't changed
+        return false;
+    }
+    if (abs((int)valFilter - (int)m_lastValidValue) < m_changeThreshold) {
+        // The value has not exceeded the change threshold. Suppress the change only if it's not
+        // near the limits. This is necessary to ensure the limits can be reached.
+        if ( (valFilter < m_maxCalibrationThresholded) && (valFilter > m_minCalibrationThresholded)) {
+            return false;
+        }
+    }
+    m_lastValidValue = m_lastValue;
+
+    // Convert the integer reading to a float value range 0.0 to 1.0f
+    if      (valFilter < m_minCalibrationThresholded) { value = 0.0f; }
     else if (valFilter > m_maxCalibrationThresholded) { value = 1.0f; }
     else {
         value = static_cast<float>(valFilter - m_minCalibrationThresholded) / static_cast<float>(m_rangeThresholded);
@@ -265,7 +277,8 @@ bool Potentiometer::getValue(float &value) {
     if (m_swapDirection) {
         value = 1.0f - value;
     }
-    return newValue;
+
+    return true;
 }
 
 int Potentiometer::getRawValue() {
@@ -291,6 +304,16 @@ void Potentiometer::setCalibrationValues(unsigned min, unsigned max, bool swapDi
     m_maxCalibration = max;
     m_swapDirection = swapDirection;
     adjustCalibrationThreshold(m_thresholdFactor);
+}
+
+void Potentiometer::setSamplingIntervalMs(unsigned intervalMs)
+{
+    m_samplingIntervalMs = intervalMs;
+}
+
+void Potentiometer::setChangeThreshold(float changeThreshold)
+{
+    m_changeThreshold = changeThreshold;
 }
 
 Potentiometer::Calib Potentiometer::calibrate(uint8_t pin) {

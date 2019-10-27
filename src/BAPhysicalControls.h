@@ -26,6 +26,8 @@
 #include <Encoder.h>
 #include <Bounce2.h>
 
+#include "Arduino.h"
+
 namespace BALibrary {
 
 constexpr bool SWAP_DIRECTION = true;    ///< Use when specifying direction should be swapped
@@ -132,11 +134,26 @@ public:
 	void adjustCalibrationThreshold(float thresholdFactor);
 
 	/// Set the amount of feedback in the IIR filter used to smooth the pot readings
-	/// @details actual filter reponse deptnds on the rate you call getValue()
+	/// @details actual filter response depends on the rate you call getValue()
 	/// @param filterValue typical values are 0.80f to 0.95f
 	void setFeedbackFitlerValue(float fitlerValue);
 
+	/// Set the calibration values for the pots
+	/// @param min analog pot reading for min value
+	/// @param max analog pot reading for max value
+	/// @param swapDirection when true min and max are reversed. (Depends on physical pot orientation)
 	void setCalibrationValues(unsigned min, unsigned max, bool swapDirection);
+
+	/// Sets a MINIMUM sampling interval for the pot in milliseconds.
+	/// @details When making a call to getValue(), if the time since the last reading is
+	/// less than this interval, a new reading will not be taken.
+	/// @param intervalMs the desired minimum sampling interval in milliseconds
+	void setSamplingIntervalMs(unsigned intervalMs);
+
+	/// Sets the minimum change between previous reading and new reading to be considered valid.
+	/// @details Increasing this value will help remove noise. Default is 8.
+	/// @param changeThreshold new change threshold for ADC
+	void setChangeThreshold(float changeThreshold);
 
 	/// Call this static function before creating the object to obtain calibration data. The sequence
 	/// involves prompts over the Serial port.
@@ -151,11 +168,16 @@ private:
 	unsigned m_minCalibration;          ///< stores the min pot value
 	unsigned m_maxCalibration;          ///< stores the max pot value
 	unsigned m_lastValue = 0;           ///< stores previous value
-	float m_feedbackFitlerValue = 0.9f; ///< feedback value for POT filter
+	float m_feedbackFitlerValue = 0.8f; ///< feedback value for POT filter
 	float m_thresholdFactor = 0.05f;    ///< threshold factor causes values pot to saturate faster at the limits, default is 5%
     unsigned m_minCalibrationThresholded; ///< stores the min pot value after thresholding
     unsigned m_maxCalibrationThresholded; ///< stores the max pot value after thresholding
     unsigned m_rangeThresholded;          ///< stores the range of max - min after thresholding
+
+    unsigned m_changeThreshold = 8;     ///< a new reading must change by this amount to be valid
+    unsigned m_lastValidValue = 0;           ///< stores previous value
+    unsigned m_samplingIntervalMs = 20; ///< the sampling interval in milliseconds
+    elapsedMillis m_timerMs;            ///< special Teensy variable that tracks time
 };
 
 /// Convenience class for rotary (quadrature) encoders. Uses Arduino Encoder under the hood.
@@ -306,8 +328,6 @@ private:
   std::vector<DigitalOutput> m_outputs;  ///< a vector of all added outputs
 };
 
-
 } // BALibrary
-
 
 #endif /* __BAPHYSICALCONTROLS_H */
