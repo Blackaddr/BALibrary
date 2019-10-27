@@ -8,8 +8,6 @@
  * This demo will provide an audio passthrough, as well as exercise the
  * MIDI interface.
  * 
- * It can optionally exercise the SPI MEM0 if installed on the TGA Pro board.
- * 
  */
 #include <Wire.h>
 #include <Audio.h>
@@ -37,6 +35,7 @@ void setup() {
   MIDI.begin(MIDI_CHANNEL_OMNI);
   Serial.begin(57600);
   delay(5);
+  while (!Serial) { yield(); }
 
   // If the codec was already powered up (due to reboot) power itd own first
   codecControl.disable();
@@ -105,4 +104,3 @@ void loop() {
   gpio.toggleLed();
 
 }
-

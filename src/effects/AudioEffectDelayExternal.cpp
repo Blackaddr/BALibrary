@@ -31,20 +31,21 @@ unsigned BAAudioEffectDelayExternal::m_usingSPICount[2] = {0,0};
 BAAudioEffectDelayExternal::BAAudioEffectDelayExternal()
 : AudioStream(1, m_inputQueueArray)
 {
-	initialize(MemSelect::MEM0);
+    m_mem = MemSelect::MEM0;
 }
 
 BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(MemSelect mem)
 : AudioStream(1, m_inputQueueArray)
 {
-	initialize(mem);
+    m_mem = mem;
 }
 
-BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(BALibrary::MemSelect type, float delayLengthMs)
+BAAudioEffectDelayExternal::BAAudioEffectDelayExternal(BALibrary::MemSelect mem, float delayLengthMs)
 : AudioStream(1, m_inputQueueArray)
 {
 	unsigned delayLengthInt = (delayLengthMs*(AUDIO_SAMPLE_RATE_EXACT/1000.0f))+0.5f;
-	initialize(type, delayLengthInt);
+	m_mem = mem;
+	m_requestedDelayLength = delayLengthInt;
 }
 
 BAAudioEffectDelayExternal::~BAAudioEffectDelayExternal()
@@ -53,6 +54,8 @@ BAAudioEffectDelayExternal::~BAAudioEffectDelayExternal()
 }
 
 void BAAudioEffectDelayExternal::delay(uint8_t channel, float milliseconds) {
+
+    if (!m_configured) { initialize(); }
 
 	if (channel >= 8) return;
 	if (milliseconds < 0.0) milliseconds = 0.0;
@@ -67,6 +70,9 @@ void BAAudioEffectDelayExternal::delay(uint8_t channel, float milliseconds) {
 }
 
 void BAAudioEffectDelayExternal::disable(uint8_t channel) {
+
+    if (!m_configured) { initialize(); }
+
 	if (channel >= 8) return;
 	uint8_t mask = m_activeMask & ~(1<<channel);
 	m_activeMask = mask;
@@ -75,11 +81,20 @@ void BAAudioEffectDelayExternal::disable(uint8_t channel) {
 
 void BAAudioEffectDelayExternal::update(void)
 {
+
 	audio_block_t *block;
 	uint32_t n, channel, read_offset;
 
 	// grab incoming data and put it into the memory
 	block = receiveReadOnly();
+
+	if (!m_configured) {
+	    if (block) {
+	        transmit(block);
+	        release(block);
+	        return;
+	    } else { return; }
+	}
 
 	if (block) {
 		if (m_headOffset + AUDIO_BLOCK_SAMPLES <= m_memoryLength) {
@@ -135,19 +150,19 @@ void BAAudioEffectDelayExternal::update(void)
 
 unsigned BAAudioEffectDelayExternal::m_allocated[2] = {0, 0};
 
-void BAAudioEffectDelayExternal::initialize(MemSelect mem, unsigned delayLength)
+void BAAudioEffectDelayExternal::initialize(void)
 {
 	unsigned samples = 0;
 	unsigned memsize = 0, avail = 0;
 
 	m_activeMask = 0;
 	m_headOffset = 0;
-	m_mem = mem;
+	//m_mem = mem;
 
-	switch (mem) {
+	switch (m_mem) {
 	case MemSelect::MEM0 :
 	{
-		memsize = BAHardwareConfig.getSpiMemSizeBytes(mem) / sizeof(int16_t);
+		memsize = BAHardwareConfig.getSpiMemSizeBytes(m_mem) / sizeof(int16_t);
 		m_spi = &SPI;
 		m_spiChannel = 0;
 		m_misoPin = SPI0_MISO_PIN;
@@ -164,7 +179,7 @@ void BAAudioEffectDelayExternal::initialize(MemSelect mem, unsigned delayLength)
 	case MemSelect::MEM1 :
 	{
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-		memsize = BAHardwareConfig.getSpiMemSizeBytes(mem) / sizeof(int16_t);
+		memsize = BAHardwareConfig.getSpiMemSizeBytes(m_mem) / sizeof(int16_t);
 		m_spi = &SPI1;
 		m_spiChannel = 1;
 		m_misoPin = SPI1_MISO_PIN;
@@ -185,14 +200,15 @@ void BAAudioEffectDelayExternal::initialize(MemSelect mem, unsigned delayLength)
 	pinMode(m_csPin, OUTPUT);
 	digitalWriteFast(m_csPin, HIGH);
 
-	avail = memsize - m_allocated[mem];
+	avail = memsize - m_allocated[m_mem];
 
-	if (delayLength > avail) samples = avail;
-	m_memoryStart = m_allocated[mem];
-	m_allocated[mem] += samples;
+	if (m_requestedDelayLength > avail) samples = avail;
+	m_memoryStart = m_allocated[m_mem];
+	m_allocated[m_mem] += samples;
 	m_memoryLength = samples;
 
 	zero(0, m_memoryLength);
+	m_configured = true;
 
 }
 

@@ -12,6 +12,8 @@ constexpr int mask1 = 0xaaaa;
 
 using namespace BALibrary;
 
+size_t SPI_MAX_ADDR = 0;
+
 int calcData(int spiAddress, int loopPhase, int maskPhase)
 {
   int data;
@@ -35,7 +37,7 @@ int calcData(int spiAddress, int loopPhase, int maskPhase)
   return (data & 0xffff);
 }
 
-bool spiTest(BASpiMemoryDMA *mem)
+bool spiTest(BASpiMemory *mem)
 {
   int spiAddress = 0;
   int spiErrorCount = 0;
@@ -45,7 +47,10 @@ bool spiTest(BASpiMemoryDMA *mem)
   uint16_t memBlock[NUM_BLOCK_WORDS];
   uint16_t goldData[NUM_BLOCK_WORDS];
 
-  Serial.println("Starting SPI MEM Test");
+  SPI_MAX_ADDR = BAHardwareConfig.getSpiMemMaxAddr(0); // assume for this test both memories are the same size so use MEM0
+  const size_t SPI_MEM0_SIZE_BYTES = BAHardwareConfig.getSpiMemSizeBytes(0);
+
+  Serial.println(String("Starting SPI MEM Test of ") + SPI_MEM0_SIZE_BYTES + String(" bytes"));
 
   for (int cnt = 0; cnt < NUM_TESTS; cnt++) {
 
@@ -122,4 +127,3 @@ bool spiTest(BASpiMemoryDMA *mem)
   }
   return true;
 }
-

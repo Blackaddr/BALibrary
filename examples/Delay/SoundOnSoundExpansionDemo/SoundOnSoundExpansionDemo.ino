@@ -100,6 +100,7 @@ delay(100);
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100); // wait a bit for serial to be available
+  BAHardwareConfig.set(MemSelect::MEM0, SPI_MEMORY_1M);
 
   // Setup the controls. The return value is the handle to use when checking for control changes, etc.
   // pushbuttons
@@ -117,13 +118,15 @@ delay(100);
   codec.disable();
   AudioMemory(128);
 
+  SPI_MEM0_1M(); // set the Spi memory size
+
   // Enable the codec
   Serial.println("Enabling codec...\n");
   codec.enable();
   codec.setHeadphoneVolume(1.0f); // Max headphone volume
 
   // We have to request memory be allocated to our slot.
-  externalSram.requestMemory(&delaySlot, SPI_MEM0_SIZE_BYTES, MemSelect::MEM0, true);
+  externalSram.requestMemory(&delaySlot, BAHardwareConfig.getSpiMemSizeBytes(MemSelect::MEM0), MemSelect::MEM0, true);
 
   // Configure the LED to indicate the gate status, this is controlled directly by SOS effect, not by
   // by BAPhysicalControls
@@ -223,4 +226,3 @@ void loop() {
   loopCount++;
 
 }
-

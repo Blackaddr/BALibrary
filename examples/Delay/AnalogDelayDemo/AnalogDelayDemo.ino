@@ -82,6 +82,7 @@ void setup() {
   // If using external memory request request memory from the manager
   // for the slot
   #ifdef USE_EXT
+  SPI_MEM0_1M();
   Serial.println("Using EXTERNAL memory");
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, 500.0f, MemSelect::MEM0, true);

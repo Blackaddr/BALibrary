@@ -22,6 +22,7 @@ AudioInputI2S            i2sIn;
 AudioOutputI2S           i2sOut;
 
 BAAudioControlWM8731        codecControl;
+//AudioEffectDelayExternal longDelay;
 BAAudioEffectDelayExternal  longDelay(MemSelect::MEM0); // comment this line to use MEM1
 //BAAudioEffectDelayExternal  longDelay(MemSelect::MEM1); // and uncomment this one to use MEM1
 AudioMixer4                 delayOutMixerA, delayOutMixerB, delayMixer;
@@ -49,11 +50,15 @@ AudioConnection  outputRight(delayMixer, 0, i2sOut, 1);
 void setup() {
 
   Serial.begin(57600);
-  AudioMemory(128);
+  while(!Serial) { yield(); }
+  AudioMemory(64);
   
-  delay(100);
+  delay(500);
   Serial.println(String("Starting...\n"));
   delay(100);
+
+  SPI_MEM0_1M(); // set the SPI MEM0 memory size
+  // SPI_MEM1_1M(); // set the MEM1 memory aize
 
   Serial.println("Enabling codec...\n");
   codecControl.enable();

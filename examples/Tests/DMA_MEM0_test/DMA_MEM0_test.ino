@@ -55,13 +55,17 @@ bool compareBuffers16(uint16_t *a, uint16_t *b, size_t numWords)
   return compareBuffers(reinterpret_cast<uint8_t *>(a), reinterpret_cast<uint8_t*>(b), sizeof(uint16_t)*numWords);
 }
 
-constexpr size_t TEST_END = SPI_MAX_ADDR;
+size_t SPI_MAX_ADDR;
+;
 
 void setup() {
 
   Serial.begin(57600);
-  while (!Serial) {}
+  while (!Serial) { yield(); }
   delay(5);
+
+  SPI_MEM0_1M();
+  SPI_MAX_ADDR = BAHardwareConfig.getSpiMemMaxAddr(MemSelect::MEM0);
 
   Serial.println("Enabling SPI, testing MEM0");
   spiMem0.begin();
@@ -82,7 +86,7 @@ bool spi8BitTest(void) {
   Serial.println("\nStarting 8-bit test Write/Read");
   while (spiPhase < 4) {
     spiAddress = 0;
-    while (spiAddress < TEST_END) {
+    while (spiAddress <= SPI_MAX_ADDR) {
       
       // fill the write data buffer
       switch (spiPhase) {
@@ -117,7 +121,7 @@ bool spi8BitTest(void) {
   
     // Read back the data using 8-bit transfers
     spiAddress = 0;
-    while (spiAddress < TEST_END) {
+    while (spiAddress <= SPI_MAX_ADDR) {
       // generate the golden data
       switch (spiPhase) {
       case 0 :
@@ -165,7 +169,7 @@ bool spi8BitTest(void) {
   // Clear the memory
   spiAddress = 0;
   memset(src8, 0, DMA_SIZE);
-  while (spiAddress < SPI_MAX_ADDR) {
+  while (spiAddress <= SPI_MAX_ADDR) {
       // Send the DMA transfer
       spiMem0.zero(spiAddress, DMA_SIZE);
       // wait until write is done
@@ -175,7 +179,7 @@ bool spi8BitTest(void) {
 
   // Check the memory is clear
   spiAddress = 0;
-  while (spiAddress < SPI_MAX_ADDR) {
+  while (spiAddress <= SPI_MAX_ADDR) {
     // Read back the DMA data
     spiMem0.read(spiAddress, dest8, DMA_SIZE);
     // wait until read is done
@@ -201,7 +205,7 @@ bool spi16BitTest(void) {
   Serial.println("\nStarting 16-bit test");
   while (spiPhase < 4) {
     spiAddress = 0;
-    while (spiAddress < SPI_MAX_ADDR) {
+    while (spiAddress <= SPI_MAX_ADDR) {
       
       // fill the write data buffer
       switch (spiPhase) {
@@ -236,7 +240,7 @@ bool spi16BitTest(void) {
   
     // Read back the data using 8-bit transfers
     spiAddress = 0;
-    while (spiAddress < SPI_MAX_ADDR) {
+    while (spiAddress <= SPI_MAX_ADDR) {
       // generate the golden data
       switch (spiPhase) {
       case 0 :
@@ -283,7 +287,7 @@ bool spi16BitTest(void) {
   // Clear the memory
   spiAddress = 0;
   memset(src16, 0, DMA_SIZE);
-  while (spiAddress < SPI_MAX_ADDR) {
+  while (spiAddress <= SPI_MAX_ADDR) {
       // Send the DMA transfer
       spiMem0.zero16(spiAddress, NUM_DATA);
       // wait until write is done
@@ -293,7 +297,7 @@ bool spi16BitTest(void) {
 
   // Check the memory is clear
   spiAddress = 0;
-  while (spiAddress < SPI_MAX_ADDR) {
+  while (spiAddress <= SPI_MAX_ADDR) {
     // Read back the DMA data
     spiMem0.read16(spiAddress, dest16, NUM_DATA);
     // wait until read is done
@@ -313,4 +317,3 @@ void loop() {
   while(true) {}
 
 }
-

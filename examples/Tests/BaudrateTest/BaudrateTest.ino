@@ -11,7 +11,7 @@
  */
 constexpr unsigned LOW_RATE = 2400;
 constexpr unsigned MIDI_RATE = 31250;
-constexpr unsigned HIGH_RATE = 250000; 
+constexpr unsigned HIGH_RATE = 230400; 
 constexpr unsigned TEST_TIME = 5; // 5 second test each
 
 unsigned baudRate = LOW_RATE; // start with low speed

@@ -136,7 +136,10 @@ protected:
 
 };
 
-#if !defined (__IMXRT1062__)
+#if defined (__IMXRT1062__)
+//#if 0
+using BASpiMemoryDMA = BASpiMemory;
+#else
 
 /**************************************************************************//**
  *  This wrapper class uses the Arduino SPI (Wire) library to access the SPI ram

@@ -353,7 +353,6 @@ void BASpiMemory::m_rawRead16(size_t address, uint16_t *dest, size_t numWords)
 
 #if defined (__IMXRT1062__)
 //#if 0
-using BASpiMemoryDMA = BASpiMemory;
 #else
 /////////////////////////////////////////////////////////////////////////////
 // BASpiMemoryDMA

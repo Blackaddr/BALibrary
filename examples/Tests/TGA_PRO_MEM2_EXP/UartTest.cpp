@@ -4,7 +4,7 @@
 using namespace BALibrary;
 
 constexpr unsigned MIDI_RATE = 31250;
-constexpr unsigned HIGH_RATE = 250000; 
+constexpr unsigned HIGH_RATE = 230400; 
 constexpr unsigned TEST_TIME = 5; // 5 second test each
 
 static unsigned baudRate = MIDI_RATE; // start with low speed
@@ -58,7 +58,7 @@ bool uartTest(void)
     if (Serial1.available()) {  
       uint8_t readData= Serial1.read();
       if (readData != writeData) {
-        Serial.println(String("ERROR: readData = ") + readData + String(" writeData = ") + writeData);
+        Serial.println(String("MIDI ERROR: readData = ") + readData + String(" writeData = ") + writeData);
         errorCount++;
       }
     
@@ -79,4 +79,3 @@ bool uartTest(void)
 
   return testFailed;
 }
-
