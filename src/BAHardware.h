@@ -36,7 +36,7 @@ namespace BALibrary {
 // to correctly configure your hardware
 #define TGA_PRO_REVA(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_A ///< Macro for specifying REV A of the TGA Pro
 #define TGA_PRO_REVB(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_B ///< Macro for specifying REV B of the TGA Pro
-#define TGA_PRO_EXPAND_REV2(x) BALibrary::BAHardwareConfig.m_expansionBoard = ExpansionBoard::REV_1 ///< Macro for specifying REV 1 of the Expansion Board
+#define TGA_PRO_EXPAND_REV2(x) BALibrary::BAHardwareConfig.m_expansionBoard = ExpansionBoard::REV_2 ///< Macro for specifying REV 2 of the Expansion Board
 #define SPI_MEM0_1M(x)         BALibrary::BAHardwareConfig.m_spiMem0 = SPI_MEMORY_1M ///< Macro for specifying MEM0 is 1Mbit
 #define SPI_MEM0_4M(x)         BALibrary::BAHardwareConfig.m_spiMem0 = SPI_MEMORY_4M ///< Macro for specifying MEM1 is 4Mbit
 #define SPI_MEM1_1M(x)         BALibrary::BAHardwareConfig.m_spiMem1 = SPI_MEMORY_1M ///< Macro for specifying MEM0 is 1Mbit

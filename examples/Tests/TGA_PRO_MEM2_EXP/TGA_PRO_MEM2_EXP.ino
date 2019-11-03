@@ -43,7 +43,7 @@
  */
 
 #define RUN_MIDI_TEST // Uncomment this line to run the MIDI test.
-#define RUN_MEMO_TEST // Uncomment this line to run the MEM0 test.
+//#define RUN_MEMO_TEST // Uncomment this line to run the MEM0 test.
 //#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Uncomment this line to run the MEM1 test.
 
 #include <Audio.h>
@@ -76,7 +76,7 @@ BAPhysicalControls controls(BA_EXPAND_NUM_SW, BA_EXPAND_NUM_POT, BA_EXPAND_NUM_E
 void configPhysicalControls(BAPhysicalControls &controls, BAAudioControlWM8731 &codec);
 void checkPot(unsigned id);
 void checkSwitch(unsigned id);
-bool spiTest(BASpiMemory *mem); // returns true if passed
+bool spiTest(BASpiMemory *mem, int id); // returns true if passed
 bool uartTest();                   // returns true if passed
 
 unsigned loopCounter = 0;
@@ -101,14 +101,16 @@ void setup() {
 
 #if defined(RUN_MEMO_TEST)
   SPI_MEM0_1M();
+  //SPI_MEM0_4M();
   spiMem0.begin(); delay(10);
-  if (spiTest(&spiMem0)) { Serial.println("SPI0 testing PASSED!");}
+  if (spiTest(&spiMem0, 0)) { Serial.println("SPI0 testing PASSED!");}
 #endif
 
 #if defined(RUN_MEM1_TEST) && !defined(__IMXRT1062__)
   SPI_MEM1_1M();
+  //SPI_MEM1_4M();
   spiMem1.begin(); delay(10);
-  if (spiTest(&spiMem1)) { Serial.println("SPI1 testing PASSED!");}
+  if (spiTest(&spiMem1, 1)) { Serial.println("SPI1 testing PASSED!");}
 #endif
 
   Serial.println("Now monitoring for input from Expansion Control Board");

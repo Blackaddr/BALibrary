@@ -12,7 +12,7 @@ constexpr int mask1 = 0xaaaa;
 
 using namespace BALibrary;
 
-size_t SPI_MAX_ADDR = 0;
+int SPI_MAX_ADDR = 0;
 
 int calcData(int spiAddress, int loopPhase, int maskPhase)
 {
@@ -37,7 +37,7 @@ int calcData(int spiAddress, int loopPhase, int maskPhase)
   return (data & 0xffff);
 }
 
-bool spiTest(BASpiMemory *mem)
+bool spiTest(BASpiMemory *mem, int id)
 {
   int spiAddress = 0;
   int spiErrorCount = 0;
@@ -48,14 +48,14 @@ bool spiTest(BASpiMemory *mem)
   uint16_t goldData[NUM_BLOCK_WORDS];
 
   SPI_MAX_ADDR = BAHardwareConfig.getSpiMemMaxAddr(0); // assume for this test both memories are the same size so use MEM0
-  const size_t SPI_MEM0_SIZE_BYTES = BAHardwareConfig.getSpiMemSizeBytes(0);
+  const size_t SPI_MEM_SIZE_BYTES = BAHardwareConfig.getSpiMemSizeBytes(id);
 
-  Serial.println(String("Starting SPI MEM Test of ") + SPI_MEM0_SIZE_BYTES + String(" bytes"));
+  Serial.println(String("Starting SPI MEM Test of ") + SPI_MEM_SIZE_BYTES + String(" bytes"));
 
   for (int cnt = 0; cnt < NUM_TESTS; cnt++) {
 
     // Zero check
-    mem->zero16(0, SPI_MEM0_SIZE_BYTES / sizeof(uint16_t));    
+    mem->zero16(0, SPI_MEM_SIZE_BYTES / sizeof(uint16_t));    
     while (mem->isWriteBusy()) {}
     
     for (spiAddress = 0; spiAddress <= SPI_MAX_ADDR; spiAddress += NUM_BLOCK_WORDS*sizeof(uint16_t)) {

@@ -498,8 +498,12 @@ void BASpiMemoryDMA::zero(size_t address, size_t numBytes)
 
 	/// TODO: Why can't the T4 zero the memory when a NULLPTR is passed? It seems to write a constant random value.
 	/// Perhaps there is somewhere we can set a fill value?
-	uint8_t zeroBuffer[MAX_DMA_XFER_SIZE];
+#if defined(__IMXRT1062__)
+	static uint8_t zeroBuffer[MAX_DMA_XFER_SIZE];
 	memset(zeroBuffer, 0, MAX_DMA_XFER_SIZE);
+#else
+	uint8_t *zeroBuffer = nullptr;
+#endif
 
 	while (bytesRemaining > 0) {
 	    m_txXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
