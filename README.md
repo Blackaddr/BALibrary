@@ -7,7 +7,7 @@ Teensyduino: v1.48*
 
 ![](TGA_PRO_revb.jpg)
 
-*The Arduino MIDI library has recently undergone changes to it's interface. You must have Teensyduino v1.41 or higher for the library and it's examples to work correctly.
+*The Arduino MIDI library has recently undergone changes to it's interface. You must have Teensyduino v1.48 or higher for the library and it's examples to work correctly.
 
 **INTRODUCTION**
 This open-source library is designed to extend the capabilities of Teensyduino, a collection of Arudino libraries  ported to the Teensy microcontroller platform by Paul at PJRC.com.
@@ -26,7 +26,7 @@ In order to use BALibrary, you should:
  5. Include "BAEffects.h" for access to Blackaddr Audio custom audio effect classes.
 
 **HARDWARE**
-The audio primitives and effects provided in the BALibrary library require no special hardware other than a Teensy 3.x series board. However, in order to use the external RAM features provided in some effects, the SPI pins used must be the same as those used on the Blackaddr [TGA-Pro audio shield](http://blackaddr.com/products/).
+The audio primitives and effects provided in the BALibrary library require no special hardware other than a Teensy 3.x and Teensy 4.0 series board. However, in order to use the external RAM features provided in some effects, the SPI pins used must be the same as those used on the Blackaddr [TGA-Pro audio shield](http://blackaddr.com/products/).
 
 **BALibrary CONTENTS**
  - WM871 advanced codec control
