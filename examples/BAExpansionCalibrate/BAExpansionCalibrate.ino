@@ -13,9 +13,6 @@
  * When prompted turn the appropriate POT in the specified direction and
  * enter any character on the terminal input line and press enter to send the character.
  */
-#define TGA_PRO_REVB // Specify our hardware revision
-#define TGA_PRO_EXPAND_REV2 // Specify we are using the EXPANSION CONTROL BOARD REV2
-
 #include "BALibrary.h"
 
 using namespace BALibrary;
@@ -27,6 +24,8 @@ void setup() {
   delay(100);
   Serial.begin(57600);
   delay(500); // long delay to wait for Serial to init
+
+  TGA_PRO_EXPAND_REV2(); // Set the expansion board revision
   
   // put your setup code here, to run once:
   Serial.println("Calibrating POT1");

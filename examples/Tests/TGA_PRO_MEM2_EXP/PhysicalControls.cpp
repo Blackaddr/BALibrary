@@ -1,5 +1,3 @@
-#define TGA_PRO_EXPAND_REV2
-
 #include "BALibrary.h"
 using namespace BALibrary;
 

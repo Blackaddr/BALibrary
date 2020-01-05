@@ -398,4 +398,63 @@ void BAAudioControlWM8731::setOutputStrength(void)
 #endif
 }
 
+// Powerup and unmute the codec
+void BAAudioControlWM8731master::enable(void)
+{
+
+    disable(); // disable first in case it was already powered up
+
+    //Serial.println("Enabling codec");
+    if (m_wireStarted == false) {
+        Wire.begin();
+        m_wireStarted = true;
+    }
+    setOutputStrength();
+
+    // Sequence from WAN0111.pdf
+    // Begin configuring the codec
+    resetCodec();
+    delay(100); // wait for reset
+
+    // Power up all domains except OUTPD and microphone
+    regArray[WM8731_REG_POWERDOWN] = 0x12;
+    write(WM8731_REG_POWERDOWN, regArray[WM8731_REG_POWERDOWN]);
+    delay(100); // wait for codec powerup
+
+
+    setAdcBypass(false); // causes a slight click
+    setDacSelect(true);
+    setHPFDisable(true);
+    setLeftInputGain(0x17); // default input gain
+    setRightInputGain(0x17);
+    setLeftInMute(false); // no input mute
+    setRightInMute(false);
+    setDacMute(false); // unmute the DAC
+
+    // link, but mute the headphone outputs
+    regArray[WM8731_REG_LHEADOUT] = WM8731_LEFT_HEADPHONE_LINK_MASK;
+    write(WM8731_REG_LHEADOUT, regArray[WM8731_REG_LHEADOUT]);      // volume off
+    regArray[WM8731_REG_RHEADOUT] = WM8731_RIGHT_HEADPHONE_LINK_MASK;
+    write(WM8731_REG_RHEADOUT, regArray[WM8731_REG_RHEADOUT]);
+
+    /// Configure the audio interface
+    write(WM8731_REG_INTERFACE, 0x42); // I2S, 16 bit, MCLK master
+    regArray[WM8731_REG_INTERFACE] = 0x42;
+
+    write(WM8731_REG_SAMPLING, 0x20);  // 256*Fs, 44.1 kHz, MCLK/1
+    regArray[WM8731_REG_SAMPLING] = 0x20;
+    delay(100); // wait for interface config
+
+    // Activate the audio interface
+    setActivate(true);
+    delay(100);
+
+    write(WM8731_REG_POWERDOWN, 0x02); // power up outputs
+    regArray[WM8731_REG_POWERDOWN] = 0x02;
+    delay(500); // wait for output to power up
+
+    delay(100); // wait for mute ramp
+
+}
+
 } /* namespace BALibrary */

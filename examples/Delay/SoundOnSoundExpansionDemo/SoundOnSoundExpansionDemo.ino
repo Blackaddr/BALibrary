@@ -20,9 +20,6 @@
  * SW2 - Push this button to clear out the sound circulating in the delay.
  * 
  */
-#define TGA_PRO_REVB // Set which hardware revision of the TGA Pro we're using
-#define TGA_PRO_EXPAND_REV2 // pull in the pin definitions for the Blackaddr Audio Expansion Board.
-
 #include "BALibrary.h"
 #include "BAEffects.h"
 
@@ -118,6 +115,7 @@ delay(100);
   codec.disable();
   AudioMemory(128);
 
+  TGA_PRO_EXPAND_REV2(); // Set the expansion board revision
   SPI_MEM0_1M(); // set the Spi memory size
 
   // Enable the codec

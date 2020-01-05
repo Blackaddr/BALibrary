@@ -42,7 +42,7 @@
  * 
  */
 
-#define RUN_MIDI_TEST // Uncomment this line to run the MIDI test.
+//#define RUN_MIDI_TEST // Uncomment this line to run the MIDI test.
 //#define RUN_MEMO_TEST // Uncomment this line to run the MEM0 test.
 //#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Uncomment this line to run the MEM1 test.
 
@@ -93,6 +93,8 @@ void setup() {
   codec.enable();
   codec.setHeadphoneVolume(0.8f); // Set headphone volume
   configPhysicalControls(controls, codec);
+
+  TGA_PRO_EXPAND_REV2(); // Macro to declare expansion board revision
 
   // Run the initial Midi connectivity and SPI memory tests.
 #if defined(RUN_MIDI_TEST)

@@ -27,7 +27,7 @@
 
 namespace BALibrary {
 
-constexpr int WM8731_NUM_REGS = 10; // Number of registers in the internal shadow array
+constexpr int WM8731_NUM_REGS = 10; ///< Number of registers in the internal shadow array
 
 /**************************************************************************//**
  * BAAudioControlWM8731 provides an API for configuring the internal registers
@@ -45,7 +45,7 @@ public:
 	void disable(void);
 
 	/// First disable, then cleanly power up and unmute the codec.
-	void enable(void);
+	virtual void enable(void);
 
 	/// Set the input gain of the codec's PGA for the left (TRS Tip) channel.
 	/// @param val an interger value from 31 = +12dB . . 1.5dB steps down to 0 = -34.5dB
@@ -119,8 +119,8 @@ public:
 protected:
 	// A shadow array for the registers on the codec since the interface is write-only.
 	int regArray[WM8731_NUM_REGS];
+    bool m_wireStarted = false;
 
-private:
 	// low-level write command
 	bool write(unsigned int reg, unsigned int val);
 
@@ -130,8 +130,19 @@ private:
 	// Sets pullups, slew rate and drive strength
 	void setOutputStrength(void);
 
-	bool m_wireStarted = false;
+};
 
+/**************************************************************************//**
+ * BAAudioControlWM8731master provides an API for configuring the internal registers
+ * of the WM8731 codec when the codec is in master mode (Teensy is slave).
+ * @details The hardware from Blackaddr Audio does not populate the XTAL needed
+ * for CODEC master mode. Please refer to the schematic for your board for the
+ * necessary parts and modifications.
+ *****************************************************************************/
+class BAAudioControlWM8731master : public BAAudioControlWM8731 {
+public:
+    /// First disable, then cleanly power up and unmute the codec.
+    void enable(void) override;
 };
 
 } /* namespace BALibrary */
