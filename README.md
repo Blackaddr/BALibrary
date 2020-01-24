@@ -1,5 +1,5 @@
 ## BALibrary
-This library is under active development as of 2019.
+This library is under active development as of 2020.
 
 Last tested with:
 Arduino IDE: v1.8.10
