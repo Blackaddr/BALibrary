@@ -196,7 +196,10 @@ public:
     /// @returns pointer to the underlying ExtMemSlot.
     ExtMemSlot *getSlot() const { return m_slot; }
 
-
+    /// Calling this function will force the underlying SPI DMA to use an extra copy buffer. This is needed if the user
+    /// audio buffers are not guarenteed to be cache aligned.
+    /// @returns true if suceess, false if an error occurs
+    bool setSpiDmaCopyBuffer(void);
 
     /// Ween using INTERNAL memory, thsi function can return a pointer to the underlying RingBuffer that contains
     /// audio_block_t * pointers.

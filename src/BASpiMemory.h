@@ -136,11 +136,6 @@ protected:
 
 };
 
-#if defined (__IMXRT1062__)
-//#if 0
-using BASpiMemoryDMA = BASpiMemory;
-#else
-
 /**************************************************************************//**
  *  This wrapper class uses the Arduino SPI (Wire) library to access the SPI ram
  *  via DMA.
@@ -223,22 +218,43 @@ public:
 	/// @param wordOffset, offset from the start of the DMA buffer in words to begin reading
 	void readBufferContents(uint16_t *dest, size_t numWords, size_t wordOffset = 0);
 
+	/// Creates and allocates an intermediate copy buffer that is suitable for DMA transfers. It is up to the
+	/// user to ensure they never request a read/write larger than the size of this buffer when using this
+	/// feature.
+	/// @details In some use cases you may want to DMA to/from memory buffers that are in memory regions that
+	/// are not directly usable for DMA. Specifying a non-zero copy buffer size will create an intermediate
+	/// DMA-compatible buffer. By default, the size is zero and an intermediate copy is not performed.
+	/// DMA requires the user data be in a DMA accessible region and that it be aligned to the
+	/// the size of a cache line, and that the cache line isn't shared with any other data that might
+	/// be used on a different thread. Best practice is for a DMA buffer to start on a cache-line
+	/// boundary and be exactly sized to an integer multiple of cache lines.
+	/// @param numBytes the number of bytes to allocate for the intermediate copy buffer.
+	/// @returns true on success, false on failure
+	bool setDmaCopyBufferSize(size_t numBytes);
+
+	/// get the current size of the DMA copy buffer. Zero size means no intermediate copy is performed.
+	/// @returns the size of the intermediate copy buffer in bytes.
+	size_t getDmaCopyBufferSize(void) { return m_dmaCopyBufferSize; }
+
 private:
 
-	DmaSpiGeneric *m_spiDma = nullptr;
-	AbstractChipSelect *m_cs = nullptr;
+	DmaSpiGeneric      *m_spiDma = nullptr;
+	AbstractChipSelect *m_cs     = nullptr;
 
-	uint8_t *m_txCommandBuffer = nullptr;
-	DmaSpi::Transfer *m_txTransfer;
-	uint8_t *m_rxCommandBuffer = nullptr;
-	DmaSpi::Transfer *m_rxTransfer;
+	uint8_t          *m_txCommandBuffer = nullptr;
+	DmaSpi::Transfer *m_txTransfer      = nullptr;
+	uint8_t          *m_rxCommandBuffer = nullptr;
+	DmaSpi::Transfer *m_rxTransfer      = nullptr;
 
 	uint16_t m_txXferCount;
 	uint16_t m_rxXferCount;
 
+	size_t  m_dmaCopyBufferSize  = 0;
+	uint8_t   *m_dmaWriteCopyBuffer = nullptr;
+	volatile uint8_t   *m_dmaReadCopyBuffer  = nullptr;
+
 	void   m_setSpiCmdAddr(int command, size_t address, uint8_t *dest);
 };
-#endif // BASpiMemoryDMA declaration
 
 
 } /* namespace BALibrary */

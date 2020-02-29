@@ -209,6 +209,20 @@ bool AudioDelay::interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBu
 	return true;
 }
 
+bool AudioDelay::setSpiDmaCopyBuffer(void)
+{
+    bool returnValue = false;
+    if (m_slot->isUseDma()) {
+        // For DMA use on T4.0 we need this kluge
+        BASpiMemoryDMA * spiDma = static_cast<BASpiMemoryDMA*>(m_slot->getSpiMemoryHandle());
+        if (spiDma) {
+            spiDma->setDmaCopyBufferSize(sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
+            returnValue = true;
+        }
+    }
+    return returnValue;
+}
+
 
 }
 

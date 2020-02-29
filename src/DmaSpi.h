@@ -199,7 +199,9 @@ namespace DmaSpi
                   volatile uint8_t* pDest = nullptr,
                   const uint8_t& fill = 0,
                   AbstractChipSelect* cs = nullptr,
-                  TransferType transferType = TransferType::NORMAL
+                  TransferType transferType = TransferType::NORMAL,
+                  uint8_t *pSourceIntermediate = nullptr,
+                  volatile uint8_t *pDestIntermediate   = nullptr
       ) : m_state(State::idle),
         m_pSource(pSource),
         m_transferCount(transferCount),
@@ -207,7 +209,9 @@ namespace DmaSpi
         m_fill(fill),
         m_pNext(nullptr),
         m_pSelect(cs),
-        m_transferType(transferType)
+        m_transferType(transferType),
+        m_pSourceIntermediate(pSourceIntermediate),
+        m_pDestIntermediate(pDestIntermediate)
       {
           DMASPI_PRINT(("Transfer @ %p\n", this));
       };
@@ -229,6 +233,10 @@ namespace DmaSpi
       Transfer* m_pNext;
       AbstractChipSelect* m_pSelect;
       TransferType m_transferType;
+
+      uint8_t *m_pSourceIntermediate = nullptr;
+      volatile uint8_t *m_pDestIntermediate   = nullptr;
+      volatile uint8_t *m_pDestOriginal       = nullptr;
   };
 } // namespace DmaSpi
 
@@ -553,6 +561,14 @@ class AbstractDmaSpi
       DMASPI_PRINT(("DmaSpi::rxIsr_()\n"));
       rxChannel_()->clearInterrupt();
       // end current transfer: deselect and mark as done
+
+      // Check if intermediate buffer was used
+      if (m_pCurrentTransfer->m_pDestIntermediate) {
+          // copy when using an intermediate buffer
+          memcpy((void *)m_pCurrentTransfer->m_pDestOriginal, // DMA contents copied to original
+                 (void *)m_pCurrentTransfer->m_pDest, // source is the actual DMA buffer
+                 m_pCurrentTransfer->m_transferCount);
+      }
       finishCurrentTransfer();
 
       DMASPI_PRINT(("  state = "));
@@ -606,6 +622,14 @@ class AbstractDmaSpi
       {
         // real data sink
         DMASPI_PRINT(("  real sink\n"));
+
+        // Check for intermediate buffer
+        if (m_pCurrentTransfer->m_pDestIntermediate) {
+            // Modify the DMA so it will fill the intermediate buffer instead
+            // store the original buffer for memcpy in rx_isr()
+            m_pCurrentTransfer->m_pDestOriginal = m_pCurrentTransfer->m_pDest;
+            m_pCurrentTransfer->m_pDest = m_pCurrentTransfer->m_pDestIntermediate;
+        }
         arm_dcache_flush_delete((void *)m_pCurrentTransfer->m_pDest, m_pCurrentTransfer->m_transferCount);
         rxChannel_()->destinationBuffer(m_pCurrentTransfer->m_pDest,
                                         m_pCurrentTransfer->m_transferCount);
@@ -622,6 +646,15 @@ class AbstractDmaSpi
       if (m_pCurrentTransfer->m_pSource != nullptr)
       {
         // real data source
+        if (m_pCurrentTransfer->m_pSourceIntermediate) {
+            // copy and use the intermediate buffer
+            memcpy((void*)m_pCurrentTransfer->m_pSourceIntermediate,
+                   (void*)m_pCurrentTransfer->m_pSource,
+                    m_pCurrentTransfer->m_transferCount
+                  );
+            // DMA will now transfer from intermediate buffer
+            m_pCurrentTransfer->m_pSource = m_pCurrentTransfer->m_pSourceIntermediate;
+        }
         DMASPI_PRINT(("  real source\n"));
         arm_dcache_flush_delete((void *)m_pCurrentTransfer->m_pSource, m_pCurrentTransfer->m_transferCount);
         txChannel_()->sourceBuffer(m_pCurrentTransfer->m_pSource,

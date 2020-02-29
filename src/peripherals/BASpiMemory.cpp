@@ -17,6 +17,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "stdlib.h"
+#include "assert.h"
 #include "Arduino.h"
 #include "BASpiMemory.h"
 
@@ -49,6 +51,10 @@ constexpr int SPI_ADDR_0_MASK = 0x0000FF;
 constexpr int CMD_ADDRESS_SIZE = 4;
 constexpr int MAX_DMA_XFER_SIZE = 0x4000;
 
+constexpr size_t MEM_ALIGNED_ALLOC = 32; // number of bytes to align DMA buffer to
+
+void * dma_aligned_malloc(size_t align, size_t size);
+void dma_aligned_free(void * ptr);
 
 BASpiMemory::BASpiMemory(SpiDeviceId memDeviceId)
 {
@@ -351,9 +357,7 @@ void BASpiMemory::m_rawRead16(size_t address, uint16_t *dest, size_t numWords)
     digitalWrite(m_csPin, HIGH);
 }
 
-#if defined (__IMXRT1062__)
-//#if 0
-#else
+
 /////////////////////////////////////////////////////////////////////////////
 // BASpiMemoryDMA
 /////////////////////////////////////////////////////////////////////////////
@@ -472,6 +476,14 @@ void BASpiMemoryDMA::write(size_t address, uint8_t *src, size_t numBytes)
 	size_t bytesRemaining = numBytes;
 	uint8_t *srcPtr = src;
 	size_t nextAddress = address;
+    uint8_t *intermediateBuffer = nullptr;
+
+    // Check for intermediate buffer use
+    if (m_dmaCopyBufferSize) {
+        // copy to the intermediate buffer;
+        intermediateBuffer = m_dmaWriteCopyBuffer;
+        memcpy(intermediateBuffer, src, numBytes);
+    }
 
 	while (bytesRemaining > 0) {
 	    m_txXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
@@ -482,7 +494,7 @@ void BASpiMemoryDMA::write(size_t address, uint8_t *src, size_t numBytes)
 		m_spiDma->registerTransfer(m_txTransfer[1]);
 
 		while ( m_txTransfer[0].busy() || m_txTransfer[1].busy()) { yield(); } // wait until not busy
-		m_txTransfer[0] = DmaSpi::Transfer(srcPtr, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS);
+		m_txTransfer[0] = DmaSpi::Transfer(srcPtr, m_txXferCount, nullptr, 0, m_cs, TransferType::NO_START_CS, intermediateBuffer, nullptr);
 		m_spiDma->registerTransfer(m_txTransfer[0]);
 		bytesRemaining -= m_txXferCount;
 		srcPtr += m_txXferCount;
@@ -539,6 +551,13 @@ void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 	size_t bytesRemaining = numBytes;
 	uint8_t *destPtr = dest;
 	size_t nextAddress = address;
+	volatile uint8_t *intermediateBuffer = nullptr;
+
+	// Check for intermediate buffer use
+	if (m_dmaCopyBufferSize) {
+	    intermediateBuffer = m_dmaReadCopyBuffer;
+	}
+
 	while (bytesRemaining > 0) {
 	    m_rxXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
 
@@ -549,7 +568,7 @@ void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 
 
 		while ( m_rxTransfer[0].busy() || m_rxTransfer[1].busy()) { yield(); }
-		m_rxTransfer[0] = DmaSpi::Transfer(nullptr, m_rxXferCount, destPtr, 0, m_cs, TransferType::NO_START_CS);
+		m_rxTransfer[0] = DmaSpi::Transfer(nullptr, m_rxXferCount, destPtr, 0, m_cs, TransferType::NO_START_CS, nullptr, intermediateBuffer);
 		m_spiDma->registerTransfer(m_rxTransfer[0]);
 
 		bytesRemaining -= m_rxXferCount;
@@ -574,6 +593,105 @@ bool BASpiMemoryDMA::isReadBusy(void) const
 {
 	return (m_rxTransfer[0].busy() or m_rxTransfer[1].busy());
 }
-#endif // BASpiMemoryDMA definition
+
+bool BASpiMemoryDMA::setDmaCopyBufferSize(size_t numBytes)
+{
+    if (m_dmaWriteCopyBuffer) {
+        dma_aligned_free((void *)m_dmaWriteCopyBuffer);
+        m_dmaCopyBufferSize = 0;
+    }
+    if (m_dmaReadCopyBuffer) {
+        dma_aligned_free((void *)m_dmaReadCopyBuffer);
+        m_dmaCopyBufferSize = 0;
+    }
+
+    if (numBytes > 0) {
+        m_dmaWriteCopyBuffer = (uint8_t*)dma_aligned_malloc(MEM_ALIGNED_ALLOC, numBytes);
+        if (!m_dmaWriteCopyBuffer) {
+            // allocate failed
+            m_dmaCopyBufferSize = 0;
+            return false;
+        }
+
+        m_dmaReadCopyBuffer = (volatile uint8_t*)dma_aligned_malloc(MEM_ALIGNED_ALLOC, numBytes);
+        if (!m_dmaReadCopyBuffer) {
+            // allocate failed
+            m_dmaCopyBufferSize = 0;
+            return false;
+        }
+        m_dmaCopyBufferSize = numBytes;
+    }
+
+    return true;
+}
+
+// Some convenience functions to malloc and free aligned memory
+// Number of bytes we're using for storing
+// the aligned pointer offset
+typedef uint16_t offset_t;
+#define PTR_OFFSET_SZ sizeof(offset_t)
+
+#ifndef align_up
+#define align_up(num, align) \
+    (((num) + ((align) - 1)) & ~((align) - 1))
+#endif
+
+void * dma_aligned_malloc(size_t align, size_t size)
+{
+    void * ptr = NULL;
+
+    // We want it to be a power of two since
+    // align_up operates on powers of two
+    assert((align & (align - 1)) == 0);
+
+    if(align && size)
+    {
+        /*
+         * We know we have to fit an offset value
+         * We also allocate extra bytes to ensure we
+         * can meet the alignment
+         */
+        uint32_t hdr_size = PTR_OFFSET_SZ + (align - 1);
+        void * p = malloc(size + hdr_size);
+
+        if(p)
+        {
+            /*
+             * Add the offset size to malloc's pointer
+             * (we will always store that)
+             * Then align the resulting value to the
+             * target alignment
+             */
+            ptr = (void *) align_up(((uintptr_t)p + PTR_OFFSET_SZ), align);
+
+            // Calculate the offset and store it
+            // behind our aligned pointer
+            *((offset_t *)ptr - 1) =
+                (offset_t)((uintptr_t)ptr - (uintptr_t)p);
+
+        } // else NULL, could not malloc
+    } //else NULL, invalid arguments
+
+    return ptr;
+}
+
+void dma_aligned_free(void * ptr)
+{
+    assert(ptr);
+
+    /*
+    * Walk backwards from the passed-in pointer
+    * to get the pointer offset. We convert to an offset_t
+    * pointer and rely on pointer math to get the data
+    */
+    offset_t offset = *((offset_t *)ptr - 1);
+
+    /*
+    * Once we have the offset, we can get our
+    * original pointer and call free
+    */
+    void * p = (void *)((uint8_t *)ptr - offset);
+    free(p);
+}
 
 } /* namespace BALibrary */

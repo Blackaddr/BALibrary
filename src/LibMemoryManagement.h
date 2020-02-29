@@ -146,6 +146,8 @@ public:
 
 	bool isReadBusy() const;
 
+	BASpiMemory *getSpiMemoryHandle() { return m_spi; }
+
 	/// DEBUG USE: prints out the slot member variables
 	void printStatus(void) const;
 
