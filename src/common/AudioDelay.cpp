@@ -79,6 +79,14 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 		if (!m_slot) { Serial.println("addBlock(): m_slot is not valid"); }
 
 		if (block) {
+
+            // KLUGE! The Teensy Audio Library doesn't support DMA buffers correctly on the T4.0. We need to
+            // use an intermediate copy buffer kluge here.
+#if defined(__IMXRT1062__)
+            // This is a T4.0 build
+            setSpiDmaCopyBuffer();
+#endif
+
 			// this causes pops
 		    m_slot->writeAdvance16(block->data, AUDIO_BLOCK_SAMPLES);
 		}
@@ -164,6 +172,7 @@ bool AudioDelay::m_getSamples(int16_t *dest, size_t offsetSamples, size_t numSam
 	} else {
 		// EXTERNAL Memory
 		if (numSamples*sizeof(int16_t) <= m_slot->size() ) { // check for overflow
+
 			// current position is considered the write position subtracted by the number of samples we're going
 			// to read since this is the smallest delay we can get without reading past the write position into
 			// the "future".
@@ -216,8 +225,11 @@ bool AudioDelay::setSpiDmaCopyBuffer(void)
         // For DMA use on T4.0 we need this kluge
         BASpiMemoryDMA * spiDma = static_cast<BASpiMemoryDMA*>(m_slot->getSpiMemoryHandle());
         if (spiDma) {
-            spiDma->setDmaCopyBufferSize(sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
-            returnValue = true;
+            // Check if the size is already set
+            if (spiDma->getDmaCopyBufferSize() == 0) {
+              spiDma->setDmaCopyBufferSize(sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
+              returnValue = true;
+            }
         }
     }
     return returnValue;

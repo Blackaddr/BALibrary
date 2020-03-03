@@ -201,7 +201,7 @@ public:
     /// @returns true if suceess, false if an error occurs
     bool setSpiDmaCopyBuffer(void);
 
-    /// Ween using INTERNAL memory, thsi function can return a pointer to the underlying RingBuffer that contains
+    /// When using INTERNAL memory, this function can return a pointer to the underlying RingBuffer that contains
     /// audio_block_t * pointers.
     /// @returns pointer to the underlying RingBuffer
     RingBuffer<audio_block_t*> *getRingBuffer() const { return m_ringBuffer; }
