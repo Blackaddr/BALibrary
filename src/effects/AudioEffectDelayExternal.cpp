@@ -67,6 +67,7 @@ void BAAudioEffectDelayExternal::delay(uint8_t channel, float milliseconds) {
 	unsigned mask = m_activeMask;
 	if (m_activeMask == 0) m_startUsingSPI(m_spiChannel);
 	m_activeMask = mask | (1<<channel);
+	Serial.print("DelayLengthInt: "); Serial.println(m_requestedDelayLength);
 }
 
 void BAAudioEffectDelayExternal::disable(uint8_t channel) {
@@ -202,7 +203,12 @@ void BAAudioEffectDelayExternal::initialize(void)
 
 	avail = memsize - m_allocated[m_mem];
 
-	if (m_requestedDelayLength > avail) samples = avail;
+	if (m_requestedDelayLength > avail) {
+	    samples = avail;
+	} else {
+	    samples = m_requestedDelayLength;
+	}
+
 	m_memoryStart = m_allocated[m_mem];
 	m_allocated[m_mem] += samples;
 	m_memoryLength = samples;

@@ -95,6 +95,9 @@ constexpr int WM8731_DAC_MUTE_SHIFT = 3;
 constexpr int WM8731_HPF_DISABLE_ADDR = 5;
 constexpr int WM8731_HPF_DISABLE_MASK = 0x1;
 constexpr int WM8731_HPF_DISABLE_SHIFT = 0;
+constexpr int WM8731_HPF_STORE_OFFSET_ADDR = 5;
+constexpr int WM8731_HPF_STORE_OFFSET_MASK = 0x10;
+constexpr int WM8731_HPF_STORE_OFFSET_SHIFT = 4;
 // Register 7
 constexpr int WM8731_LRSWAP_ADDR = 5;
 constexpr int WM8731_LRSWAP_MASK = 0x20;

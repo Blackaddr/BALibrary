@@ -26,5 +26,6 @@
 #include "AudioEffectAnalogDelay.h"
 #include "AudioEffectSOS.h"
 #include "AudioEffectTremolo.h"
+#include "AudioEffectRmsMeasure.h"
 
 #endif /* __BAEFFECTS_H */
