@@ -110,6 +110,12 @@ public:
 	/// @details This will cause the codec to reset its internal registers to default values.
 	void resetCodec(void);
 
+	/// Recalibrate the DC offset removal
+	/// @details This function will temporarily mute the inputs, enable the CODEC's
+	/// HPF in order to calculate the DC offset (which is subtracted out). Then the filter
+	/// is disabled.
+	void recalibrateDcOffset(void);
+
 	/// Write a custom command to the codec via I2C control interface.
 	/// @details See WM8731 datasheet for register map details.
 	/// @param addr The register address you wish to write to, range 0 to 15.

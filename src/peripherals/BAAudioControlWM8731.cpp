@@ -361,6 +361,26 @@ void BAAudioControlWM8731::resetCodec(void)
 	resetInternalReg();
 }
 
+void BAAudioControlWM8731::recalibrateDcOffset(void)
+{
+    // mute the inputs
+    setLeftInMute(true);
+    setRightInMute(true);
+
+    // enable the HPF and DC offset store
+    setHPFDisable(false);
+    regArray[WM8731_HPF_STORE_OFFSET_ADDR] |= WM8731_HPF_STORE_OFFSET_MASK;
+    write(WM8731_REG_DIGITAL, regArray[WM8731_REG_DIGITAL]);
+
+    delay(1000); // wait for the DC offset to be calculated over 1 second
+    setHPFDisable(true); // disable the dynamic HPF calculation
+    delay(500);
+
+    // unmute the inputs
+    setLeftInMute(false);
+    setRightInMute(false);
+}
+
 // Direct write control to the codec
 bool BAAudioControlWM8731::writeI2C(unsigned int addr, unsigned int val)
 {

@@ -69,6 +69,8 @@ void setup() {
 
   rmsModule.enable();
   rmsModule.bypass(false);
+
+  codecControl.recalibrateDcOffset();
   
   
 }
