@@ -88,11 +88,11 @@ void clearAudioBlock(audio_block_t *block);
 /// @param mix float between 0.0 and 1.0.
 void alphaBlend(audio_block_t *out, audio_block_t *dry, audio_block_t* wet, float mix);
 
-/// Applies a gain to the audio via fixed-point scaling accoring to <br>
+/// Applies a gain to the audio via fixed-point scaling according to <br>
 /// out = int * (vol * 2^coeffShift)
 /// @param out pointer to output audio block
 /// @param in  pointer to input audio block
-/// @param vol volume cofficient between -1.0 and +1.0
+/// @param vol volume coefficient between -1.0 and +1.0
 /// @param coeffShift number of bits to shift the coefficient
 void gainAdjust(audio_block_t *out, audio_block_t *in, float vol, int coeffShift = 0);
 

@@ -151,7 +151,7 @@ void AudioEffectAnalogDelay::update(void)
 	transmit(blockToOutput);
 
 	release(inputAudioBlock);
-	release(m_previousBlock);
+	if (m_previousBlock) { release(m_previousBlock); }
 	m_previousBlock = blockToOutput;
 
 	if (m_blockToRelease) release(m_blockToRelease);
@@ -255,7 +255,7 @@ void AudioEffectAnalogDelay::m_postProcessing(audio_block_t *out, audio_block_t 
 		memcpy(out->data, dry->data, sizeof(int16_t) * AUDIO_BLOCK_SAMPLES);
 	}
 	// Set the output volume
-	gainAdjust(out, out, m_volume, 1);
+	gainAdjust(out, out, m_volume);
 
 }
 
