@@ -34,9 +34,13 @@ namespace BALibrary {
 
 // In your Arudino .ino file, use #defines for your TGA Pro revision and options
 // to correctly configure your hardware
-#define TGA_PRO_REVA(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_A ///< Macro for specifying REV A of the TGA Pro
-#define TGA_PRO_REVB(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_B ///< Macro for specifying REV B of the TGA Pro
+#define TGA_PRO_REVA(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_A     ///< Macro for specifying REV A of the TGA Pro
+#define TGA_PRO_REVB(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_B     ///< Macro for specifying REV B of the TGA Pro
+#define TGA_PRO_MKII_REV1(x)   BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::MKII_REV1 ///< Macro for specifying REV B of the TGA Pro
+
 #define TGA_PRO_EXPAND_REV2(x) BALibrary::BAHardwareConfig.m_expansionBoard = ExpansionBoard::REV_2 ///< Macro for specifying REV 2 of the Expansion Board
+#define TGA_PRO_EXPAND_REV3(x) BALibrary::BAHardwareConfig.m_expansionBoard = ExpansionBoard::REV_3 ///< Macro for specifying REV 2 of the Expansion Board
+
 #define SPI_MEM0_1M(x)         BALibrary::BAHardwareConfig.m_spiMem0 = SPI_MEMORY_1M ///< Macro for specifying MEM0 is 1Mbit
 #define SPI_MEM0_4M(x)         BALibrary::BAHardwareConfig.m_spiMem0 = SPI_MEMORY_4M ///< Macro for specifying MEM1 is 4Mbit
 #define SPI_MEM1_1M(x)         BALibrary::BAHardwareConfig.m_spiMem1 = SPI_MEMORY_1M ///< Macro for specifying MEM0 is 1Mbit
@@ -48,14 +52,16 @@ namespace BALibrary {
 /// enum to specify the TGA Board revision
 enum class TgaBoard : unsigned {
     REV_A = 0, ///< indicates using REV A of the TGA Pro
-    REV_B      ///< indicates using REV B of the TGA Pro
+    REV_B,     ///< indicates using REV B of the TGA Pro
+    MKII_REV1  ///< indicates using MKII, Rev 1 of the TGA Pro
 };
 
 /// enum to specify the TGA Pro Expansion Board revision
 enum class ExpansionBoard : unsigned {
     NO_EXPANSION = 0, ///< default, indicates no expansion board is present
     REV_1,            ///< indicates using REV 1 of the Expansion Board
-    REV_2             ///< indicates using REV 2 of the Expansion Board
+    REV_2,            ///< indicates using REV 2 of the Expansion Board
+    REV_3             ///< indicates using REV 3 of the Expansion Board (MKII Series)
 };
 
 /// enum to specify SPI memory dize
@@ -209,7 +215,12 @@ enum class GPIO : uint8_t {
  * Teensy 4.0 Hardware Settings
  *****************************************************************************/
 #elif defined(__IMXRT1062__) // T4.0
-constexpr uint8_t USR_LED_ID = 2; ///< Teensy IO number for the user LED.
+
+// TGA PRO MKI
+//constexpr uint8_t USR_LED_ID = 2; ///< Teensy IO number for the user LED.
+
+// TGA PRO MKI
+constexpr uint8_t USR_LED_ID = 6; ///< Teensy IO number for the user LED.
 
 // SPI0 pinouts
 constexpr uint8_t SPI0_SCK_PIN = 13;
@@ -300,10 +311,18 @@ constexpr unsigned BA_EXPAND_NUM_ENC  = 0;
 constexpr uint8_t BA_EXPAND_POT1_PIN = A0; // 14_A0_TX3_SPDIFOUT
 constexpr uint8_t BA_EXPAND_POT2_PIN = A1; // 15_A1_RX3_SPDIFIN
 constexpr uint8_t BA_EXPAND_POT3_PIN = A2; // 16_A2_RX4_SCL1
-constexpr uint8_t BA_EXPAND_SW1_PIN  = 3;  // 3_LRCLK2
-constexpr uint8_t BA_EXPAND_SW2_PIN  = 4;  // 4_BCLK2
-constexpr uint8_t BA_EXPAND_LED1_PIN = 5;  // 5_IN2
-constexpr uint8_t BA_EXPAND_LED2_PIN = 6;  // 6_OUT1D
+
+//// REV B
+//constexpr uint8_t BA_EXPAND_SW1_PIN  = 3;  // 3_LRCLK2
+//constexpr uint8_t BA_EXPAND_SW2_PIN  = 4;  // 4_BCLK2
+//constexpr uint8_t BA_EXPAND_LED1_PIN = 5;  // 5_IN2
+//constexpr uint8_t BA_EXPAND_LED2_PIN = 6;  // 6_OUT1D
+
+// MKII REV1
+constexpr uint8_t BA_EXPAND_SW1_PIN  = 2;  // 2_OUT2
+constexpr uint8_t BA_EXPAND_SW2_PIN  = 3;  // 3_LRCLK2
+constexpr uint8_t BA_EXPAND_LED1_PIN = 4;  // 4_BLCK2
+constexpr uint8_t BA_EXPAND_LED2_PIN = 5;  // 5_IN2
 
 #else
 

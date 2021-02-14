@@ -42,9 +42,10 @@
  * 
  */
 
-//#define RUN_MIDI_TEST // Uncomment this line to run the MIDI test.
-//#define RUN_MEMO_TEST // Uncomment this line to run the MEM0 test.
+#define RUN_MIDI_TEST // Uncomment this line to run the MIDI test.
+#define RUN_MEMO_TEST // Uncomment this line to run the MEM0 test.
 //#define RUN_MEM1_TEST // (Teensy 3.5/3/6 only!) Uncomment this line to run the MEM1 test.
+#define RUN_EXP_TEST // Test the Expansion board controls
 
 #include <Audio.h>
 #include "BALibrary.h"
@@ -83,7 +84,7 @@ unsigned loopCounter = 0;
 
 void setup() {
   Serial.begin(57600);
-  while (!Serial) { yield(); }
+  //while (!Serial) { yield(); }
   delay(500);
 
   // Disable the audio codec first
@@ -94,7 +95,8 @@ void setup() {
   codec.setHeadphoneVolume(0.8f); // Set headphone volume
   configPhysicalControls(controls, codec);
 
-  TGA_PRO_EXPAND_REV2(); // Macro to declare expansion board revision
+  TGA_PRO_MKII_REV1();
+  TGA_PRO_EXPAND_REV3(); // Macro to declare expansion board revision
 
   // Run the initial Midi connectivity and SPI memory tests.
 #if defined(RUN_MIDI_TEST)
@@ -102,8 +104,8 @@ void setup() {
 #endif
 
 #if defined(RUN_MEMO_TEST)
-  SPI_MEM0_1M();
-  //SPI_MEM0_4M();
+  //SPI_MEM0_1M();
+  SPI_MEM0_4M();
   spiMem0.begin(); delay(10);
   if (spiTest(&spiMem0, 0)) { Serial.println("SPI0 testing PASSED!");}
 #endif
@@ -115,16 +117,20 @@ void setup() {
   if (spiTest(&spiMem1, 1)) { Serial.println("SPI1 testing PASSED!");}
 #endif
 
+#if defined(RUN_EXP_TEST)
   Serial.println("Now monitoring for input from Expansion Control Board");
+  #endif
 }
 
 void loop() {
-  
-  checkPot(0);
-  checkPot(1);
-  checkPot(2);
-  checkSwitch(0);
-  checkSwitch(1);
+
+  #if defined(RUN_EXP_TEST)
+    checkPot(0);
+    checkPot(1);
+    checkPot(2);
+    checkSwitch(0);
+    checkSwitch(1);
+  #endif
 
   delay(20);
   loopCounter++;
