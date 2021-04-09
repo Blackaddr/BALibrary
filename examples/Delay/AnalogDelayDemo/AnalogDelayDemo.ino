@@ -31,6 +31,7 @@ BAAudioControlWM8731 codec;
 // YOU MUST USE TEENSYDUINO 1.41 or greater
 // YOU MUST COMPILE THIS DEMO USING Serial + Midi
 
+#define USE_CAB_FILTER // uncomment this line to add a simple low-pass filter to simulate a cabinet if you are going straight to headphones
 //#define USE_EXT // uncomment this line to use External MEM0
 #define MIDI_DEBUG // uncomment to see raw MIDI info in terminal
 
@@ -53,18 +54,32 @@ AudioEffectAnalogDelay analogDelay(200.0f); // max delay of 200 ms or internal.
 // If you use external SPI memory you can get up to 1485.0f ms of delay!
 #endif
 
+#if defined(USE_CAB_FILTER)
 AudioFilterBiquad cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
+#endif
 
-// Simply connect the input to the delay, and the output
-// to both i2s channels
 AudioConnection input(i2sIn,0, analogDelay,0);
+#if defined(USE_CAB_FILTER)
 AudioConnection delayOut(analogDelay, 0, cabFilter, 0);
 AudioConnection leftOut(cabFilter,0, i2sOut, 0);
 AudioConnection rightOut(cabFilter,0, i2sOut, 1);
+#else
+AudioConnection leftOut(analogDelay,0, i2sOut, 0);
+AudioConnection rightOut(analogDelay,0, i2sOut, 1);
+#endif
 
-int loopCount = 0;
+elapsedMillis timer;
 
 void setup() {
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+
+  #ifdef USE_EXT
+  SPI_MEM0_4M();
+  //SPI_MEM0_1M(); // use this line instead of you have the older 1Mbit memory
+  #endif
+  
   delay(100);
   Serial.begin(57600); // Start the serial port
 
@@ -82,7 +97,6 @@ void setup() {
   // If using external memory request request memory from the manager
   // for the slot
   #ifdef USE_EXT
-  SPI_MEM0_1M();
   Serial.println("Using EXTERNAL memory");
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, 500.0f, MemSelect::MEM0, true);
@@ -116,9 +130,11 @@ void setup() {
   //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::WARM); // A warm filter with a smooth frequency rolloff above 2Khz
   //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::DARK); // A very dark filter, with a sharp rolloff above 1Khz
 
-  // Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
+#if defined(USE_CAB_FILTER)
+  // Guitar cabinet: Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
   cabFilter.setLowpass(1, 4500, .7071);
+#endif
 }
 
 void OnControlChange(byte channel, byte control, byte value) {
@@ -138,14 +154,15 @@ void loop() {
   // usbMIDI.read() needs to be called rapidly from loop().  When
   // each MIDI messages arrives, it return true.  The message must
   // be fully processed before usbMIDI.read() is called again.
-
-  if (loopCount % 524288 == 0) {
+  
+  if (timer > 1000) {
+    timer = 0;
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
     Serial.print("% ");
     Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
     Serial.println("%");
   }
-  loopCount++;
+
 
   // check for new MIDI from USB
   if (usbMIDI.read()) {
