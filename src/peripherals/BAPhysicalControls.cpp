@@ -319,6 +319,9 @@ void Potentiometer::setChangeThreshold(float changeThreshold)
 Potentiometer::Calib Potentiometer::calibrate(uint8_t pin) {
 	Calib calib;
 
+	// Flush the serial port input buffer
+	while (Serial.available() > 0) {}
+
 	Serial.print("Calibration pin "); Serial.println(pin);
 	Serial.println("Move the pot fully counter-clockwise to the minimum setting and press any key then ENTER");
 	while (true) {
