@@ -62,7 +62,7 @@ void AudioEffectSOS::enable(void)
     if (m_externalMemory) {
         // Because we hold the previous output buffer for an update cycle, the maximum delay is actually
         // 1 audio block mess then the max delay returnable from the memory.
-        m_maxDelaySamples = m_memory->getMaxDelaySamples();
+        m_maxDelaySamples = m_memory->getMaxDelaySamples() - AUDIO_BLOCK_SAMPLES;
         Serial.println(String("SOS Enabled with delay length ") + m_maxDelaySamples + String(" samples"));
     }
     m_delaySamples = m_maxDelaySamples;
