@@ -144,11 +144,17 @@ bool ExtMemSlot::writeAdvance16(int16_t *src, size_t numWords)
 		// this write will wrap the memory slot
 		size_t wrBytes = m_end - m_currentWrPosition + 1;
 		size_t wrDataNum = wrBytes >> 1; // divide by two to get the number of data
+
 		m_spi->write16(m_currentWrPosition, reinterpret_cast<uint16_t*>(src), wrDataNum);
 		size_t remainingData = numWords - wrDataNum;
+
 		m_spi->write16(m_start, reinterpret_cast<uint16_t*>(src + wrDataNum), remainingData); // write remaining bytes are start
 		m_currentWrPosition = m_start + (remainingData*sizeof(int16_t));
 	}
+
+	// If a write transaction landed exactly on the end of the memory, the next position must be
+	// manually put back to the start
+	if (m_currentWrPosition > m_end) { m_currentWrPosition = m_start; }
 	return true;
 }
 

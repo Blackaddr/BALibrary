@@ -28,17 +28,16 @@ AudioEffectTremolo::~AudioEffectTremolo()
 
 void AudioEffectTremolo::update(void)
 {
+    // Check is block is disabled
+    if (m_enable == false) {
+        // do not transmit or process any audio, return as quickly as possible.
+        return;
+    }
+
 	audio_block_t *inputAudioBlock = receiveWritable(); // get the next block of input samples
 
-	// Check is block is disabled
-	if (m_enable == false) {
-		// do not transmit or process any audio, return as quickly as possible.
-		if (inputAudioBlock) release(inputAudioBlock);
-		return;
-	}
-
 	// Check is block is bypassed, if so either transmit input directly or create silence
-	if (m_bypass == true) {
+	if ((m_bypass == true) || (!inputAudioBlock)) {
 		// transmit the input directly
 		if (!inputAudioBlock) {
 			// create silence

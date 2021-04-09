@@ -77,50 +77,52 @@ void AudioEffectAnalogDelay::setFilter(Filter filter)
 
 void AudioEffectAnalogDelay::update(void)
 {
-	audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
-	// Check is block is disabled
-	if (m_enable == false) {
-		// do not transmit or process any audio, return as quickly as possible.
-		if (inputAudioBlock) release(inputAudioBlock);
+    // Check is block is disabled
+    if (m_enable == false) {
+        // release all held memory resources
+        if (m_previousBlock) {
+            release(m_previousBlock); m_previousBlock = nullptr;
+        }
+        if (!m_externalMemory) {
+            // when using internal memory we have to release all references in the ring buffer
+            while (m_memory->getRingBuffer()->size() > 0) {
+                audio_block_t *releaseBlock = m_memory->getRingBuffer()->front();
+                m_memory->getRingBuffer()->pop_front();
+                if (releaseBlock) release(releaseBlock);
+            }
+        }
+        return;
+    }
 
-		// release all held memory resources
-		if (m_previousBlock) {
-			release(m_previousBlock); m_previousBlock = nullptr;
-		}
-		if (!m_externalMemory) {
-			// when using internal memory we have to release all references in the ring buffer
-			while (m_memory->getRingBuffer()->size() > 0) {
-				audio_block_t *releaseBlock = m_memory->getRingBuffer()->front();
-				m_memory->getRingBuffer()->pop_front();
-				if (releaseBlock) release(releaseBlock);
-			}
-		}
-		return;
-	}
+    audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
-	// Check is block is bypassed, if so either transmit input directly or create silence
-	if (m_bypass == true) {
-		// transmit the input directly
-		if (!inputAudioBlock) {
-			// create silence
-			inputAudioBlock = allocate();
-			if (!inputAudioBlock) { return; } // failed to allocate
-			else {
-				clearAudioBlock(inputAudioBlock);
-			}
-		}
-		transmit(inputAudioBlock, 0);
-		release(inputAudioBlock);
-		return;
-	}
+    // Check is block is bypassed, if so either transmit input directly or create silence
+    if ((m_bypass == true) || (!inputAudioBlock)) {
+        // transmit the input directly
+        if (!inputAudioBlock) {
+            // create silence
+            inputAudioBlock = allocate();
+            if (!inputAudioBlock) { return; } // failed to allocate
+            else {
+                clearAudioBlock(inputAudioBlock);
+            }
+        }
+        transmit(inputAudioBlock, 0);
+        release(inputAudioBlock);
+        return;
+    }
 
 	// Otherwise perform normal processing
 	// In order to make use of the SPI DMA, we need to request the read from memory first,
 	// then do other processing while it fills in the back.
 	audio_block_t *blockToOutput = nullptr; // this will hold the output audio
     blockToOutput = allocate();
-    if (!blockToOutput) return; // skip this update cycle due to failure
+    if (!blockToOutput) {
+        transmit(inputAudioBlock, 0);
+        release(inputAudioBlock);
+        return; // skip this update cycle due to failure
+    }
 
     // get the data. If using external memory with DMA, this won't be filled until
     // later.
