@@ -36,7 +36,9 @@ AudioEffectAnalogDelay::AudioEffectAnalogDelay(ExtMemSlot *slot)
 : AudioStream(1, m_inputQueueArray)
 {
 	m_memory = new AudioDelay(slot);
-	m_maxDelaySamples = (slot->size() / sizeof(int16_t));
+
+	// the delay cannot be exactly equal to the slot size, you need at least one sample so the wr/rd are not on top of each other.
+	m_maxDelaySamples = (slot->size() / sizeof(int16_t))-AUDIO_BLOCK_SAMPLES;
 	m_externalMemory = true;
 	m_constructFilter();
 }
@@ -164,21 +166,17 @@ void AudioEffectAnalogDelay::delay(float milliseconds)
 {
 	size_t delaySamples = calcAudioSamples(milliseconds);
 
-	if (delaySamples > m_memory->getMaxDelaySamples()) {
-	    // this exceeds max delay value, limit it.
-	    delaySamples = m_memory->getMaxDelaySamples();
-	}
-
-	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
+	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); return; }
 
 	if (!m_externalMemory) {
 		// internal memory
+	    m_maxDelaySamples = m_memory->getMaxDelaySamples();
 		//QueuePosition queuePosition = calcQueuePosition(milliseconds);
 		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	} else {
 		// external memory
-		//Serial.println(String("CONFIG: delay:") + delaySamples);
 		ExtMemSlot *slot = m_memory->getSlot();
+		m_maxDelaySamples = (slot->size() / sizeof(int16_t))-AUDIO_BLOCK_SAMPLES;
 
 		if (!slot) { Serial.println("ERROR: slot ptr is not valid"); }
 		if (!slot->isEnabled()) {
@@ -187,6 +185,10 @@ void AudioEffectAnalogDelay::delay(float milliseconds)
 		}
 	}
 
+    if (delaySamples > m_maxDelaySamples) {
+        // this exceeds max delay value, limit it.
+        delaySamples = m_maxDelaySamples;
+    }
 	m_delaySamples = delaySamples;
 }
 
@@ -196,43 +198,52 @@ void AudioEffectAnalogDelay::delay(size_t delaySamples)
 
 	if (!m_externalMemory) {
 		// internal memory
+	    m_maxDelaySamples = m_memory->getMaxDelaySamples();
 		//QueuePosition queuePosition = calcQueuePosition(delaySamples);
 		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	} else {
 		// external memory
 		//Serial.println(String("CONFIG: delay:") + delaySamples);
 		ExtMemSlot *slot = m_memory->getSlot();
+		m_maxDelaySamples = (slot->size() / sizeof(int16_t))-AUDIO_BLOCK_SAMPLES;
 		if (!slot->isEnabled()) {
 			slot->enable();
 		}
 	}
-	m_delaySamples = delaySamples;
+
+	if (delaySamples > m_maxDelaySamples) {
+        // this exceeds max delay value, limit it.
+        delaySamples = m_maxDelaySamples;
+    }
+    m_delaySamples = delaySamples;
 }
 
 void AudioEffectAnalogDelay::delayFractionMax(float delayFraction)
 {
 	size_t delaySamples = static_cast<size_t>(static_cast<float>(m_memory->getMaxDelaySamples()) * delayFraction);
 
-	if (delaySamples > m_memory->getMaxDelaySamples()) {
-	    // this exceeds max delay value, limit it.
-	    delaySamples = m_memory->getMaxDelaySamples();
-	}
-
 	if (!m_memory) { Serial.println("delay(): m_memory is not valid"); }
 
 	if (!m_externalMemory) {
 		// internal memory
+	    m_maxDelaySamples = m_memory->getMaxDelaySamples();
 		//QueuePosition queuePosition = calcQueuePosition(delaySamples);
 		//Serial.println(String("CONFIG: delay:") + delaySamples + String(" queue position ") + queuePosition.index + String(":") + queuePosition.offset);
 	} else {
 		// external memory
 		//Serial.println(String("CONFIG: delay:") + delaySamples);
 		ExtMemSlot *slot = m_memory->getSlot();
+		m_maxDelaySamples = (slot->size() / sizeof(int16_t))-AUDIO_BLOCK_SAMPLES;
 		if (!slot->isEnabled()) {
 			slot->enable();
 		}
 	}
-	m_delaySamples = delaySamples;
+
+	if (delaySamples > m_maxDelaySamples) {
+        // this exceeds max delay value, limit it.
+        delaySamples = m_maxDelaySamples;
+    }
+    m_delaySamples = delaySamples;
 }
 
 void AudioEffectAnalogDelay::m_preProcessing(audio_block_t *out, audio_block_t *dry, audio_block_t *wet)
@@ -270,8 +281,8 @@ void AudioEffectAnalogDelay::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[DELAY][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[DELAY][MIDI_CONTROL] == control)) {
 		// Delay
-		if (m_externalMemory) { m_maxDelaySamples = m_memory->getSlot()->size() / sizeof(int16_t); }
-		size_t delayVal = (size_t)(val * (float)m_maxDelaySamples);
+		if (m_externalMemory) { m_maxDelaySamples = (m_memory->getSlot()->size() / sizeof(int16_t))-AUDIO_BLOCK_SAMPLES; }
+		size_t delayVal = (size_t)(val * (float)(m_maxDelaySamples));
 		delay(delayVal);
 		Serial.println(String("AudioEffectAnalogDelay::delay (ms): ") + calcAudioTimeMs(delayVal)
 				+ String(" (samples): ") + delayVal + String(" out of ") + m_maxDelaySamples);

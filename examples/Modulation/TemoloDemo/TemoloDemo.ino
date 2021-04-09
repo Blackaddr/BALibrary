@@ -31,22 +31,33 @@ BAAudioControlWM8731 codec;
 // YOU MUST USE TEENSYDUINO 1.41 or greater
 // YOU MUST COMPILE THIS DEMO USING Serial + Midi
 
+//#define USE_CAB_FILTER // uncomment this line to add a simple low-pass filter to simulate a cabinet if you are going straight to headphones
 #define MIDI_DEBUG // uncomment to see raw MIDI info in terminal
 
 AudioEffectTremolo tremolo;
 
+#if defined(USE_CAB_FILTER)
 AudioFilterBiquad cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
+#endif
 
-// Simply connect the input to the tremolo, and the output
-// to both i2s channels
 AudioConnection input(i2sIn,0, tremolo,0);
-AudioConnection tremoloOut(tremolo, 0, cabFilter, 0);
+#if defined(USE_CAB_FILTER)
+AudioConnection tremOut(tremolo, 0, cabFilter, 0);
 AudioConnection leftOut(cabFilter,0, i2sOut, 0);
 AudioConnection rightOut(cabFilter,0, i2sOut, 1);
+#else
+AudioConnection leftOut(tremolo,0, i2sOut, 0);
+AudioConnection rightOut(tremolo,0, i2sOut, 1);
+#endif
 
-int loopCount = 0;
+elapsedMillis timer;
 
 void setup() {
+
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+  
   delay(100);
   Serial.begin(57600); // Start the serial port
 
@@ -78,9 +89,11 @@ void setup() {
   tremolo.bypass(false);
   tremolo.depth(0.5f); // 50% depth modulation
 
-  // Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
+#if defined(USE_CAB_FILTER)
+  // Guitar cabinet: Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
   cabFilter.setLowpass(1, 4500, .7071);
+#endif
 }
 
 void OnControlChange(byte channel, byte control, byte value) {
@@ -101,13 +114,13 @@ void loop() {
   // each MIDI messages arrives, it return true.  The message must
   // be fully processed before usbMIDI.read() is called again.
 
-  if (loopCount % 524288 == 0) {
+  if (timer > 1000) {
+    timer = 0;
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
     Serial.print("% ");
     Serial.print(" tremolo: "); Serial.print(tremolo.processorUsage());
     Serial.println("%");
   }
-  loopCount++;
 
   // check for new MIDI from USB
   if (usbMIDI.read()) {

@@ -15,6 +15,8 @@
  * be useful for frequency detection but is not appropriate for when sound quality is desired as
  * the modulation of the filter will result in audible artifacts.
  * 
+ * ALLOW THE TEST TO RUN THROUGH SEVERAL CYCLE of toggling the HPF so the CODEC can calibrate correctly.
+ * 
  */
 #include <Wire.h>
 #include <Audio.h>
@@ -39,6 +41,9 @@ AudioConnection      patchOutL(rmsModule, 0, i2sOut, 0); // connect the cab filt
 AudioConnection      patchOutR(rmsModule, 0, i2sOut, 1); // connect the cab filter to the output.
 
 void setup() {
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
 
   delay(5); // wait a few ms to make sure the GTA Pro is fully powered up
   AudioMemory(48);

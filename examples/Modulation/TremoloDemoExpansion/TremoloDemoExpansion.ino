@@ -8,11 +8,12 @@
  * This example demonstrates teh BAAudioEffectsTremolo effect. It can
  * be controlled using the Blackaddr Audio "Expansion Control Board".
  * 
- * POT1 (left) controls amount of delay
- * POT2 (right) controls amount of feedback
- * POT3 (center) controls the wet/dry mix
+ * POT1 (left) controls the tremolo RATE
+ * POT2 (right) controls the tremolo DEPTH
+ * POT3 (center) controls the output VOLUME
  * SW1 will enable/bypass the audio effect. LED1 will be on when effect is enabled.
- * SW2 will cycle through the 3 pre-programmed analog filters. LED2 will be on when SW2 is pressed.
+ * SW2 will cycle through the 3 pre-programmed waveforms. NOTE: any waveform other than Sine will cause
+ *     pops/clicks since the waveforms are not bandlimited.
  * 
  * 
  * Using the Serial Montitor, send 'u' and 'd' characters to increase or decrease
@@ -25,20 +26,27 @@
 using namespace BAEffects;
 using namespace BALibrary;
 
+//#define USE_CAB_FILTER // uncomment this line to add a simple low-pass filter to simulate a cabinet if you are going straight to headphones
+
 AudioInputI2S i2sIn;
 AudioOutputI2S i2sOut;
 BAAudioControlWM8731 codec;
 
 AudioEffectTremolo tremolo;
 
+#if defined(USE_CAB_FILTER)
 AudioFilterBiquad cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
+#endif
 
-// Simply connect the input to the delay, and the output
-// to both i2s channels
 AudioConnection input(i2sIn,0, tremolo,0);
-AudioConnection delayOut(tremolo, 0, cabFilter, 0);
+#if defined(USE_CAB_FILTER)
+AudioConnection tremOut(tremolo, 0, cabFilter, 0);
 AudioConnection leftOut(cabFilter,0, i2sOut, 0);
 AudioConnection rightOut(cabFilter,0, i2sOut, 1);
+#else
+AudioConnection leftOut(tremolo,0, i2sOut, 0);
+AudioConnection rightOut(tremolo,0, i2sOut, 1);
+#endif
 
 
 //////////////////////////////////////////
@@ -61,7 +69,8 @@ constexpr bool potSwapDirection = true;
 // Blackaddr Audio Expansion Board.
 BAPhysicalControls controls(BA_EXPAND_NUM_SW, BA_EXPAND_NUM_POT, BA_EXPAND_NUM_ENC, BA_EXPAND_NUM_LED);
 
-int loopCount = 0;
+elapsedMillis timer;
+
 unsigned waveformIndex = 0; // variable for storing which analog filter we're currently using.
 constexpr unsigned MAX_HEADPHONE_VOL = 10;
 unsigned headphoneVolume = 8; // control headphone volume from 0 to 10.
@@ -70,11 +79,13 @@ unsigned headphoneVolume = 8; // control headphone volume from 0 to 10.
 int bypassHandle, waveformHandle, rateHandle, depthHandle, volumeHandle, led1Handle, led2Handle; // Handles for the various controls
 
 void setup() {
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+  
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100);
-
-  TGA_PRO_EXPAND_REV2(); // Configure the expansion board revision
 
   // Setup the controls. The return value is the handle to use when checking for control changes, etc.
   // pushbuttons
@@ -104,6 +115,7 @@ void setup() {
   // Set some default values.
   // These can be changed using the controls on the Blackaddr Audio Expansion Board
   tremolo.bypass(false);
+  controls.setOutput(led1Handle, !tremolo.isBypass()); // Set the LED when NOT bypassed  
   tremolo.rate(0.0f);
   tremolo.depth(1.0f);
 
@@ -112,9 +124,11 @@ void setup() {
   // These are commented out, in this example we'll use SW2 to cycle through the different filters
   //tremolo.setWaveform(Waveform::SINE); // The default waveform
 
+#if defined(USE_CAB_FILTER)
   // Guitar cabinet: Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
   cabFilter.setLowpass(1, 4500, .7071);
+#endif
 }
 
 void loop() {
@@ -178,15 +192,14 @@ void loop() {
     }
   }
 
-  // Use the loopCounter to roughly measure human timescales. Every few seconds, print the CPU usage
-  // to the serial port. About 500,000 loops!
-  //if (loopCount % 524288 == 0) {
-  if (loopCount % 25000 == 0) {
+  delay(20); // Without some minimal delay here it will be difficult for the pots/switch changes to be detected.
+  
+  if (timer > 1000) {
+    timer = 0;
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
     Serial.print("% ");
     Serial.print(" tremolo: "); Serial.print(tremolo.processorUsage());
     Serial.println("%");
   }
-  loopCount++;
 
 }
