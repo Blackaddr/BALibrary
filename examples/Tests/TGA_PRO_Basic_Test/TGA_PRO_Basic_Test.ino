@@ -7,7 +7,6 @@
  * - Audio INPUT and OUTPUT JACKS
  * - Midi INPUT and Midi OUTPUT jacks
  * - MEM0 (if installed)
- * - MEM1 (if installed)
  * - User LED
  * 
  * This will also test the Expansion Control Board (if installed):
@@ -42,9 +41,9 @@
  * 
  */
 
-#define RUN_MIDI_TEST // Uncomment this line to run a MIDI test. You must connect a MIDI cable as a loopback between the MIDI input and output jacks.
-#define RUN_MEMO_TEST // Uncomment this line if you purchased the option SPI RAM.
-#define RUN_EXP_TEST  // Uncomment if you purchased the Expansion Control Board
+//#define RUN_MIDI_TEST // Uncomment this line to run a MIDI test. You must connect a MIDI cable as a loopback between the MIDI input and output jacks.
+//#define RUN_MEMO_TEST // Uncomment this line if you purchased the option SPI RAM.
+//#define RUN_EXP_TEST  // Uncomment if you purchased the Expansion Control Board
 
 #include <Audio.h>
 #include "BALibrary.h"
@@ -101,7 +100,10 @@ void setup() {
   AudioMemory(64);
   codec.enable();
   codec.setHeadphoneVolume(0.8f); // Set headphone volume
+#if defined(RUN_EXP_TEST)
   configPhysicalControls(controls, codec);
+  Serial.println("Now monitoring for input from Expansion Control Board");
+#endif
 
   // Run the initial Midi connectivity and SPI memory tests.
 #if defined(RUN_MIDI_TEST)
@@ -113,10 +115,6 @@ void setup() {
   // SPI_MEM0_1M(); // older boards only had 1M memories 
   spiMem0.begin(); delay(10);
   if (spiTest(&spiMem0, 0)) { Serial.println("SPI0 testing PASSED!");}
-#endif
-
-#if defined(RUN_EXP_TEST)
-  Serial.println("Now monitoring for input from Expansion Control Board");
 #endif
 }
 

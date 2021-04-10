@@ -126,7 +126,6 @@ void setup() {
   // Setup MIDI
   MIDI.begin(MIDI_CHANNEL_OMNI);
   MIDI.setHandleControlChange(OnControlChange);
-
   usbMIDI.setHandleControlChange(OnControlChange);
 
   // Configure the LED to indicate the gate status
