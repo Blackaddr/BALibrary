@@ -17,8 +17,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __BALIBRARY_H
-#define __BALIBRARY_H
+#ifndef BALIBRARY_H_
+#define BALIBRARY_H_
 
 #include "BAHardware.h" // contains the Blackaddr hardware board definitions
 
@@ -31,4 +31,4 @@
 #include "BAGpio.h"
 #include "BAPhysicalControls.h"
 
-#endif /* __BALIBRARY_H */
+#endif /* BALIBRARY_H_ */

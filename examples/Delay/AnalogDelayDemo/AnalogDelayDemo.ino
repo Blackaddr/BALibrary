@@ -15,11 +15,14 @@
  * Even if you don't control the guitar effect with USB MIDI, you must set
  * the Arduino IDE USB-Type under Tools to "Serial + MIDI"
  */
- #include <MIDI.h>
+#include <Audio.h>
+#include <MIDI.h>
 #include "BALibrary.h"
 #include "BAEffects.h"
 
 using namespace midi;
+MIDI_CREATE_DEFAULT_INSTANCE();
+
 using namespace BAEffects;
 using namespace BALibrary;
 
@@ -31,7 +34,7 @@ BAAudioControlWM8731 codec;
 // YOU MUST USE TEENSYDUINO 1.41 or greater
 // YOU MUST COMPILE THIS DEMO USING Serial + Midi
 
-#define USE_CAB_FILTER // uncomment this line to add a simple low-pass filter to simulate a cabinet if you are going straight to headphones
+//#define USE_CAB_FILTER // uncomment this line to add a simple low-pass filter to simulate a cabinet if you are going straight to headphones
 //#define USE_EXT // uncomment this line to use External MEM0
 #define MIDI_DEBUG // uncomment to see raw MIDI info in terminal
 
@@ -70,6 +73,19 @@ AudioConnection rightOut(analogDelay,0, i2sOut, 1);
 
 elapsedMillis timer;
 
+void OnControlChange(byte channel, byte control, byte value) {
+  analogDelay.processMidi(channel-1, control, value);
+  #ifdef MIDI_DEBUG
+  Serial.print("Control Change, ch=");
+  Serial.print(channel, DEC);
+  Serial.print(", control=");
+  Serial.print(control, DEC);
+  Serial.print(", value=");
+  Serial.print(value, DEC);
+  Serial.println();
+  #endif  
+}
+
 void setup() {
   TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
   //TGA_PRO_REVB(x);
@@ -104,6 +120,12 @@ void setup() {
   Serial.println("Using INTERNAL memory");
   #endif
 
+  // Setup MIDI
+  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI.setHandleControlChange(OnControlChange);
+
+  usbMIDI.setHandleControlChange(OnControlChange);
+  
   // Configure which MIDI CC's will control the effect parameters
   analogDelay.mapMidiControl(AudioEffectAnalogDelay::BYPASS,16);
   analogDelay.mapMidiControl(AudioEffectAnalogDelay::DELAY,20);
@@ -137,23 +159,8 @@ void setup() {
 #endif
 }
 
-void OnControlChange(byte channel, byte control, byte value) {
-  analogDelay.processMidi(channel, control, value);
-  #ifdef MIDI_DEBUG
-  Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
-  #endif  
-}
-
 void loop() {
-  // usbMIDI.read() needs to be called rapidly from loop().  When
-  // each MIDI messages arrives, it return true.  The message must
-  // be fully processed before usbMIDI.read() is called again.
+  // usbMIDI.read() needs to be called rapidly from loop().
   
   if (timer > 1000) {
     timer = 0;
@@ -163,23 +170,7 @@ void loop() {
     Serial.println("%");
   }
 
-
-  // check for new MIDI from USB
-  if (usbMIDI.read()) {
-    // this code entered only if new MIDI received
-    byte type, channel, data1, data2, cable;
-    type = usbMIDI.getType();       // which MIDI message, 128-255
-    channel = usbMIDI.getChannel(); // which MIDI channel, 1-16
-    data1 = usbMIDI.getData1();     // first data byte of message, 0-127
-    data2 = usbMIDI.getData2();     // second data byte of message, 0-127
-    Serial.println(String("Received a MIDI message on channel ") + channel);
-    
-    if (type == MidiType::ControlChange) {
-      // if type is 3, it's a CC MIDI Message
-      // Note: the Arduino MIDI library encodes channels as 1-16 instead
-      // of 0 to 15 as it should, so we must subtract one.
-      OnControlChange(channel-1, data1, data2);
-    }
-  }
+  MIDI.read();
+  usbMIDI.read();
 
 }

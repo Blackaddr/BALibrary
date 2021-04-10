@@ -11,32 +11,29 @@
  * the BAMidiTester to control the effect but it's best to use external MIDI footswitch
  * or the Blackaddr Audio Expansion Control Board.
  * 
- * Use must set the Arduino IDE USB-Type to "Serial + MIDI" in the Tools menu.
+ * User must set the Arduino IDE USB-Type to "Serial + MIDI" in the Tools menu.
+ * 
+ * Afters startup, the effect will spend about 5 seconds clearing the audio delay buffer to prevent
+ * any startup pops or clicks from propagating.
  * 
  */
-#include <Wire.h>
 #include <Audio.h>
 #include <MIDI.h>
-#include <SPI.h>
+
 #include "BALibrary.h"
 #include "BAEffects.h"
 
-#include <midi_UsbTransport.h>
-static const unsigned sUsbTransportBufferSize = 16;
-typedef midi::UsbTransport<sUsbTransportBufferSize> UsbTransport;
+/// IMPORTANT /////
+// YOU MUST USE TEENSYDUINO 1.41 or greater
+// YOU MUST COMPILE THIS DEMO USING Serial + Midi
 
-UsbTransport sUsbTransport;
-
-MIDI_CREATE_INSTANCE(UsbTransport, sUsbTransport, uMIDI);
-
-
-MIDI_CREATE_DEFAULT_INSTANCE();
-using namespace midi;
-
-using namespace BAEffects;
-
+//#define USE_CAB_FILTER // uncomment this line to add a simple low-pass filter to simulate a cabinet if you are going straight to headphones
 #define MIDI_DEBUG
 
+using namespace midi;
+MIDI_CREATE_DEFAULT_INSTANCE();
+
+using namespace BAEffects;
 using namespace BALibrary;
 
 AudioInputI2S i2sIn;
@@ -54,8 +51,11 @@ AudioEffectSOS sos(&delaySlot);
 AudioEffectDelay         delayModule; // we'll add a little slapback echo
 AudioMixer4              gainModule; // This will be used simply to reduce the gain before the reverb
 AudioEffectReverb        reverb; // Add a bit of 'verb to our tone
-AudioFilterBiquad        cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
 AudioMixer4 mixer;
+
+#if defined(USE_CAB_FILTER)
+AudioFilterBiquad cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
+#endif
 
 // Connect the input
 AudioConnection inputToSos(i2sIn, 0, sos, 0);
@@ -69,13 +69,17 @@ AudioConnection inputToReverb(gainModule, 0, reverb, 0);
 AudioConnection mixer0input(i2sIn, 0, mixer, 0);  // SOLO Dry Channel
 AudioConnection mixer1input(reverb, 0, mixer, 1); // SOLO Wet Channel
 AudioConnection mixer2input(sos, 0, mixer, 2); // SOS Channel
-AudioConnection inputToCab(mixer, 0, cabFilter, 0);
 
-// CODEC Outputs
+#if defined(USE_CAB_FILTER)
+AudioConnection inputToCab(mixer, 0, cabFilter, 0);
 AudioConnection outputLeft(cabFilter, 0, i2sOut, 0);
 AudioConnection outputRight(cabFilter, 0, i2sOut, 1);
+#else
+AudioConnection outputLeft(mixer, 0, i2sOut, 0);
+AudioConnection outputRight(mixer, 0, i2sOut, 1);
+#endif
 
-int loopCount = 0;
+elapsedMillis timer;
 
 void OnControlChange(byte channel, byte control, byte value) {
   sos.processMidi(channel-1, control, value);
@@ -92,7 +96,14 @@ void OnControlChange(byte channel, byte control, byte value) {
 
 void setup() {
 
-delay(100);
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+
+  SPI_MEM0_4M();
+  //SPI_MEM0_1M(); // use this line instead of you have the older 1Mbit memory
+
+  delay(100);
   Serial.begin(57600); // Start the serial port
 
   // Disable the codec first
@@ -115,20 +126,20 @@ delay(100);
   // Setup MIDI
   MIDI.begin(MIDI_CHANNEL_OMNI);
   MIDI.setHandleControlChange(OnControlChange);
-  uMIDI.begin(MIDI_CHANNEL_OMNI);
-  uMIDI.setHandleControlChange(OnControlChange);
+
+  usbMIDI.setHandleControlChange(OnControlChange);
 
   // Configure the LED to indicate the gate status
   sos.setGateLedGpio(USR_LED_ID);
   
   // Configure which MIDI CC's will control the effect parameters
-  sos.mapMidiControl(AudioEffectSOS::BYPASS,16);
-  sos.mapMidiControl(AudioEffectSOS::CLEAR_FEEDBACK_TRIGGER,22);
-  sos.mapMidiControl(AudioEffectSOS::GATE_TRIGGER,23);
+  //sos.mapMidiControl(AudioEffectSOS::BYPASS,16);
+  sos.mapMidiControl(AudioEffectSOS::GATE_TRIGGER,16);
+  sos.mapMidiControl(AudioEffectSOS::CLEAR_FEEDBACK_TRIGGER,17);
   sos.mapMidiControl(AudioEffectSOS::GATE_OPEN_TIME,20);
   sos.mapMidiControl(AudioEffectSOS::GATE_CLOSE_TIME,21);
-  sos.mapMidiControl(AudioEffectSOS::FEEDBACK,24);
-  sos.mapMidiControl(AudioEffectSOS::VOLUME,17);
+  sos.mapMidiControl(AudioEffectSOS::VOLUME,22);
+  //sos.mapMidiControl(AudioEffectSOS::FEEDBACK,24);
 
   // Besure to enable the delay. When disabled, audio is is completely blocked
   // to minimize resources to nearly zero.
@@ -146,51 +157,34 @@ delay(100);
   gainModule.gain(0, 0.25); // the reverb unit clips easily if the input is too high
   delayModule.delay(0, 50.0f); // 50 ms slapback delay
 
+#if defined(USE_CAB_FILTER)
   // Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
   cabFilter.setLowpass(1, 4500, .7071);
+#endif
 
   // Setup the Mixer
   mixer.gain(0, 0.5f); // SOLO Dry gain
   mixer.gain(1, 0.5f); // SOLO Wet gain
   mixer.gain(1, 1.0f); // SOS gain
+
+  delay(1000);
+  sos.clear();
   
 }
 
-
-
 void loop() {
-  // usbMIDI.read() needs to be called rapidly from loop().  When
-  // each MIDI messages arrives, it return true.  The message must
-  // be fully processed before usbMIDI.read() is called again.
+  // usbMIDI.read() needs to be called rapidly from loop().
 
-  if (loopCount % 524288 == 0) {
+  if (timer > 1000) {
+    timer = 0;
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
     Serial.print("% ");
-    Serial.print(" sos: "); Serial.print(sos.processorUsage());
+    Serial.print(" SOS: "); Serial.print(sos.processorUsage());
     Serial.println("%");
   }
-  loopCount++;
 
   MIDI.read();
-  uMIDI.read();
-
-//  // check for new MIDI from USB
-//  if (usbMIDI.read()) {
-//    // this code entered only if new MIDI received
-//    byte type, channel, data1, data2, cable;
-//    type = usbMIDI.getType();       // which MIDI message, 128-255
-//    channel = usbMIDI.getChannel(); // which MIDI channel, 1-16
-//    data1 = usbMIDI.getData1();     // first data byte of message, 0-127
-//    data2 = usbMIDI.getData2();     // second data byte of message, 0-127
-//    Serial.println(String("Received a MIDI message on channel ") + channel);
-//    
-//    if (type == MidiType::ControlChange) {
-//      // if type is 3, it's a CC MIDI Message
-//      // Note: the Arduino MIDI library encodes channels as 1-16 instead
-//      // of 0 to 15 as it should, so we must subtract one.
-//      OnControlChange(channel-1, data1, data2);
-//    }
-//  }
+  usbMIDI.read();
 
 }

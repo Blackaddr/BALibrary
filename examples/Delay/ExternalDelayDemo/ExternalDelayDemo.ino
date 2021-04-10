@@ -49,16 +49,20 @@ AudioConnection  outputRight(delayMixer, 0, i2sOut, 1);
 
 void setup() {
 
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+
+  SPI_MEM0_4M();
+  //SPI_MEM0_1M(); // use this line instead of you have the older 1Mbit memory
+
   Serial.begin(57600);
-  while(!Serial) { yield(); }
+  delay(200);
   AudioMemory(64);
   
   delay(500);
   Serial.println(String("Starting...\n"));
   delay(100);
-
-  SPI_MEM0_1M(); // set the SPI MEM0 memory size
-  // SPI_MEM1_1M(); // set the MEM1 memory aize
 
   Serial.println("Enabling codec...\n");
   codecControl.enable();
