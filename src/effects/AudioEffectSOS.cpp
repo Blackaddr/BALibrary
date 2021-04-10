@@ -62,28 +62,25 @@ void AudioEffectSOS::enable(void)
     if (m_externalMemory) {
         // Because we hold the previous output buffer for an update cycle, the maximum delay is actually
         // 1 audio block mess then the max delay returnable from the memory.
-        m_maxDelaySamples = m_memory->getMaxDelaySamples();
+        m_maxDelaySamples = m_memory->getMaxDelaySamples() - AUDIO_BLOCK_SAMPLES;
         Serial.println(String("SOS Enabled with delay length ") + m_maxDelaySamples + String(" samples"));
     }
     m_delaySamples = m_maxDelaySamples;
     m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
-    m_inputGateAuto.setupParameter(GATE_HOLD_STAGE, 1.0f, 1.0f, m_maxDelaySamples, ParameterAutomation<float>::Function::HOLD);
+    m_inputGateAuto.setupParameter(GATE_HOLD_STAGE, 1.0f, 1.0f, m_delaySamples, ParameterAutomation<float>::Function::HOLD);
     m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
 
     m_clearFeedbackAuto.setupParameter(GATE_OPEN_STAGE, 1.0f, 0.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
-    m_clearFeedbackAuto.setupParameter(GATE_HOLD_STAGE, 0.0f, 0.0f, m_maxDelaySamples, ParameterAutomation<float>::Function::HOLD);
+    m_clearFeedbackAuto.setupParameter(GATE_HOLD_STAGE, 0.0f, 0.0f, m_delaySamples, ParameterAutomation<float>::Function::HOLD);
     m_clearFeedbackAuto.setupParameter(GATE_CLOSE_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 void AudioEffectSOS::update(void)
 {
-    audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
     // Check is block is disabled
     if (m_enable == false) {
         // do not transmit or process any audio, return as quickly as possible.
-        if (inputAudioBlock) release(inputAudioBlock);
-
         // release all held memory resources
         if (m_previousBlock) {
             release(m_previousBlock); m_previousBlock = nullptr;
@@ -98,6 +95,8 @@ void AudioEffectSOS::update(void)
         }
         return;
     }
+
+    audio_block_t *inputAudioBlock = receiveReadOnly(); // get the next block of input samples
 
     // Check is block is bypassed, if so either transmit input directly or create silence
     if ( (m_bypass == true) || (!inputAudioBlock) ) {
@@ -138,11 +137,7 @@ void AudioEffectSOS::update(void)
     // mix the input with the feedback path in the pre-processing stage
     m_preProcessing(preProcessed, inputAudioBlock, m_previousBlock);
 
-    // consider doing the BBD post processing here to use up more time while waiting
-    // for the read data to come back
     audio_block_t *blockToRelease = m_memory->addBlock(preProcessed);
-    //audio_block_t *blockToRelease = m_memory->addBlock(inputAudioBlock);
-    //Serial.println("Done adding new block");
 
 
     // BACK TO OUTPUT PROCESSING
@@ -158,15 +153,14 @@ void AudioEffectSOS::update(void)
 
     release(inputAudioBlock);
 
-    if (m_previousBlock)
-        release(m_previousBlock);
+    if (m_previousBlock) { release(m_previousBlock); }
     m_previousBlock = blockToOutput;
 
     if (m_blockToRelease == m_previousBlock) {
         Serial.println("ERROR: POINTER COLLISION");
     }
 
-    if (m_blockToRelease) release(m_blockToRelease);
+    if (m_blockToRelease) { release(m_blockToRelease); }
     m_blockToRelease = blockToRelease;
 }
 
@@ -176,14 +170,12 @@ void AudioEffectSOS::gateOpenTime(float milliseconds)
     // TODO - change the paramter automation to an automation sequence
     m_openTimeMs = milliseconds;
     m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, m_openTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
-    //m_clearFeedbackAuto.setupParameter(GATE_OPEN_STAGE, 1.0f, 0.0f, m_openTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 void AudioEffectSOS::gateCloseTime(float milliseconds)
 {
     m_closeTimeMs = milliseconds;
     m_inputGateAuto.setupParameter(GATE_CLOSE_STAGE, 1.0f, 0.0f, m_closeTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
-    //m_clearFeedbackAuto.setupParameter(GATE_CLOSE_STAGE, 0.0f, 1.0f, m_closeTimeMs, ParameterAutomation<float>::Function::EXPONENTIAL);
 }
 
 ////////////////////////////////////////////////////////////////////////

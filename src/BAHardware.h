@@ -20,8 +20,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#ifndef __BALIBRARY_BAHARDWARE_H
-#define __BALIBRARY_BAHARDWARE_H
+#ifndef BALIBRARY_BAHARDWARE_H_
+#define BALIBRARY_BAHARDWARE_H_
 
 #include <Arduino.h>
 #include <cstdint>
@@ -32,30 +32,29 @@
  *****************************************************************************/
 namespace BALibrary {
 
-// In your Arudino .ino file, use #defines for your TGA Pro revision and options
-// to correctly configure your hardware
-#define TGA_PRO_REVA(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_A ///< Macro for specifying REV A of the TGA Pro
-#define TGA_PRO_REVB(x)        BALibrary::BAHardwareConfig.m_tgaBoard = TgaBoard::REV_B ///< Macro for specifying REV B of the TGA Pro
-#define TGA_PRO_EXPAND_REV2(x) BALibrary::BAHardwareConfig.m_expansionBoard = ExpansionBoard::REV_2 ///< Macro for specifying REV 2 of the Expansion Board
-#define SPI_MEM0_1M(x)         BALibrary::BAHardwareConfig.m_spiMem0 = SPI_MEMORY_1M ///< Macro for specifying MEM0 is 1Mbit
-#define SPI_MEM0_4M(x)         BALibrary::BAHardwareConfig.m_spiMem0 = SPI_MEMORY_4M ///< Macro for specifying MEM1 is 4Mbit
-#define SPI_MEM1_1M(x)         BALibrary::BAHardwareConfig.m_spiMem1 = SPI_MEMORY_1M ///< Macro for specifying MEM0 is 1Mbit
-#define SPI_MEM1_4M(x)         BALibrary::BAHardwareConfig.m_spiMem1 = SPI_MEMORY_4M ///< Macro for specifying MEM1 is 1Mbit
-
 /******************************************************************************
  * Hardware Configuration
  *****************************************************************************/
 /// enum to specify the TGA Board revision
 enum class TgaBoard : unsigned {
     REV_A = 0, ///< indicates using REV A of the TGA Pro
-    REV_B      ///< indicates using REV B of the TGA Pro
+    REV_B,     ///< indicates using REV B of the TGA Pro
+    MKII_REV1, ///< indicates using MKII, Rev 1 of the TGA Pro
+    AVALON
+};
+
+/// enum to specify the TGA Board revision
+enum class TeensyProcessor : unsigned {
+    TEENSY3 = 0, ///< indicates using REV A of the TGA Pro
+    TEENSY4,     ///< indicates using REV B of the TGA Pro
 };
 
 /// enum to specify the TGA Pro Expansion Board revision
 enum class ExpansionBoard : unsigned {
     NO_EXPANSION = 0, ///< default, indicates no expansion board is present
     REV_1,            ///< indicates using REV 1 of the Expansion Board
-    REV_2             ///< indicates using REV 2 of the Expansion Board
+    REV_2,            ///< indicates using REV 2 of the Expansion Board
+    REV_3             ///< indicates using REV 3 of the Expansion Board (MKII Series)
 };
 
 /// enum to specify SPI memory dize
@@ -66,6 +65,7 @@ enum class SpiMemorySize : unsigned {
 };
 
 constexpr unsigned NUM_MEM_SLOTS = 2; ///< The TGA Pro has two SPI ports for memory
+
 /// enum to specify MEM0 or MEM1
 enum MemSelect : unsigned {
     MEM0 = 0, ///< SPI RAM MEM0
@@ -108,6 +108,22 @@ enum class SpiDeviceId : unsigned {
     SPI_DEVICE1 = 1  ///< Arduino SPI1 device
 };
 
+// GPIOs and Testpoints are accessed via enumerated class constants.
+enum class GPIO {
+    GPIO0 = 0,
+    GPIO1 = 1,
+    GPIO2 = 2,
+    GPIO3 = 3,
+
+    GPIO4 = 4,
+    GPIO5 = 5,
+    GPIO6 = 6,
+    GPIO7 = 7,
+
+    TP1 = 8,
+    TP2 = 9
+};
+
 /**************************************************************************//**
  * BAHardware is a global object that holds hardware configuration options for
  * board revisions and ordering options. It is created automatically, and only
@@ -116,7 +132,7 @@ enum class SpiDeviceId : unsigned {
  *****************************************************************************/
 class BAHardware {
 public:
-    BAHardware() = default; ///< default constructor
+    BAHardware(); ///< default constructor
 
     /// sets the TGA Pro board revision
     /// @param tgaBoard enum to specify board revision
@@ -125,6 +141,10 @@ public:
     /// get the configured TGA Pro board revision
     /// @returns enum for the board revision
     TgaBoard getTgaBoard(void);
+
+    /// get the configured Teensy Processor
+    /// @returns enum for the processor
+    TeensyProcessor getTeensyProcessor();
 
     /// sets the Expansion board revision
     /// @param expansionBoard enum to specify the expansion board revision
@@ -163,75 +183,75 @@ public:
     /// @returns the last valid address location in the memory
     size_t getSpiMemMaxAddr  (unsigned memIndex);
 
-    TgaBoard       m_tgaBoard       = TgaBoard::REV_B; ///< stores the configured TGA Pro revision
-    ExpansionBoard m_expansionBoard = ExpansionBoard::NO_EXPANSION; ///< stores the configured Expansion Board revision
-    SpiMemoryDefinition m_spiMem0   = SPI_MEMORY_NONE; ///< stores the definition for MEM0
-    SpiMemoryDefinition m_spiMem1   = SPI_MEMORY_NONE; ///< stores the definition for MEM1
+    TgaBoard            m_tgaBoard        = TgaBoard::MKII_REV1;              ///< stores the configured TGA Pro revision
+    TeensyProcessor     m_teensyProcessor = TeensyProcessor::TEENSY4;   ///< store the processor in use
+    ExpansionBoard      m_expansionBoard  = ExpansionBoard::NO_EXPANSION; ///< stores the configured Expansion Board revision
+    SpiMemoryDefinition m_spiMem0         = SPI_MEMORY_NONE;              ///< stores the definition for MEM0
+    SpiMemoryDefinition m_spiMem1         = SPI_MEMORY_NONE;              ///< stores the definition for MEM1
 };
 
 extern BAHardware BAHardwareConfig; ///< external definition of global configuration class object
 
-/**************************************************************************//**
- * Teensy 3.6/3.5 Hardware Pinout
- *****************************************************************************/
-#if defined(__MK66FX1M0__) || defined(__MK64FX512__) // T3.6 or T3.5
-constexpr uint8_t USR_LED_ID = 16; ///< Teensy IO number for the user LED.
+// In your Arudino .ino file, use #defines for your TGA Pro revision and options
+// to correctly configure your hardware
+#define TGA_PRO_REVA(x)        BALibrary::BAHardwareConfig.set(TgaBoard::REV_A)     ///< Macro for specifying REV A of the TGA Pro
+#define TGA_PRO_REVB(x)        BALibrary::BAHardwareConfig.set(TgaBoard::REV_B)     ///< Macro for specifying REV B of the TGA Pro
+#define TGA_PRO_MKII_REV1(x)   BALibrary::BAHardwareConfig.set(TgaBoard::MKII_REV1) ///< Macro for specifying REV B of the TGA Pro
+
+#define TGA_PRO_EXPAND_REV2(x) BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::REV_2) ///< Macro for specifying REV 2 of the Expansion Board
+#define TGA_PRO_EXPAND_REV3(x) BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::REV_3) ///< Macro for specifying REV 2 of the Expansion Board
+
+#define SPI_MEM0_1M(x)         BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_1M) ///< Macro for specifying MEM0 is 1Mbit
+#define SPI_MEM0_4M(x)         BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_4M) ///< Macro for specifying MEM1 is 4Mbit
+#define SPI_MEM1_1M(x)         BALibrary::BAHardwareConfig.set(MEM1, SPI_MEMORY_1M) ///< Macro for specifying MEM0 is 1Mbit
+#define SPI_MEM1_4M(x)         BALibrary::BAHardwareConfig.set(MEM1, SPI_MEMORY_4M) ///< Macro for specifying MEM1 is 1Mbit
+
+extern uint8_t USR_LED_ID; ///< Teensy IO number for the user LED.
+
+extern unsigned BA_EXPAND_NUM_POT;
+extern unsigned BA_EXPAND_NUM_SW;
+extern unsigned BA_EXPAND_NUM_LED;
+extern unsigned BA_EXPAND_NUM_ENC;
+
+extern uint8_t BA_EXPAND_POT1_PIN; // 14_A0_TX3_SPDIFOUT
+extern uint8_t BA_EXPAND_POT2_PIN; // 15_A1_RX3_SPDIFIN
+extern uint8_t BA_EXPAND_POT3_PIN; // 16_A2_RX4_SCL1
+
+extern uint8_t BA_EXPAND_SW1_PIN;  // 2_OUT2
+extern uint8_t BA_EXPAND_SW2_PIN;  // 3_LRCLK2
+extern uint8_t BA_EXPAND_LED1_PIN;  // 4_BLCK2
+extern uint8_t BA_EXPAND_LED2_PIN;  // 5_IN2
+
+extern uint8_t GPIO0;
+extern uint8_t GPIO1;
+extern uint8_t GPIO2;
+extern uint8_t GPIO3;
+extern uint8_t GPIO4;
+extern uint8_t GPIO5;
+extern uint8_t GPIO6;
+extern uint8_t GPIO7;
+extern uint8_t TP1;
+extern uint8_t TP2;
 
 // SPI0 and SPI1 pinouts
-constexpr uint8_t SPI0_SCK_PIN = 14;
-constexpr uint8_t SPI0_CS_PIN = 15;
-constexpr uint8_t SPI0_MISO_PIN = 8;
-constexpr uint8_t SPI0_MOSI_PIN = 7;
+extern uint8_t SPI0_SCK_PIN;
+extern uint8_t SPI0_CS_PIN;
+extern uint8_t SPI0_MISO_PIN;
+extern uint8_t SPI0_MOSI_PIN;
 
+extern uint8_t SPI1_SCK_PIN;
+extern uint8_t SPI1_CS_PIN;
+extern uint8_t SPI1_MISO_PIN;
+extern uint8_t SPI1_MOSI_PIN;
+
+#if defined(ARDUINO_TEENSY41) || defined(__MK66FX1M0__) || defined(__MK64FX512__)
 #define SPI1_AVAILABLE
-constexpr uint8_t SPI1_SCK_PIN = 20;
-constexpr uint8_t SPI1_CS_PIN = 31;
-constexpr uint8_t SPI1_MISO_PIN = 5;
-constexpr uint8_t SPI1_MOSI_PIN = 21;
-
-// GPIOs and Testpoints are accessed via enumerated class constants.
-enum class GPIO : uint8_t {
-	GPIO0 = 2,
-	GPIO1 = 3,
-	GPIO2 = 4,
-	GPIO3 = 6,
-
-	GPIO4 = 12,
-	GPIO5 = 32,
-	GPIO6 = 27,
-	GPIO7 = 28,
-
-	TP1 = 34,
-	TP2 = 33
-};
+#endif
 
 /**************************************************************************//**
  * Teensy 4.0 Hardware Settings
  *****************************************************************************/
-#elif defined(__IMXRT1062__) // T4.0
-constexpr uint8_t USR_LED_ID = 2; ///< Teensy IO number for the user LED.
-
-// SPI0 pinouts
-constexpr uint8_t SPI0_SCK_PIN = 13;
-constexpr uint8_t SPI0_CS_PIN = 10;
-constexpr uint8_t SPI0_MISO_PIN = 12;
-constexpr uint8_t SPI0_MOSI_PIN = 11;
-
-// GPIOs and Testpoints are accessed via enumerated class constants.
-enum class GPIO : uint8_t {
-    GPIO0 = 3,
-    GPIO1 = 4,
-    GPIO2 = 5,
-    GPIO3 = 6,
-
-    GPIO4 = 17,
-    GPIO5 = 16,
-    GPIO6 = 15,
-    GPIO7 = 14,
-
-    TP1 = 9,
-    TP2 = 22
-};
+#if defined(__IMXRT1062__) // T4.0
 
 #define SCL_PAD_CTRL IOMUXC_SW_PAD_CTL_PAD_GPIO_AD_B1_00
 #define SDA_PAD_CTRL IOMUXC_SW_PAD_CTL_PAD_GPIO_AD_B1_01
@@ -242,75 +262,10 @@ constexpr uint32_t SCL_SDA_PAD_CFG = 0xF808;
 #define LRCLK_PAD_CTRL IOMUXC_SW_PAD_CTL_PAD_GPIO_AD_B1_11
 #define DAC_PAD_CTRL   IOMUXC_SW_PAD_CTL_PAD_GPIO_B1_01
 constexpr uint32_t I2S_PAD_CFG = 0x0008;
-
-/**************************************************************************//**
- * DEFAULT Teensy 3.2 Hardware Settings
- *****************************************************************************/
-#else
-constexpr uint8_t USR_LED_ID = 16; ///< Teensy IO number for the user LED.
-
-// SPI0 and SPI1 pinouts
-constexpr uint8_t SPI0_SCK_PIN = 14;
-constexpr uint8_t SPI0_CS_PIN = 15;
-constexpr uint8_t SPI0_MISO_PIN = 8;
-constexpr uint8_t SPI0_MOSI_PIN = 7;
-
-// GPIOs and Testpoints are accessed via enumerated class constants.
-enum class GPIO : uint8_t {
-    GPIO0 = 2,
-    GPIO1 = 3,
-    GPIO2 = 4,
-    GPIO3 = 6,
-
-    GPIO4 = 12,
-    GPIO5 = 32,
-    GPIO6 = 27,
-    GPIO7 = 28,
-
-    TP1 = 34,
-    TP2 = 33
-};
 #endif
 
-/**************************************************************************//**
- * Blackaddr Audio Expansion Board Pin Configuration
- *****************************************************************************/
-#if defined(__MK66FX1M0__) || defined(__MK64FX512__) // T3.6 or T3.5
-// Teensy 3.6 Pinout
-constexpr unsigned BA_EXPAND_NUM_POT  = 3;
-constexpr unsigned BA_EXPAND_NUM_SW   = 2;
-constexpr unsigned BA_EXPAND_NUM_LED  = 2;
-constexpr unsigned BA_EXPAND_NUM_ENC  = 0;
 
-constexpr uint8_t BA_EXPAND_POT1_PIN = A16; // 35_A16_PWM
-constexpr uint8_t BA_EXPAND_POT2_PIN = A17; // 36_A17_PWM
-constexpr uint8_t BA_EXPAND_POT3_PIN = A18; // 37_SCL1_A18_PWM
-constexpr uint8_t BA_EXPAND_SW1_PIN  = 2;  // 2)PWM
-constexpr uint8_t BA_EXPAND_SW2_PIN  = 3;  // 3_SCL2_PWM
-constexpr uint8_t BA_EXPAND_LED1_PIN = 4;  // 4_SDA2_PWM
-constexpr uint8_t BA_EXPAND_LED2_PIN = 6;  // 6_PWM
-
-#elif defined(__IMXRT1062__)
-// Teensy 4.0 pinout
-constexpr unsigned BA_EXPAND_NUM_POT  = 3;
-constexpr unsigned BA_EXPAND_NUM_SW   = 2;
-constexpr unsigned BA_EXPAND_NUM_LED  = 2;
-constexpr unsigned BA_EXPAND_NUM_ENC  = 0;
-
-constexpr uint8_t BA_EXPAND_POT1_PIN = A0; // 14_A0_TX3_SPDIFOUT
-constexpr uint8_t BA_EXPAND_POT2_PIN = A1; // 15_A1_RX3_SPDIFIN
-constexpr uint8_t BA_EXPAND_POT3_PIN = A2; // 16_A2_RX4_SCL1
-constexpr uint8_t BA_EXPAND_SW1_PIN  = 3;  // 3_LRCLK2
-constexpr uint8_t BA_EXPAND_SW2_PIN  = 4;  // 4_BCLK2
-constexpr uint8_t BA_EXPAND_LED1_PIN = 5;  // 5_IN2
-constexpr uint8_t BA_EXPAND_LED2_PIN = 6;  // 6_OUT1D
-
-#else
-
-#warning Your processor is not yet supported in BALibrary
-
-#endif
 
 } // namespace BALibrary
 
-#endif /* __BALIBRARY_BAHARDWARE_H */
+#endif /* BALIBRARY_BAHARDWARE_H_ */

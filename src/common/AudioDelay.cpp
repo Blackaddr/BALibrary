@@ -87,7 +87,6 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
             setSpiDmaCopyBuffer();
 #endif
 
-			// this causes pops
 		    m_slot->writeAdvance16(block->data, AUDIO_BLOCK_SAMPLES);
 		}
 		blockToRelease =  block;
@@ -115,7 +114,10 @@ size_t AudioDelay::getMaxDelaySamples()
 
 bool AudioDelay::getSamples(audio_block_t *dest, size_t offsetSamples, size_t numSamples)
 {
-	return m_getSamples(dest->data, offsetSamples, numSamples);
+    if (!dest) { return false; }
+    else {
+	    return m_getSamples(dest->data, offsetSamples, numSamples);
+    }
 }
 
 bool AudioDelay::getSamples(int16_t *dest, size_t offsetSamples, size_t numSamples)
@@ -221,6 +223,7 @@ bool AudioDelay::interpolateDelay(int16_t *extendedSourceBuffer, int16_t *destBu
 bool AudioDelay::setSpiDmaCopyBuffer(void)
 {
     bool returnValue = false;
+
     if (m_slot->isUseDma()) {
         // For DMA use on T4.0 we need this kluge
         BASpiMemoryDMA * spiDma = static_cast<BASpiMemoryDMA*>(m_slot->getSpiMemoryHandle());

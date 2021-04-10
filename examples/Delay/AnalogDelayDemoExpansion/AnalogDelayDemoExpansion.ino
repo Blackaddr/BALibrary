@@ -28,11 +28,12 @@
 using namespace BAEffects;
 using namespace BALibrary;
 
+//#define USE_CAB_FILTER // uncomment this line to add a simple low-pass filter to simulate a cabinet if you are going straight to headphones
+//#define USE_EXT // uncomment this line to use External MEM0
+
 AudioInputI2S i2sIn;
 AudioOutputI2S i2sOut;
 BAAudioControlWM8731 codec;
-
-//#define USE_EXT // uncomment this line to use External MEM0
 
 #ifdef USE_EXT
 // If using external SPI memory, we will instantiate a SRAM
@@ -53,15 +54,19 @@ AudioEffectAnalogDelay analogDelay(200.0f); // set the max delay of 200 ms.
 // If you use external SPI memory you can get up to 1485.0f ms of delay!
 #endif
 
+#if defined(USE_CAB_FILTER)
 AudioFilterBiquad cabFilter; // We'll want something to cut out the highs and smooth the tone, just like a guitar cab.
+#endif
 
-// Simply connect the input to the delay, and the output
-// to both i2s channels
 AudioConnection input(i2sIn,0, analogDelay,0);
+#if defined(USE_CAB_FILTER)
 AudioConnection delayOut(analogDelay, 0, cabFilter, 0);
 AudioConnection leftOut(cabFilter,0, i2sOut, 0);
 AudioConnection rightOut(cabFilter,0, i2sOut, 1);
-
+#else
+AudioConnection leftOut(analogDelay,0, i2sOut, 0);
+AudioConnection rightOut(analogDelay,0, i2sOut, 1);
+#endif
 
 //////////////////////////////////////////
 // SETUP PHYSICAL CONTROLS
@@ -83,7 +88,7 @@ constexpr bool potSwapDirection = true;
 // Blackaddr Audio Expansion Board.
 BAPhysicalControls controls(BA_EXPAND_NUM_SW, BA_EXPAND_NUM_POT, BA_EXPAND_NUM_ENC, BA_EXPAND_NUM_LED);
 
-int loopCount = 0;
+elapsedMillis timer;
 unsigned filterIndex = 0; // variable for storing which analog filter we're currently using.
 constexpr unsigned MAX_HEADPHONE_VOL = 10;
 unsigned headphoneVolume = 8; // control headphone volume from 0 to 10.
@@ -92,13 +97,21 @@ unsigned headphoneVolume = 8; // control headphone volume from 0 to 10.
 int bypassHandle, filterHandle, delayHandle, feedbackHandle, mixHandle, led1Handle, led2Handle; // Handles for the various controls
 
 void setup() {
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+  
+  #ifdef USE_EXT
+    SPI_MEM0_4M();
+  //SPI_MEM0_1M(); // use this line instead of you have the older 1Mbit memory
+  #endif
+  
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100);
 
   // Configure the hardware
-  SPI_MEM0_1M();
-
+  
   // Setup the controls. The return value is the handle to use when checking for control changes, etc.
   // pushbuttons
   bypassHandle = controls.addSwitch(BA_EXPAND_SW1_PIN); // will be used for bypass control
@@ -137,6 +150,7 @@ void setup() {
   // Set some default values.
   // These can be changed using the controls on the Blackaddr Audio Expansion Board
   analogDelay.bypass(false);
+  controls.setOutput(led1Handle, !analogDelay.isBypass()); // Set the LED when NOT bypassed  
   analogDelay.mix(0.5f);
   analogDelay.feedback(0.0f);
 
@@ -147,9 +161,11 @@ void setup() {
   //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::WARM); // A warm filter with a smooth frequency rolloff above 2Khz
   //analogDelay.setFilter(AudioEffectAnalogDelay::Filter::DARK); // A very dark filter, with a sharp rolloff above 1Khz
 
+#if defined(USE_CAB_FILTER)
   // Guitar cabinet: Setup 2-stages of LPF, cutoff 4500 Hz, Q-factor 0.7071 (a 'normal' Q-factor)
   cabFilter.setLowpass(0, 4500, .7071);
   cabFilter.setLowpass(1, 4500, .7071);
+#endif
 }
 
 void loop() {
@@ -213,14 +229,14 @@ void loop() {
     }
   }
 
-  // Use the loopCounter to roughly measure human timescales. Every few seconds, print the CPU usage
-  // to the serial port. About 500,000 loops!
-  if (loopCount % 524288 == 0) {
+  delay(20); // Without some minimal delay here it will be difficult for the pots/switch changes to be detected.
+  
+  if (timer > 1000) {
+    timer = 0;
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
     Serial.print("% ");
     Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
     Serial.println("%");
   }
-  loopCount++;
 
 }

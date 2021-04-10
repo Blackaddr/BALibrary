@@ -8,6 +8,10 @@
  * This program can be used to find out the calibration values for each of your POTs
  * on the Blackaddr Audio Expansion Control Board.
  * 
+ * Normally the default values used in the BALibrary are appropriate for the Expansion
+ * Control Board, however you an use this program as a reference for calibrating pots
+ * in a custom design.
+ * 
  * USE THE ARDUINO SERIAL MONITOR TO PERFORM THE CALIBRATION
  * 
  * When prompted turn the appropriate POT in the specified direction and
@@ -24,8 +28,11 @@ void setup() {
   delay(100);
   Serial.begin(57600);
   delay(500); // long delay to wait for Serial to init
+  Serial.flush();
 
-  TGA_PRO_EXPAND_REV2(); // Set the expansion board revision
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
   
   // put your setup code here, to run once:
   Serial.println("Calibrating POT1");

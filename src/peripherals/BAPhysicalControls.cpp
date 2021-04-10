@@ -265,12 +265,22 @@ bool Potentiometer::getValue(float &value) {
             return false;
         }
     }
-    m_lastValidValue = m_lastValue;
 
     // Convert the integer reading to a float value range 0.0 to 1.0f
-    if      (valFilter < m_minCalibrationThresholded) { value = 0.0f; }
-    else if (valFilter > m_maxCalibrationThresholded) { value = 1.0f; }
+    if (valFilter < m_minCalibrationThresholded) {
+        m_lastValue = m_minCalibrationThresholded;
+        if (m_lastValidValue == m_minCalibrationThresholded) { return false; }
+        m_lastValidValue = m_lastValue;
+        value = 0.0f;
+    }
+    else if (valFilter > m_maxCalibrationThresholded) {
+        m_lastValue = m_maxCalibrationThresholded;
+        if (m_lastValidValue == m_maxCalibrationThresholded) { return false; }
+        m_lastValidValue = m_lastValue;
+        value = 1.0f;
+    }
     else {
+        m_lastValidValue = m_lastValue;
         value = static_cast<float>(valFilter - m_minCalibrationThresholded) / static_cast<float>(m_rangeThresholded);
     }
 
@@ -318,6 +328,9 @@ void Potentiometer::setChangeThreshold(float changeThreshold)
 
 Potentiometer::Calib Potentiometer::calibrate(uint8_t pin) {
 	Calib calib;
+
+	// Flush the serial port input buffer
+	while (Serial.available() > 0) {}
 
 	Serial.print("Calibration pin "); Serial.println(pin);
 	Serial.println("Move the pot fully counter-clockwise to the minimum setting and press any key then ENTER");

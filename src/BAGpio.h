@@ -67,6 +67,11 @@ public:
 	/// @returns the new stage of the user LED.
 	int toggleLed();
 
+	/// Convert the GPIO enum to the underlying logical pin number
+	/// @param gpio the enum value to convert
+	/// @returns the logical pin number for the GPIO
+	uint8_t enumToPinNumber(GPIO gpio);
+
 private:
 	uint8_t m_ledState;
 };

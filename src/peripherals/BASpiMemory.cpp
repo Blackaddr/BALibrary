@@ -24,19 +24,19 @@
 
 namespace BALibrary {
 
-// MEM0 Settings
-constexpr int SPI_CS_MEM0 = SPI0_CS_PIN;
-constexpr int SPI_MOSI_MEM0 = SPI0_MOSI_PIN;
-constexpr int SPI_MISO_MEM0 = SPI0_MISO_PIN;
-constexpr int SPI_SCK_MEM0 = SPI0_SCK_PIN;
-
-#if defined(SPI1_AVAILABLE)
-// MEM1 Settings
-constexpr int SPI_CS_MEM1 = SPI1_CS_PIN;
-constexpr int SPI_MOSI_MEM1 = SPI1_MOSI_PIN;
-constexpr int SPI_MISO_MEM1 = SPI1_MISO_PIN;
-constexpr int SPI_SCK_MEM1 = SPI1_SCK_PIN;
-#endif
+//// MEM0 Settings
+//int SPI_CS_MEM0   = SPI0_CS_PIN;
+//int SPI_MOSI_MEM0 = SPI0_MOSI_PIN;
+//int SPI_MISO_MEM0 = SPI0_MISO_PIN;
+//int SPI_SCK_MEM0  = SPI0_SCK_PIN;
+//
+//#if defined(SPI1_AVAILABLE)
+//// MEM1 Settings
+//int SPI_CS_MEM1   = SPI1_CS_PIN;
+//int SPI_MOSI_MEM1 = SPI1_MOSI_PIN;
+//int SPI_MISO_MEM1 = SPI1_MISO_PIN;
+//int SPI_SCK_MEM1  = SPI1_SCK_PIN;
+//#endif
 
 // SPI Constants
 constexpr int SPI_WRITE_MODE_REG = 0x1;
@@ -73,22 +73,22 @@ void BASpiMemory::begin()
 {
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
-		m_csPin = SPI_CS_MEM0;
+		m_csPin = SPI0_CS_PIN;
 		m_spi = &SPI;
-		m_spi->setMOSI(SPI_MOSI_MEM0);
-		m_spi->setMISO(SPI_MISO_MEM0);
-		m_spi->setSCK(SPI_SCK_MEM0);
+		m_spi->setMOSI(SPI0_MOSI_PIN);
+		m_spi->setMISO(SPI0_MISO_PIN);
+		m_spi->setSCK(SPI0_SCK_PIN);
 		m_spi->begin();
 		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM0).DIE_BOUNDARY;
 		break;
 
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
-		m_csPin = SPI_CS_MEM1;
+		m_csPin = SPI1_CS_PIN;
 		m_spi = &SPI1;
-		m_spi->setMOSI(SPI_MOSI_MEM1);
-		m_spi->setMISO(SPI_MISO_MEM1);
-		m_spi->setSCK(SPI_SCK_MEM1);
+		m_spi->setMOSI(SPI1_MOSI_PIN);
+		m_spi->setMISO(SPI1_MISO_PIN);
+		m_spi->setSCK(SPI1_SCK_PIN);
 		m_spi->begin();
 		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM1).DIE_BOUNDARY;
 		break;
@@ -367,17 +367,17 @@ BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId)
 	int cs;
 	switch (memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
-		cs = SPI_CS_MEM0;
+		cs = SPI0_CS_PIN;
 		m_cs = new ActiveLowChipSelect(cs, m_settings);
 		break;
 #if defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
-		cs = SPI_CS_MEM1;
+		cs = SPI1_CS_PIN;
 		m_cs = new ActiveLowChipSelect1(cs, m_settings);
 		break;
 #endif
 	default :
-		cs = SPI_CS_MEM0;
+		cs = SPI0_CS_PIN;
 	}
 
 	// add 4 bytes to buffer for SPI CMD and 3 bytes of address
@@ -393,17 +393,17 @@ BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz)
 	int cs;
 	switch (memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
-		cs = SPI_CS_MEM0;
+		cs = SPI0_CS_PIN;
 		m_cs = new ActiveLowChipSelect(cs, m_settings);
 		break;
 #if defined(__MK66FX1M0__)
 	case SpiDeviceId::SPI_DEVICE1 :
-		cs = SPI_CS_MEM1;
+		cs = SPI1_CS_PIN;
 		m_cs = new ActiveLowChipSelect1(cs, m_settings);
 		break;
 #endif
 	default :
-		cs = SPI_CS_MEM0;
+		cs = SPI0_CS_PIN;
 	}
 
 	m_txCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
@@ -433,11 +433,11 @@ void BASpiMemoryDMA::begin(void)
 {
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
-		m_csPin = SPI_CS_MEM0;
+		m_csPin = SPI0_CS_PIN;
 		m_spi = &SPI;
-		m_spi->setMOSI(SPI_MOSI_MEM0);
-		m_spi->setMISO(SPI_MISO_MEM0);
-		m_spi->setSCK(SPI_SCK_MEM0);
+		m_spi->setMOSI(SPI0_MOSI_PIN);
+		m_spi->setMISO(SPI0_MISO_PIN);
+		m_spi->setSCK(SPI0_SCK_PIN);
 		m_spi->begin();
 		m_spiDma = new DmaSpiGeneric();
 		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM0).DIE_BOUNDARY;
@@ -445,11 +445,11 @@ void BASpiMemoryDMA::begin(void)
 
 #if defined(__MK66FX1M0__) // DMA on SPI1 is only supported on T3.6
 	case SpiDeviceId::SPI_DEVICE1 :
-		m_csPin = SPI_CS_MEM1;
+		m_csPin = SPI1_CS_PIN;
 		m_spi = &SPI1;
-		m_spi->setMOSI(SPI_MOSI_MEM1);
-		m_spi->setMISO(SPI_MISO_MEM1);
-		m_spi->setSCK(SPI_SCK_MEM1);
+		m_spi->setMOSI(SPI1_MOSI_PIN);
+		m_spi->setMISO(SPI1_MISO_PIN);
+		m_spi->setSCK(SPI1_SCK_PIN);
 		m_spi->begin();
 		m_spiDma = new DmaSpiGeneric(1);
 		m_dieBoundary = BAHardwareConfig.getSpiMemoryDefinition(MemSelect::MEM1).DIE_BOUNDARY;
@@ -478,6 +478,8 @@ void BASpiMemoryDMA::write(size_t address, uint8_t *src, size_t numBytes)
 	size_t nextAddress = address;
     uint8_t *intermediateBuffer = nullptr;
 
+    while ( m_txTransfer[1].busy() || m_txTransfer[0].busy()) { yield(); } // wait until not busy
+
     // Check for intermediate buffer use
     if (m_dmaCopyBufferSize) {
         // copy to the intermediate buffer;
@@ -487,8 +489,6 @@ void BASpiMemoryDMA::write(size_t address, uint8_t *src, size_t numBytes)
 
 	while (bytesRemaining > 0) {
 	    m_txXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
-
-		while ( m_txTransfer[1].busy() || m_txTransfer[0].busy()) { yield(); } // wait until not busy
 		m_setSpiCmdAddr(SPI_WRITE_CMD, nextAddress, m_txCommandBuffer);
 		m_txTransfer[1] = DmaSpi::Transfer(m_txCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
 		m_spiDma->registerTransfer(m_txTransfer[1]);
@@ -559,13 +559,12 @@ void BASpiMemoryDMA::read(size_t address, uint8_t *dest, size_t numBytes)
 	}
 
 	while (bytesRemaining > 0) {
-	    m_rxXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
 
+	    while ( m_rxTransfer[1].busy() || m_rxTransfer[0].busy()) { yield(); }
+	    m_rxXferCount = m_bytesToXfer(nextAddress, min(bytesRemaining, static_cast<size_t>(MAX_DMA_XFER_SIZE))); // check for die boundary
 		m_setSpiCmdAddr(SPI_READ_CMD, nextAddress, m_rxCommandBuffer);
-		while ( m_rxTransfer[1].busy() || m_rxTransfer[0].busy()) { yield(); }
 		m_rxTransfer[1] = DmaSpi::Transfer(m_rxCommandBuffer, CMD_ADDRESS_SIZE, nullptr, 0, m_cs, TransferType::NO_END_CS);
 		m_spiDma->registerTransfer(m_rxTransfer[1]);
-
 
 		while ( m_rxTransfer[0].busy() || m_rxTransfer[1].busy()) { yield(); }
 		m_rxTransfer[0] = DmaSpi::Transfer(nullptr, m_rxXferCount, destPtr, 0, m_cs, TransferType::NO_START_CS, nullptr, intermediateBuffer);
@@ -615,7 +614,6 @@ bool BASpiMemoryDMA::setDmaCopyBufferSize(size_t numBytes)
 
         m_dmaReadCopyBuffer = (volatile uint8_t*)dma_aligned_malloc(MEM_ALIGNED_ALLOC, numBytes);
         if (!m_dmaReadCopyBuffer) {
-            // allocate failed
             m_dmaCopyBufferSize = 0;
             return false;
         }
