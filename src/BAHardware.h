@@ -61,7 +61,8 @@ enum class ExpansionBoard : unsigned {
 enum class SpiMemorySize : unsigned {
     NO_MEMORY = 0, ///< default, indicates no SPI memory installed
     MEM_1M,        ///< indicates 1Mbit memory is installed
-    MEM_4M         ///< indicates 4Mbit memory is installed
+    MEM_4M,        ///< indicates 4Mbit memory is installed
+    MEM_64M        ///< indicates 64Mbit memory is installed
 };
 
 constexpr unsigned NUM_MEM_SLOTS = 2; ///< The TGA Pro has two SPI ports for memory
@@ -79,6 +80,12 @@ enum MemSelect : unsigned {
 struct SpiMemoryDefinition {
     size_t MEM_SIZE_BYTES;
     size_t DIE_BOUNDARY;
+};
+
+/// Settings for 64Mbit SPI MEM
+constexpr SpiMemoryDefinition SPI_MEMORY_64M = {
+    .MEM_SIZE_BYTES = 8388608,
+    .DIE_BOUNDARY   = 0
 };
 
 /// Settings for 4Mbit SPI MEM
@@ -201,10 +208,12 @@ extern BAHardware BAHardwareConfig; ///< external definition of global configura
 #define TGA_PRO_EXPAND_REV2(x) BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::REV_2) ///< Macro for specifying REV 2 of the Expansion Board
 #define TGA_PRO_EXPAND_REV3(x) BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::REV_3) ///< Macro for specifying REV 2 of the Expansion Board
 
-#define SPI_MEM0_1M(x)         BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_1M) ///< Macro for specifying MEM0 is 1Mbit
-#define SPI_MEM0_4M(x)         BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_4M) ///< Macro for specifying MEM1 is 4Mbit
-#define SPI_MEM1_1M(x)         BALibrary::BAHardwareConfig.set(MEM1, SPI_MEMORY_1M) ///< Macro for specifying MEM0 is 1Mbit
-#define SPI_MEM1_4M(x)         BALibrary::BAHardwareConfig.set(MEM1, SPI_MEMORY_4M) ///< Macro for specifying MEM1 is 1Mbit
+#define SPI_MEM0_1M(x)         BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_1M)   ///< Macro for specifying MEM0 is 1Mbit
+#define SPI_MEM0_4M(x)         BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_4M)   ///< Macro for specifying MEM0 is 4Mbit
+#define SPI_MEM0_64M(x)        BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_64M)  ///< Macro for specifying MEM0 is 64Mbit
+#define SPI_MEM1_1M(x)         BALibrary::BAHardwareConfig.set(MEM1, SPI_MEMORY_1M)   ///< Macro for specifying MEM1 is 1Mbit
+#define SPI_MEM1_4M(x)         BALibrary::BAHardwareConfig.set(MEM1, SPI_MEMORY_4M)   ///< Macro for specifying MEM1 is 4Mbit
+#define SPI_MEM1_64M(x)        BALibrary::BAHardwareConfig.set(MEM1, SPI_MEMORY_64M)  ///< Macro for specifying MEM1 is 64Mbit
 
 extern uint8_t USR_LED_ID; ///< Teensy IO number for the user LED.
 
