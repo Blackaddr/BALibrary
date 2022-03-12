@@ -28,7 +28,7 @@ using namespace BALibrary;
 #define SPI_ADDR_1_SHIFT 8
 #define SPI_ADDR_0_MASK 0x0000FF
 SPISettings memSettings(20000000, MSBFIRST, SPI_MODE0);
-const int cs0pin = 15;
+const int cs0pin = SPI1_CS_PIN;
 
 BAGpio           gpio;  // access to User LED
 BASpiMemoryDMA   spiMem1(SpiDeviceId::SPI_DEVICE1);
@@ -57,6 +57,12 @@ bool compareBuffers16(uint16_t *a, uint16_t *b, size_t numWords)
 size_t SPI_MAX_ADDR = 0;
 
 void setup() {
+
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+  
+  gpio.begin();
 
   Serial.begin(57600);
   while (!Serial) { yield(); }
