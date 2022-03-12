@@ -364,52 +364,15 @@ void BASpiMemory::m_rawRead16(size_t address, uint16_t *dest, size_t numWords)
 BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId)
 : BASpiMemory(memDeviceId)
 {
-	int cs;
-	switch (memDeviceId) {
-	case SpiDeviceId::SPI_DEVICE0 :
-		cs = SPI0_CS_PIN;
-		m_cs = new ActiveLowChipSelect(cs, m_settings);
-		break;
-#if defined(__MK66FX1M0__)
-	case SpiDeviceId::SPI_DEVICE1 :
-		cs = SPI1_CS_PIN;
-		m_cs = new ActiveLowChipSelect1(cs, m_settings);
-		break;
-#endif
-	default :
-		cs = SPI0_CS_PIN;
-	}
-
-	// add 4 bytes to buffer for SPI CMD and 3 bytes of address
-	m_txCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
-	m_rxCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
-	m_txTransfer = new DmaSpi::Transfer[2];
-	m_rxTransfer = new DmaSpi::Transfer[2];
+	m_memDeviceId = memDeviceId;
+	m_settings = {20000000, MSBFIRST, SPI_MODE0};
 }
 
 BASpiMemoryDMA::BASpiMemoryDMA(SpiDeviceId memDeviceId, uint32_t speedHz)
 : BASpiMemory(memDeviceId, speedHz)
 {
-	int cs;
-	switch (memDeviceId) {
-	case SpiDeviceId::SPI_DEVICE0 :
-		cs = SPI0_CS_PIN;
-		m_cs = new ActiveLowChipSelect(cs, m_settings);
-		break;
-#if defined(__MK66FX1M0__)
-	case SpiDeviceId::SPI_DEVICE1 :
-		cs = SPI1_CS_PIN;
-		m_cs = new ActiveLowChipSelect1(cs, m_settings);
-		break;
-#endif
-	default :
-		cs = SPI0_CS_PIN;
-	}
-
-	m_txCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
-	m_rxCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
-	m_txTransfer = new DmaSpi::Transfer[2];
-	m_rxTransfer = new DmaSpi::Transfer[2];
+	m_memDeviceId = memDeviceId;
+	m_settings = {20000000, MSBFIRST, SPI_MODE0};
 }
 
 BASpiMemoryDMA::~BASpiMemoryDMA()
@@ -431,6 +394,29 @@ void BASpiMemoryDMA::m_setSpiCmdAddr(int command, size_t address, uint8_t *dest)
 
 void BASpiMemoryDMA::begin(void)
 {
+	int cs;
+	switch (m_memDeviceId) {
+	case SpiDeviceId::SPI_DEVICE0 :
+		cs = SPI0_CS_PIN;
+		m_cs = new ActiveLowChipSelect(cs, m_settings);
+		break;
+#if defined(__MK66FX1M0__)
+	case SpiDeviceId::SPI_DEVICE1 :
+		cs = SPI1_CS_PIN;
+		m_cs = new ActiveLowChipSelect1(cs, m_settings);
+		break;
+#endif
+	default :
+		cs = SPI0_CS_PIN;
+	}
+
+	// add 4 bytes to buffer for SPI CMD and 3 bytes of address
+	m_txCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
+	m_rxCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
+	m_txTransfer = new DmaSpi::Transfer[2];
+	m_rxTransfer = new DmaSpi::Transfer[2];
+	
+	
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
 		m_csPin = SPI0_CS_PIN;

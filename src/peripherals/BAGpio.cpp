@@ -25,6 +25,15 @@ namespace BALibrary {
 
 BAGpio::BAGpio()
 {
+    begin();
+}
+
+BAGpio::~BAGpio()
+{
+}
+
+void BAGpio::begin()
+{
 	// Set all GPIOs to input
 	pinMode(GPIO0, INPUT);
 	pinMode(GPIO1, INPUT);
@@ -40,11 +49,6 @@ BAGpio::BAGpio()
 	// Set the LED to ouput
 	pinMode(USR_LED_ID, OUTPUT);
 	clearLed(); // turn off the LED
-
-}
-
-BAGpio::~BAGpio()
-{
 }
 
 void BAGpio::setGPIODirection(GPIO gpioId, int direction)

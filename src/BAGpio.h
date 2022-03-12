@@ -38,6 +38,10 @@ public:
 	/// Construct a GPIO object for controlling the various GPIO and user pins
 	BAGpio();
 	virtual ~BAGpio();
+	
+	/// resets the configuration of the GPIO pins. Call this after to call the
+	/// hardware config macro. E.g. TGA_PRO_REVB();
+	void begin();
 
 	/// Set the direction of the specified GPIO pin.
 	/// @param gpioId Specify a GPIO pin such as GPIO::GPIO0
