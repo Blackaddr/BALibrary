@@ -28,7 +28,7 @@ using namespace BALibrary;
 #define SPI_ADDR_1_SHIFT 8
 #define SPI_ADDR_0_MASK 0x0000FF
 SPISettings memSettings(20000000, MSBFIRST, SPI_MODE0);
-const int cs0pin = 15;
+const int cs0pin = SPI1_CS_PIN;
 
 BAGpio           gpio;  // access to User LED
 BASpiMemoryDMA   spiMem1(SpiDeviceId::SPI_DEVICE1);
