@@ -58,6 +58,12 @@ size_t SPI_MAX_ADDR = 0;
 
 void setup() {
 
+  TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
+  //TGA_PRO_REVB(x);
+  //TGA_PRO_REVA(x);
+  
+  gpio.begin();
+
   Serial.begin(57600);
   while (!Serial) { yield(); }
   delay(5);

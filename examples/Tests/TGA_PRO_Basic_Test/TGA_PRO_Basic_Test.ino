@@ -90,6 +90,8 @@ void setup() {
   //TGA_PRO_REVB(x);
   //TGA_PRO_REVA(x);
 
+  gpio.begin();
+
   Serial.begin(57600);
   //while (!Serial) { yield(); }
   delay(500);
