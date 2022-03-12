@@ -25,7 +25,7 @@ namespace BALibrary {
 
 BAGpio::BAGpio()
 {
-    begin();
+
 }
 
 BAGpio::~BAGpio()
