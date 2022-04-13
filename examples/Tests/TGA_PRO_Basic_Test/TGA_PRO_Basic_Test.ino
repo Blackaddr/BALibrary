@@ -113,8 +113,9 @@ void setup() {
 #endif
 
 #if defined(RUN_MEMO_TEST)
-  SPI_MEM0_4M(); // Declare the correct memory size
-  // SPI_MEM0_1M(); // older boards only had 1M memories 
+  SPI_MEM0_64M();   // declare the 64Mbit optional PSI memory
+  //SPI_MEM0_4M();  // REVB and REVA came with 4M or 1M
+  // SPI_MEM0_1M(); 
   spiMem0.begin(); delay(10);
   if (spiTest(&spiMem0, 0)) { Serial.println("SPI0 testing PASSED!");}
 #endif
