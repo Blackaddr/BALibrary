@@ -92,8 +92,9 @@ void setup() {
   //TGA_PRO_REVA(x);
 
   #ifdef USE_EXT
-  SPI_MEM0_4M();
-  //SPI_MEM0_1M(); // use this line instead of you have the older 1Mbit memory
+  SPI_MEM0_64M();   // Optional 64Mbit SPI RAM
+  //SPI_MEM0_4M();  // Older REVA and REVB boards came with 4M or 1M
+  //SPI_MEM0_1M();
   #endif
   
   delay(100);

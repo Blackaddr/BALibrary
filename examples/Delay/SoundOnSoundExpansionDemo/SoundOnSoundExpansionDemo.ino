@@ -110,8 +110,9 @@ void setup() {
   //TGA_PRO_REVB(x);
   //TGA_PRO_REVA(x);
 
-  SPI_MEM0_4M();
-  //SPI_MEM0_1M(); // use this line instead of you have the older 1Mbit memory
+  SPI_MEM0_64M();  // Optional 64Mbit SPI RAM
+  //SPI_MEM0_4M();  // Older REVB / REVA boards offered 1M or 4M
+  //SPI_MEM0_1M();
 
   delay(100);
   delay(100); // wait a bit for serial to be available
