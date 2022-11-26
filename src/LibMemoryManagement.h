@@ -80,6 +80,55 @@ public:
 	/// @returns the read position value
 	size_t getReadPosition() const { return m_currentRdPosition-m_start; }
 
+	/* Byte-based transfers */
+
+	/// Write a block of zeros (8-bit) to the memory at the specified offset
+	/// @param offsetBytes offset in 8-bit bytes from start of slot
+	/// @param numBytes number of 8-bit bytes to transfer
+	/// @returns true on success, else false on error
+	bool zero(size_t offsetBytes, size_t numBytes);
+
+	/// Write a block of 8-bit data to the memory at the specified offset
+	/// @param offsetBytes offset in 8-bit bytes from start of slot
+	/// @param src pointer to start of block of 16-bit data
+	/// @param numBytes number of 8-bit bytes to transfer
+	/// @returns true on success, else false on error
+	bool write(size_t offsetBytes, uint8_t *src, size_t numBytes);
+
+	/// Read a block of 8-bit data from the memory at the specified location
+	/// @param offsetBytes offset in 8-bit bytes from start of slot
+	/// @param dest pointer to destination for the read data
+	/// @param numBytes number of 8-bit bytes to transfer
+	/// @returns true on success, else false on error
+	bool read(size_t offsetBytes, uint8_t *dest, size_t numBytes);
+
+	/// Write a block of 16-bit data zeros in circular operation
+	/// @param numBytes number of 16-bit words to transfer
+	/// @returns true on success, else false on error
+	bool zeroAdvance(size_t numBytes);
+
+	/// Write a single 16-bit data to the next location in circular operation
+	/// @param data the 16-bit word to transfer
+	/// @returns true on success, else false on error
+	bool writeAdvance(uint8_t data); // write just one data
+
+	/// Write a block of 16-bit data from the specified location in circular operation
+	/// @param src pointer to the start of the block of data to write to memory
+	/// @param numBytes number of 16-bit words to transfer
+	/// @returns true on success, else false on error
+	bool writeAdvance(uint8_t *src, size_t numBytes);
+
+	/// Read the next byte in memory during circular operation
+	/// @returns the next 8-bit data word in memory
+	uint8_t readAdvance();
+
+	/// Read the next block of numWords during circular operation
+	/// @details, dest is ignored when using DMA
+	/// @param dest pointer to the destination of the read.
+	/// @param numBytes number of 16-bit words to transfer
+	/// @returns true on success, else false on error
+	bool readAdvance(uint8_t *dest, size_t numBytes);
+
 	/// Write a block of 16-bit data to the memory at the specified offset
 	/// @param offsetWords offset in 16-bit words from start of slot
 	/// @param src pointer to start of block of 16-bit data
@@ -100,10 +149,11 @@ public:
 	/// @returns true on success, else false on error
 	bool read16(size_t offsetWords, int16_t *dest, size_t numWords);
 
+	/* 16-bit data transfers */
+
 	/// Read the next in memory during circular operation
 	/// @returns the next 16-bit data word in memory
 	uint16_t readAdvance16();
-
 
 	/// Read the next block of numWords during circular operation
 	/// @details, dest is ignored when using DMA

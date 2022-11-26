@@ -31,7 +31,7 @@ namespace BALibrary {
 bool ExtMemSlot::clear()
 {
 	if (!m_valid) { return false; }
-	m_spi->zero16(m_start, m_size);
+	m_spi->zero(m_start, m_size);
 	return true;
 }
 
@@ -42,6 +42,148 @@ bool ExtMemSlot::setWritePosition(size_t offsetBytes)
 		return true;
 	} else { return false; }
 }
+
+bool ExtMemSlot::setReadPosition(size_t offsetBytes)
+{
+	if (m_start + offsetBytes <= m_end) {
+		m_currentRdPosition = m_start + offsetBytes;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////
+// BYTE BASED TRANSFERS
+/////////////////////////////////////////////////////////////////////////
+bool ExtMemSlot::zero(size_t offsetBytes, size_t numBytes)
+{
+	if (!m_valid) { return false; }
+	size_t writeStart = m_start + offsetBytes;
+	if ((writeStart + numBytes-1) <= m_end) {
+		m_spi->zero(writeStart, numBytes); // cast audio data to uint
+		return true;
+	} else {
+		// this would go past the end of the memory slot, do not perform the write
+		return false;
+	}
+}
+
+bool ExtMemSlot::write(size_t offsetBytes, uint8_t *src, size_t numBytes)
+{
+	if (!m_valid) { return false; }
+	size_t writeStart = m_start + offsetBytes;
+	if ((writeStart + numBytes-1) <= m_end) {
+		m_spi->write(writeStart, src, numBytes); // cast audio data to uint
+		return true;
+	} else {
+		// this would go past the end of the memory slot, do not perform the write
+		return false;
+	}
+}
+
+bool ExtMemSlot::read(size_t offsetBytes, uint8_t *dest, size_t numBytes)
+{
+	if (!dest) return false; // invalid destination
+	size_t readOffset = m_start + offsetBytes;
+
+	if ((readOffset + numBytes-1) <= m_end) {
+		m_spi->read(readOffset, dest, numBytes);
+		return true;
+	} else {
+		// this would go past the end of the memory slot, do not perform the read
+		return false;
+	}
+}
+
+bool ExtMemSlot::zeroAdvance(size_t numBytes)
+{
+	if (!m_valid) { return false; }
+
+	if (m_currentWrPosition + numBytes-1 <= m_end) {
+		// entire block fits in memory slot without wrapping
+		m_spi->zero(m_currentWrPosition, numBytes); // cast audio data to uint.
+		m_currentWrPosition += numBytes;
+
+	} else {
+		// this write will wrap the memory slot
+		size_t wrBytes = m_end - m_currentWrPosition + 1;
+		m_spi->zero(m_currentWrPosition, wrBytes);
+		size_t remainingBytes = numBytes - wrBytes; // calculate the remaining bytes
+		m_spi->zero(m_start, remainingBytes); // write remaining bytes are start
+		m_currentWrPosition = m_start + remainingBytes;
+	}
+	return true;
+}
+
+bool ExtMemSlot::writeAdvance(uint8_t data)
+{
+	if (!m_valid) { return false; }
+
+	m_spi->write(m_currentWrPosition, static_cast<uint8_t>(data));
+	if (m_currentWrPosition < m_end-1) {
+		m_currentWrPosition++; // wrote two bytes
+	} else {
+		m_currentWrPosition = m_start;
+	}
+	return true;
+}
+
+bool ExtMemSlot::writeAdvance(uint8_t *src, size_t numBytes)
+{
+	if (!m_valid) { return false; }
+
+	if (m_currentWrPosition + numBytes-1 <= m_end) {
+		// entire block fits in memory slot without wrapping
+		m_spi->write(m_currentWrPosition, reinterpret_cast<uint8_t*>(src), numBytes); // cast audio data to uint.
+		m_currentWrPosition += numBytes;
+
+	} else {
+		// this write will wrap the memory slot
+		size_t wrBytes = m_end - m_currentWrPosition + 1;
+		m_spi->write(m_currentWrPosition, src, wrBytes);
+		size_t remainingData = numBytes - wrBytes;
+		m_spi->write(m_start, src + wrBytes, remainingData); // write remaining bytes are start
+		m_currentWrPosition = m_start + remainingData;
+	}
+	return true;
+}
+
+/// Read the next in memory during circular operation
+/// @returns the next 8-bit data word in memory
+uint8_t ExtMemSlot::readAdvance() {
+	uint8_t val = m_spi->read(m_currentRdPosition);
+	if (m_currentRdPosition < m_end-1) {
+		m_currentRdPosition ++; // position is in bytes and we read two
+	} else {
+		m_currentRdPosition = m_start;
+	}
+	return val;
+}
+
+bool ExtMemSlot::readAdvance(uint8_t *dest, size_t numBytes)
+{
+	if (!m_valid) { return false; }
+
+    if (m_currentRdPosition + numBytes-1 <= m_end) {
+        // entire block fits in memory slot without wrapping
+        m_spi->read(m_currentRdPosition, dest, numBytes); // cast audio data to uint.
+        m_currentRdPosition += numBytes;
+
+    } else {
+        // this read will wrap the memory slot
+        size_t rdBytes = m_end - m_currentRdPosition + 1;
+        m_spi->read(m_currentRdPosition, dest, rdBytes);
+        size_t remainingData = numBytes - rdBytes;
+        m_spi->read(m_start, (dest + rdBytes), remainingData); // write remaining bytes are start
+        m_currentRdPosition = m_start + remainingData;
+    }
+    return true;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// 16-BIT BASED TRANSFERS
+/////////////////////////////////////////////////////////////////////////
 
 bool ExtMemSlot::write16(size_t offsetWords, int16_t *src, size_t numWords)
 {
@@ -57,15 +199,7 @@ bool ExtMemSlot::write16(size_t offsetWords, int16_t *src, size_t numWords)
 	}
 }
 
-bool ExtMemSlot::setReadPosition(size_t offsetBytes)
-{
-	if (m_start + offsetBytes <= m_end) {
-		m_currentRdPosition = m_start + offsetBytes;
-		return true;
-	} else {
-		return false;
-	}
-}
+
 
 bool ExtMemSlot::zero16(size_t offsetWords, size_t numWords)
 {

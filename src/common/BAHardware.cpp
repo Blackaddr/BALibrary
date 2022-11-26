@@ -40,6 +40,7 @@ uint8_t BA_EXPAND_POT3_PIN = A2; // 16_A2_RX4_SCL1
 
 uint8_t BA_EXPAND_SW1_PIN  = 2;  // 2_OUT2
 uint8_t BA_EXPAND_SW2_PIN  = 3;  // 3_LRCLK2
+
 uint8_t BA_EXPAND_LED1_PIN = 4;  // 4_BLCK2
 uint8_t BA_EXPAND_LED2_PIN = 5;  // 5_IN2
 
@@ -66,6 +67,27 @@ uint8_t SPI1_CS_PIN   = 38;
 uint8_t SPI1_MISO_PIN = 39;
 uint8_t SPI1_MOSI_PIN = 26;
 
+// The following pins are only used on Multiverse
+// They have dummy default values
+uint8_t BA_EXPAND_POT4_PIN = A0;
+uint8_t BA_EXPAND_POT5_PIN = A0;
+uint8_t BA_EXPAND_POT6_PIN = A0;
+
+uint8_t BA_EXPAND_SW3_PIN  = 0;
+uint8_t BA_EXPAND_SW4_PIN  = 0;
+uint8_t BA_EXPAND_SW5_PIN  = 0;
+uint8_t BA_EXPAND_SW6_PIN  = 0;
+
+uint8_t BA_EXPAND_ENC1_A_PIN  = 0;
+uint8_t BA_EXPAND_ENC1_B_PIN  = 0;
+uint8_t BA_EXPAND_ENC2_A_PIN  = 0;
+uint8_t BA_EXPAND_ENC2_B_PIN  = 0;
+uint8_t BA_EXPAND_ENC3_A_PIN  = 0;
+uint8_t BA_EXPAND_ENC3_B_PIN  = 0;
+uint8_t BA_EXPAND_ENC4_A_PIN  = 0;
+uint8_t BA_EXPAND_ENC4_B_PIN  = 0;
+
+
 BAHardware::BAHardware()
 {
 #if defined(ARDUINO_TEENSY41) || defined(ARDUINO_TEENSY40) || defined(ARDUINO_TEENSY_MICROMOD) // T4.X
@@ -88,6 +110,7 @@ void BAHardware::set(TgaBoard tgaBoard)
     if (tgaBoard == TgaBoard::MKII_REV1) {
         // No change from defaults
     }
+    return;
 #endif
 
 #if defined(__MK66FX1M0__) || defined(__MK64FX512__) || defined(__MK20DX256__) // T3.6 or T3.5 or T3.2
@@ -126,6 +149,7 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_MISO_PIN = 5;
         SPI1_MOSI_PIN = 21;
     }
+    return;
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
@@ -162,6 +186,7 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI0_MISO_PIN = 12;
         SPI0_MOSI_PIN = 11;
     }
+    return;
 #endif
 
 #if defined(__MK66FX1M0__) || defined(__MK64FX512__) || defined(__MK20DX256__) // T3.6 or T3.5 or T3.2
@@ -199,6 +224,7 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_MISO_PIN = 5;
         SPI1_MOSI_PIN = 21;
     }
+    return;
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
@@ -226,6 +252,7 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI0_MISO_PIN = 12;
         SPI0_MOSI_PIN = 11;
     }
+    return;
 #endif
 
 #if defined(__MK66FX1M0__) || defined(__MK64FX512__) || defined(__MK20DX256__) // T3.6 or T3.5 or T3.2
@@ -255,32 +282,57 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_MISO_PIN = 5;
         SPI1_MOSI_PIN = 21;
     }
+    return;
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
-    // Avalon                                                                 //
+    // MULTIVERSE                                                             //
     ////////////////////////////////////////////////////////////////////////////
-#if defined(ARDUINO_TEENSY41) // T4.X
-    if (tgaBoard == TgaBoard::AVALON) {
-        BA_EXPAND_NUM_POT  = 2;
+#if defined(ARDUINO_TEENSY_MICROMOD)
+    if (tgaBoard == TgaBoard::MULTIVERSE) {
+        BA_EXPAND_NUM_POT  = 4;
         BA_EXPAND_NUM_SW   = 6;
         BA_EXPAND_NUM_LED  = 2;
         BA_EXPAND_NUM_ENC  = 4;
 
-        BA_EXPAND_POT1_PIN = A0;
-        BA_EXPAND_POT2_PIN = A1;
-        BA_EXPAND_POT3_PIN = A13;
+        BA_EXPAND_POT1_PIN = A8;
+        BA_EXPAND_POT2_PIN = A0;
+        BA_EXPAND_POT3_PIN = A2;
+        BA_EXPAND_POT4_PIN = A3;
 
-        BA_EXPAND_SW1_PIN  = 17;
-        BA_EXPAND_SW2_PIN  = 16;
-        BA_EXPAND_LED1_PIN = 22;
-        BA_EXPAND_LED2_PIN = 32;
+        BA_EXPAND_SW1_PIN  = 6;
+        BA_EXPAND_SW2_PIN  = 34;
+        BA_EXPAND_SW3_PIN  = 45;
+        BA_EXPAND_SW4_PIN  = 32;
+        BA_EXPAND_SW5_PIN  = 41;
+        BA_EXPAND_SW6_PIN  = 40;
+
+        BA_EXPAND_ENC1_A_PIN  = 33;
+        BA_EXPAND_ENC1_B_PIN  = 2;
+
+        BA_EXPAND_ENC2_A_PIN  = 31;
+        BA_EXPAND_ENC2_B_PIN  = 36;
+
+        BA_EXPAND_ENC3_A_PIN  = 5;
+        BA_EXPAND_ENC3_B_PIN  = 4;
+
+        BA_EXPAND_ENC4_A_PIN  = 3;
+        BA_EXPAND_ENC4_B_PIN  = 30;
+
+        BA_EXPAND_LED1_PIN = 9;
+        BA_EXPAND_LED2_PIN = 42;
 
         SPI0_SCK_PIN  = 13;
         SPI0_CS_PIN   = 10;
         SPI0_MISO_PIN = 12;
         SPI0_MOSI_PIN = 11;
+
+        SPI1_SCK_PIN  = 27;
+        SPI1_CS_PIN   = 43;
+        SPI1_MISO_PIN = 1;
+        SPI1_MOSI_PIN = 26;
     }
+    return;
 #endif
 }
 
