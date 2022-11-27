@@ -56,6 +56,8 @@ unsigned BAPhysicalControls::addRotary(uint8_t pin1, uint8_t pin2, bool swapDire
 	return  m_encoders.size()-1;
 }
 
+unsigned BAPhysicalControls::getNumRotary() { return m_encoders.size(); }
+
 unsigned BAPhysicalControls::addSwitch(uint8_t pin, unsigned long intervalMilliseconds) {
 	m_switches.emplace_back();
 	m_switches.back().attach(pin);
@@ -63,6 +65,8 @@ unsigned BAPhysicalControls::addSwitch(uint8_t pin, unsigned long intervalMillis
 	pinMode(pin, INPUT);
 	return m_switches.size()-1;
 }
+
+unsigned BAPhysicalControls::getNumSwitches() { return m_switches.size(); }
 
 unsigned BAPhysicalControls::addPot(uint8_t pin, unsigned minCalibration, unsigned maxCalibration) {
 	m_pots.emplace_back(pin, minCalibration, maxCalibration);
@@ -76,11 +80,15 @@ unsigned BAPhysicalControls::addPot(uint8_t pin, unsigned minCalibration, unsign
 	return m_pots.size()-1;
 }
 
+unsigned BAPhysicalControls::getNumPots() { return m_pots.size(); }
+
 unsigned BAPhysicalControls::addOutput(uint8_t pin) {
 	m_outputs.emplace_back(pin);
 	pinMode(pin, OUTPUT);
 	return m_outputs.size()-1;
 }
+
+unsigned BAPhysicalControls::getNumOutputs() { return m_outputs.size(); }
 
 void BAPhysicalControls::setOutput(unsigned handle, int val) {
 	if (handle >= m_outputs.size()) { return; }

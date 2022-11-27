@@ -1,24 +1,24 @@
 /*************************************************************************
  * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * This example demonstrates teh BAAudioEffectsAnalogDelay effect. It can
  * be controlled using the Blackaddr Audio "Expansion Control Board".
- * 
+ *
  * POT1 (left) controls amount of delay
  * POT2 (right) controls amount of feedback
  * POT3 (center) controls the wet/dry mix
  * SW1 will enable/bypass the audio effect. LED1 will be on when effect is enabled.
  * SW2 will cycle through the 3 pre-programmed analog filters. LED2 will be on when SW2 is pressed.
- * 
+ *
  * !!! SET POTS TO REASONABLE VALUES BEFORE STARTING TO AVOID SCREECHING FEEDBACK!!!!
  * - set POT1 (delay) fully counter-clockwise then increase it slowly.
  * - set POT2 (feedback) fully counter-clockwise, then increase it slowly
  * - set POT3 (wet/dry mix) to half-way at the detent.
- * 
+ *
  * Using the Serial Montitor, send 'u' and 'd' characters to increase or decrease
  * the headphone volume between values of 0 and 9.
  */
@@ -79,7 +79,7 @@ AudioConnection rightOut(analogDelay,0, i2sOut, 1);
 // - LED2 (right) will illuminate when pressing SW2.
 //////////////////////////////////////////
 // To get the calibration values for your particular board, first run the
-// BAExpansionCalibrate.ino example and 
+// BAExpansionCalibrate.ino example and
 constexpr int  potCalibMin = 1;
 constexpr int  potCalibMax = 1018;
 constexpr bool potSwapDirection = true;
@@ -100,27 +100,27 @@ void setup() {
   TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
   //TGA_PRO_REVB(x);
   //TGA_PRO_REVA(x);
-  
+
   #ifdef USE_EXT
   SPI_MEM0_64M();   // Optional 64Mbit SPI RAM
   //SPI_MEM0_4M();  // Older REVB and REVA boards offered 1M or 4M
-  //SPI_MEM0_1M(); 
+  //SPI_MEM0_1M();
   #endif
-  
+
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100);
 
   // Configure the hardware
-  
+
   // Setup the controls. The return value is the handle to use when checking for control changes, etc.
   // pushbuttons
   bypassHandle = controls.addSwitch(BA_EXPAND_SW1_PIN); // will be used for bypass control
   filterHandle = controls.addSwitch(BA_EXPAND_SW2_PIN); // will be used for stepping through filters
   // pots
   delayHandle    = controls.addPot(BA_EXPAND_POT1_PIN, potCalibMin, potCalibMax, potSwapDirection); // control the amount of delay
-  feedbackHandle = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection); 
-  mixHandle      = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection); 
+  feedbackHandle = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection);
+  mixHandle      = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection);
   // leds
   led1Handle = controls.addOutput(BA_EXPAND_LED1_PIN);
   led2Handle = controls.addOutput(BA_EXPAND_LED2_PIN); // will illuminate when pressing SW2
@@ -140,18 +140,19 @@ void setup() {
   Serial.println("Using EXTERNAL memory");
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, 500.0f, MemSelect::MEM0, true);
+  delaySlot.clear();
   #else
   Serial.println("Using INTERNAL memory");
   #endif
 
   // Besure to enable the delay. When disabled, audio is is completely blocked by the effect
   // to minimize resource usage to nearly to nearly zero.
-  analogDelay.enable(); 
+  analogDelay.enable();
 
   // Set some default values.
   // These can be changed using the controls on the Blackaddr Audio Expansion Board
   analogDelay.bypass(false);
-  controls.setOutput(led1Handle, !analogDelay.isBypass()); // Set the LED when NOT bypassed  
+  controls.setOutput(led1Handle, !analogDelay.isBypass()); // Set the LED when NOT bypassed
   analogDelay.mix(0.5f);
   analogDelay.feedback(0.0f);
 
@@ -178,7 +179,7 @@ void loop() {
     bool bypass = analogDelay.isBypass(); // get the current state
     bypass = !bypass; // change it
     analogDelay.bypass(bypass); // set the new state
-    controls.setOutput(led1Handle, !bypass); // Set the LED when NOT bypassed  
+    controls.setOutput(led1Handle, !bypass); // Set the LED when NOT bypassed
     Serial.println(String("BYPASS is ") + bypass);
   }
 
@@ -217,11 +218,11 @@ void loop() {
     if (Serial.available() > 0) {
       while (Serial.available()) {
         char key = Serial.read();
-        if (key == 'u') { 
+        if (key == 'u') {
           headphoneVolume = (headphoneVolume + 1) % MAX_HEADPHONE_VOL;
           Serial.println(String("Increasing HEADPHONE volume to ") + headphoneVolume);
         }
-        else if (key == 'd') { 
+        else if (key == 'd') {
           headphoneVolume = (headphoneVolume - 1) % MAX_HEADPHONE_VOL;
           Serial.println(String("Decreasing HEADPHONE volume to ") + headphoneVolume);
         }
@@ -231,7 +232,7 @@ void loop() {
   }
 
   delay(20); // Without some minimal delay here it will be difficult for the pots/switch changes to be detected.
-  
+
   if (timer > 1000) {
     timer = 0;
     Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());

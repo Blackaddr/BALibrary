@@ -238,17 +238,29 @@ public:
 	/// @returns the index in the encoder vector the new encoder was placed at.
 	unsigned addRotary(uint8_t pin1, uint8_t pin2, bool swapDirection = false, int divider = 1);
 
+	/// Get the number of registered rotary encoders
+	/// @returns the number of encoders registered
+	unsigned getNumRotary();
+
 	/// add a switch to the controls
 	/// @param pin the pin number connected to the switch
 	/// @param intervalMilliseconds, optional, specifies the filtering time to debounce a switch
 	/// @returns the index in the switch vector the new switch was placed at.
 	unsigned addSwitch(uint8_t pin, unsigned long intervalMilliseconds = 10);
 
+	/// Get the number of registered switches
+	/// @returns the number of switches registered
+	unsigned getNumSwitches();
+
 	/// add a pot to the controls
 	/// @param pin the pin number connected to the wiper of the pot
 	/// @param minCalibration the value corresponding to lowest pot setting
 	/// @param maxCalibration the value corresponding to the highest pot setting
 	unsigned addPot(uint8_t pin, unsigned minCalibration, unsigned maxCalibration);
+
+	/// Get the number of registered pots
+	/// @returns the number of pots registered
+	unsigned getNumPots();
 
 	/// add a pot to the controls
 	/// @param pin the pin number connected to the wiper of the pot
@@ -262,6 +274,10 @@ public:
 	/// @param pin the pin number connected to the Arduino output
 	/// @returns a handle (unsigned) to the added output. Use this to access the output.
 	unsigned addOutput(uint8_t pin);
+
+	/// Get the number of registered outputs
+	/// @returns the number of outputs registered
+	unsigned getNumOutputs();
 
 	/// Set the output specified by the provided handle
 	/// @param handle the handle that was provided previously by calling addOutput()

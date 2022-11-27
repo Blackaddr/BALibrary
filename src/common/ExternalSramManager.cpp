@@ -89,7 +89,7 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALi
 			if (!m_memConfig[mem].m_spi) {
 				if (Serial) { Serial.printf("Failed to create SPI for id %d\n\r", (int)mem);}
 			} else {
-				Serial.println("Calling spi begin()");
+				if (Serial) { Serial.println("Calling spi begin()"); }
 				m_memConfig[mem].m_spi->begin();
 			}
 		}
@@ -100,15 +100,14 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALi
 		m_memConfig[mem].totalAvailable -= sizeBytes;
 		slot->m_valid = true;
 		if (!slot->isEnabled()) { slot->enable(); }
-		Serial.println("Clear the memory\n"); Serial.flush();
-		slot->clear();
-		Serial.println("Done Request memory\n"); Serial.flush();
+		// Note: we no longer auto-clear the slot (on purpose)
+		if (Serial) { Serial.println("Done Request memory\n"); Serial.flush(); }
 		return true;
 	} else {
 		// there is not enough memory available for the request
-	    Serial.println(String("ExternalSramManager::requestMemory(): Insufficient memory in slot, request/available: ")
+	    if (Serial) { Serial.println(String("ExternalSramManager::requestMemory(): Insufficient memory in slot, request/available: ")
 	            + sizeBytes + String(" : ")
-	            + m_memConfig[mem].totalAvailable);
+	            + m_memConfig[mem].totalAvailable); }
 		return false;
 	}
 }
