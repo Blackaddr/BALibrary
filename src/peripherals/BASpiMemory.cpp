@@ -49,7 +49,7 @@ constexpr int SPI_ADDR_1_SHIFT = 8;
 constexpr int SPI_ADDR_0_MASK = 0x0000FF;
 
 constexpr int CMD_ADDRESS_SIZE = 4;
-constexpr int MAX_DMA_XFER_SIZE = 0x4000;
+constexpr int MAX_DMA_XFER_SIZE = 0x400;
 
 constexpr size_t MEM_ALIGNED_ALLOC = 32; // number of bytes to align DMA buffer to
 
@@ -247,8 +247,9 @@ size_t BASpiMemory::m_bytesToXfer(size_t address, size_t numBytes)
 {
     // Check if this burst will cross the die boundary
     size_t bytesToXfer = numBytes;
+    if (bytesToXfer > MAX_DMA_XFER_SIZE) { bytesToXfer = MAX_DMA_XFER_SIZE; }
     if (m_dieBoundary) {
-        if ((address < m_dieBoundary) && (address+numBytes > m_dieBoundary)) {
+        if ((address < m_dieBoundary) && (address+bytesToXfer > m_dieBoundary)) {
             // split into two xfers
             bytesToXfer = m_dieBoundary-address;
         }
@@ -415,8 +416,8 @@ void BASpiMemoryDMA::begin(void)
 	m_rxCommandBuffer = new uint8_t[CMD_ADDRESS_SIZE];
 	m_txTransfer = new DmaSpi::Transfer[2];
 	m_rxTransfer = new DmaSpi::Transfer[2];
-	
-	
+
+
 	switch (m_memDeviceId) {
 	case SpiDeviceId::SPI_DEVICE0 :
 		m_csPin = SPI0_CS_PIN;
