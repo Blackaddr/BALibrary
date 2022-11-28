@@ -1,15 +1,15 @@
 /*************************************************************************
  * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * This demo shows to use the BAAudioEffectDelayExternal audio class
  * to create long delays using external SPI RAM.
- * 
+ *
  * Eight delay taps are configured from a single SRAM device.
- * 
+ *
  */
 #include <Audio.h>
 #include "BALibrary.h"
@@ -60,12 +60,12 @@ void setup() {
   Serial.begin(57600);
   delay(200);
   AudioMemory(64);
-  
+
   delay(500);
-  Serial.println(String("Starting...\n"));
+  if (Serial) { Serial.println(String("Starting...\n")); }
   delay(100);
 
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codecControl.enable();
   delay(100);
 
@@ -90,12 +90,12 @@ void setup() {
   delayOutMixerB.gain(1, 0.05f);
   delayOutMixerB.gain(2, 0.025f);
   delayOutMixerB.gain(3, 0.0125f);
-  
+
   // mix the original signal with the two delay mixers
   delayMixer.gain(0, 1.0f);
   delayMixer.gain(1, 1.0f);
   delayMixer.gain(2, 1.0f);
-  
+
 }
 
 void loop() {

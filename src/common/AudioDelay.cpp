@@ -76,7 +76,9 @@ audio_block_t* AudioDelay::addBlock(audio_block_t *block)
 
 	} else {
 		// EXTERNAL memory
-		if (!m_slot) { Serial.println("addBlock(): m_slot is not valid"); }
+		if (!m_slot) {
+			if (Serial) { Serial.println("addBlock(): m_slot is not valid"); }
+		}
 
 		if (block) {
 
@@ -128,7 +130,7 @@ bool AudioDelay::getSamples(int16_t *dest, size_t offsetSamples, size_t numSampl
 bool AudioDelay::m_getSamples(int16_t *dest, size_t offsetSamples, size_t numSamples)
 {
 	if (!dest) {
-		Serial.println("getSamples(): dest is invalid");
+		if (Serial) { Serial.println("getSamples(): dest is invalid"); }
 		return false;
 	}
 
@@ -196,8 +198,8 @@ bool AudioDelay::m_getSamples(int16_t *dest, size_t offsetSamples, size_t numSam
 			return true;
 		} else {
 			// numSamples is > than total slot size
-			Serial.println("getSamples(): ERROR numSamples > total slot size");
-			Serial.println(numSamples + String(" > ") + m_slot->size());
+			if (Serial) { Serial.println("getSamples(): ERROR numSamples > total slot size"); }
+			if (Serial) { Serial.println(numSamples + String(" > ") + m_slot->size()); }
 			return false;
 		}
 	}

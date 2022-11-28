@@ -3,7 +3,20 @@
  *
  *  Created on: March 7, 2020
  *      Author: slascos
- */
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.*
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include <arm_math.h>
 #include "BALibrary.h"
 #include "AudioEffectRmsMeasure.h"
@@ -64,8 +77,7 @@ void AudioEffectRmsMeasure::update(void)
 	for (int i=0; i<AUDIO_BLOCK_SAMPLES; i++) {
 	    dotProduct += ((int64_t)inputAudioBlock->data[i] * (int64_t)inputAudioBlock->data[i]);
 	    if (dotProduct < 0) {
-	        Serial.println("DOT ERROR!");
-	        Serial.println(inputAudioBlock->data[i], HEX);
+	        if (Serial) { Serial.println("DOT ERROR!"); Serial.println(inputAudioBlock->data[i], HEX); }
 	    }
 	}
 	m_sum += (int64_t)(dotProduct);
@@ -80,11 +92,13 @@ void AudioEffectRmsMeasure::update(void)
 	    // dbfs = 20*log10(abs(rmsFigure)/32768.0f);
 	    m_dbfs = 20.0f * log10(m_rms/32768.0f);
 
-	    Serial.print("Accumulator: "); Serial.println((int)(m_sum >> 32), HEX);
-	    Serial.print("RAW RMS: "); Serial.println(m_rms);
+        if (Serial) {
+			Serial.print("Accumulator: "); Serial.println((int)(m_sum >> 32), HEX);
+			Serial.print("RAW RMS: "); Serial.println(m_rms);
 
-	    Serial.print("AudioEffectRmsMeasure: the RMS figure is "); Serial.print(m_dbfs);
-	    Serial.print(" dBFS over "); Serial.print(m_accumulatorCount); Serial.println(" audio blocks");
+			Serial.print("AudioEffectRmsMeasure: the RMS figure is "); Serial.print(m_dbfs);
+			Serial.print(" dBFS over "); Serial.print(m_accumulatorCount); Serial.println(" audio blocks");
+		}
 
 	    m_sum = 0;
 	    m_accumulatorCount = 0;

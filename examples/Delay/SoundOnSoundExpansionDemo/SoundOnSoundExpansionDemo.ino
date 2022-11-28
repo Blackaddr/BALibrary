@@ -114,7 +114,6 @@ void setup() {
   //SPI_MEM0_4M();  // Older REVB / REVA boards offered 1M or 4M
   //SPI_MEM0_1M();
 
-  delay(100);
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100); // wait a bit for serial to be available
@@ -136,7 +135,7 @@ void setup() {
   AudioMemory(128);
 
   // Enable the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
   codec.setHeadphoneVolume(1.0f); // Max headphone volume
 
@@ -188,34 +187,34 @@ void loop() {
   // LED1 will be directly control by the SOS effect, not by BAPhysicalControls
   if (controls.isSwitchToggled(gateHandle)) {
     sos.trigger();
-    Serial.println("GATE OPEN is triggered");
+    if (Serial) { Serial.println("GATE OPEN is triggered"); }
   }
 
   // Use SW2 to clear out the SOS delayline
   controls.setOutput(led2Handle, controls.getSwitchValue(led2Handle));
   if (controls.isSwitchToggled(clearHandle)) {
     sos.clear();
-    Serial.println("GATE CLEAR is triggered");
+    if (Serial) { Serial.println("GATE CLEAR is triggered"); }
   }
 
   // Use POT1 (left) to control the OPEN GATE time
   if (controls.checkPotValue(openHandle, potValue)) {
     // Pot has changed
     sos.gateOpenTime(potValue * MAX_GATE_TIME_MS);
-    Serial.println(String("New OPEN GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS));
+    if (Serial) { Serial.println(String("New OPEN GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS)); }
   }
 
   // Use POT2 (right) to control the CLOSE GATE time
   if (controls.checkPotValue(closeHandle, potValue)) {
     // Pot has changed
     sos.gateCloseTime(potValue * MAX_GATE_TIME_MS);
-    Serial.println(String("New CLOSE GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS));
+    if (Serial) { Serial.println(String("New CLOSE GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS)); }
   }
 
   // Use POT3 (centre) to control the sos effect volume
   if (controls.checkPotValue(volumeHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New SOS VOLUME setting: ") + potValue);
+    if (Serial) { Serial.println(String("New SOS VOLUME setting: ") + potValue); }
     sos.volume(potValue);
   }
 
@@ -241,9 +240,11 @@ void loop() {
 
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" SOS: "); Serial.print(sos.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" SOS: "); Serial.print(sos.processorUsage());
+      Serial.println("%");
+    }
   }
 }

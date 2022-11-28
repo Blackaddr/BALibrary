@@ -130,19 +130,19 @@ void setup() {
   AudioMemory(128);
 
   // Enable and configure the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
   codec.setHeadphoneVolume(1.0f); // Max headphone volume
 
   // If using external memory request request memory from the manager
   // for the slot
   #ifdef USE_EXT
-  Serial.println("Using EXTERNAL memory");
+  if (Serial) { Serial.println("Using EXTERNAL memory"); }
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, 500.0f, MemSelect::MEM0, true);
   delaySlot.clear();
   #else
-  Serial.println("Using INTERNAL memory");
+  if (Serial) { Serial.println("Using INTERNAL memory"); }
   #endif
 
   // Besure to enable the delay. When disabled, audio is is completely blocked by the effect
@@ -180,7 +180,7 @@ void loop() {
     bypass = !bypass; // change it
     analogDelay.bypass(bypass); // set the new state
     controls.setOutput(led1Handle, !bypass); // Set the LED when NOT bypassed
-    Serial.println(String("BYPASS is ") + bypass);
+    if (Serial) { Serial.println(String("BYPASS is ") + bypass); }
   }
 
   // Use SW2 to cycle through the filters
@@ -189,27 +189,27 @@ void loop() {
     filterIndex = (filterIndex + 1) % 3; // update and potentionall roll the counter 0, 1, 2, 0, 1, 2, ...
     // cast the index between 0 to 2 to the enum class AudioEffectAnalogDelay::Filter
     analogDelay.setFilter(static_cast<AudioEffectAnalogDelay::Filter>(filterIndex)); // will cycle through 0 to 2
-    Serial.println(String("Filter set to ") + filterIndex);
+    if (Serial) { Serial.println(String("Filter set to ") + filterIndex); }
   }
 
   // Use POT1 (left) to control the delay setting
   if (controls.checkPotValue(delayHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New DELAY setting: ") + potValue);
+    if (Serial) { Serial.println(String("New DELAY setting: ") + potValue); }
     analogDelay.delayFractionMax(potValue);
   }
 
   // Use POT2 (right) to control the feedback setting
   if (controls.checkPotValue(feedbackHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New FEEDBACK setting: ") + potValue);
+    if (Serial) { Serial.println(String("New FEEDBACK setting: ") + potValue); }
     analogDelay.feedback(potValue);
   }
 
   // Use POT3 (centre) to control the mix setting
   if (controls.checkPotValue(mixHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New MIX setting: ") + potValue);
+    if (Serial) { Serial.println(String("New MIX setting: ") + potValue); }
     analogDelay.mix(potValue);
   }
 
@@ -235,10 +235,12 @@ void loop() {
 
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
+      Serial.println("%");
+    }
   }
 
 }

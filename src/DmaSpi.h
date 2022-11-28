@@ -58,8 +58,8 @@ class DummyChipSelect : public AbstractChipSelect
 **/
 class DebugChipSelect : public AbstractChipSelect
 {
-  void select(TransferType transferType = TransferType::NORMAL) override {Serial.println("Debug CS: select()");}
-  void deselect(TransferType transferType = TransferType::NORMAL) override {Serial.println("Debug CS: deselect()");}
+  void select(TransferType transferType = TransferType::NORMAL) override { if (Serial) Serial.println("Debug CS: select()");}
+  void deselect(TransferType transferType = TransferType::NORMAL) override { if (Serial) Serial.println("Debug CS: deselect()");}
 };
 
 /** \brief An active low chip select class. This also configures the given pin.
@@ -159,7 +159,7 @@ class ActiveLowChipSelect1 : public AbstractChipSelect
 
 
 #if defined(DEBUG_DMASPI)
-  #define DMASPI_PRINT(x) do {Serial.printf x ; Serial.flush();} while (0);
+  #define DMASPI_PRINT(x) do { if (Serial) { Serial.printf x ; Serial.flush();} } while (0);
 #else
   #define DMASPI_PRINT(x) do {} while (0);
 #endif
@@ -712,15 +712,17 @@ typename AbstractDmaSpi<DMASPI_INSTANCE, SPICLASS, m_Spi>::Transfer* volatile Ab
 template<typename DMASPI_INSTANCE, typename SPICLASS, SPICLASS& m_Spi>
 volatile uint8_t AbstractDmaSpi<DMASPI_INSTANCE, SPICLASS, m_Spi>::m_devNull = 0;
 
-//void dump_dma(DMAChannel *dmabc)
-//{
-//    Serial.printf("%x %x:", (uint32_t)dmabc, (uint32_t)dmabc->TCD);
-//
-//    Serial.printf("SA:%x SO:%d AT:%x NB:%x SL:%d DA:%x DO: %d CI:%x DL:%x CS:%x BI:%x\n", (uint32_t)dmabc->TCD->SADDR,
-//        dmabc->TCD->SOFF, dmabc->TCD->ATTR, dmabc->TCD->NBYTES, dmabc->TCD->SLAST, (uint32_t)dmabc->TCD->DADDR,
-//        dmabc->TCD->DOFF, dmabc->TCD->CITER, dmabc->TCD->DLASTSGA, dmabc->TCD->CSR, dmabc->TCD->BITER);
-//    Serial.flush();
-//}
+// void dump_dma(DMAChannel *dmabc)
+// {
+//   if (Serial) {
+//     Serial.printf("%x %x:", (uint32_t)dmabc, (uint32_t)dmabc->TCD);
+
+//     Serial.printf("SA:%x SO:%d AT:%x NB:%x SL:%d DA:%x DO: %d CI:%x DL:%x CS:%x BI:%x\n", (uint32_t)dmabc->TCD->SADDR,
+//         dmabc->TCD->SOFF, dmabc->TCD->ATTR, dmabc->TCD->NBYTES, dmabc->TCD->SLAST, (uint32_t)dmabc->TCD->DADDR,
+//         dmabc->TCD->DOFF, dmabc->TCD->CITER, dmabc->TCD->DLASTSGA, dmabc->TCD->CSR, dmabc->TCD->BITER);
+//     Serial.flush();
+//   }
+// }
 
 #if defined(__IMXRT1062__) // T4.0
 

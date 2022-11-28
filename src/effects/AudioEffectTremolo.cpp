@@ -3,7 +3,21 @@
  *
  *  Created on: Jan 7, 2018
  *      Author: slascos
- */
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.*
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <cmath> // std::roundf
 #include "AudioEffectTremolo.h"
 
@@ -62,16 +76,6 @@ void AudioEffectTremolo::update(void)
 		float sample = std::roundf(mod[i] * (float)inputAudioBlock->data[i]);
 		inputAudioBlock->data[i] = (int16_t)sample;
 	}
-	//Serial.println(String("mod: ") + mod[0]);
-
-
-
-	//float mod = (m_osc.getNext()+1.0f)/2.0f; // value between -1.0 and +1.0f
-	//float modVolume =  (1.0f - m_depth) + mod*m_depth; // value between 0 to depth
-	//float finalVolume = m_volume * modVolume;
-
-	// Set the output volume
-	//gainAdjust(inputAudioBlock, inputAudioBlock, finalVolume, 1);
 
 	transmit(inputAudioBlock);
 	release(inputAudioBlock);
@@ -97,8 +101,8 @@ void AudioEffectTremolo::processMidi(int channel, int control, int value)
 	if ((m_midiConfig[BYPASS][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[BYPASS][MIDI_CONTROL] == control)) {
 		// Bypass
-		if (value >= 65) { bypass(false); Serial.println(String("AudioEffectTremolo::not bypassed -> ON") + value); }
-		else { bypass(true); Serial.println(String("AudioEffectTremolo::bypassed -> OFF") + value); }
+		if (value >= 65) { bypass(false); if (Serial) Serial.println(String("AudioEffectTremolo::not bypassed -> ON") + value); }
+		else { bypass(true); if (Serial) Serial.println(String("AudioEffectTremolo::bypassed -> OFF") + value); }
 		return;
 	}
 
@@ -106,7 +110,7 @@ void AudioEffectTremolo::processMidi(int channel, int control, int value)
         (m_midiConfig[RATE][MIDI_CONTROL] == control)) {
 		// Rate
 		rate(val);
-		Serial.println(String("AudioEffectTremolo::rate: ") + m_rate);
+		if (Serial) { Serial.println(String("AudioEffectTremolo::rate: ") + m_rate); }
 		return;
 	}
 
@@ -114,7 +118,7 @@ void AudioEffectTremolo::processMidi(int channel, int control, int value)
         (m_midiConfig[DEPTH][MIDI_CONTROL] == control)) {
 		// Depth
 		depth(val);
-		Serial.println(String("AudioEffectTremolo::depth: ") + m_depth);
+		if (Serial) { Serial.println(String("AudioEffectTremolo::depth: ") + m_depth); }
 		return;
 	}
 
@@ -133,14 +137,14 @@ void AudioEffectTremolo::processMidi(int channel, int control, int value)
 			m_waveform = Waveform::RANDOM;
 		}
 
-		Serial.println(String("AudioEffectTremolo::waveform: ") + static_cast<unsigned>(m_waveform));
+		if (Serial) { Serial.println(String("AudioEffectTremolo::waveform: ") + static_cast<unsigned>(m_waveform)); }
 		return;
 	}
 
 	if ((m_midiConfig[VOLUME][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[VOLUME][MIDI_CONTROL] == control)) {
 		// Volume
-		Serial.println(String("AudioEffectTremolo::volume: ") + 100*val + String("%"));
+		if (Serial) { Serial.println(String("AudioEffectTremolo::volume: ") + 100*val + String("%")); }
 		volume(val);
 		return;
 	}

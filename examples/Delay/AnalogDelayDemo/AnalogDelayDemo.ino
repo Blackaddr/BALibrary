@@ -76,13 +76,15 @@ elapsedMillis timer;
 void OnControlChange(byte channel, byte control, byte value) {
   analogDelay.processMidi(channel-1, control, value);
   #ifdef MIDI_DEBUG
-  Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
+  if (Serial) {
+    Serial.print("Control Change, ch=");
+    Serial.print(channel, DEC);
+    Serial.print(", control=");
+    Serial.print(control, DEC);
+    Serial.print(", value=");
+    Serial.print(value, DEC);
+    Serial.println();
+  }
   #endif
 }
 
@@ -107,19 +109,19 @@ void setup() {
   delay(5);
 
   // Enable the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
   delay(100);
 
   // If using external memory request request memory from the manager
   // for the slot
   #ifdef USE_EXT
-  Serial.println("Using EXTERNAL memory");
+  if (Serial) { Serial.println("Using EXTERNAL memory"); }
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, 500.0f, MemSelect::MEM0, true);
   delaySlot.clear();
   #else
-  Serial.println("Using INTERNAL memory");
+  if (Serial) { Serial.println("Using INTERNAL memory"); }
   #endif
 
   // Setup MIDI
@@ -166,10 +168,12 @@ void loop() {
 
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
+      Serial.println("%");
+    }
   }
 
   MIDI.read();

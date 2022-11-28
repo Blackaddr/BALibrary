@@ -1,44 +1,44 @@
 /*************************************************************************
  * This demo is used for manufacturing testing on the TGA Pro Expansion
  * Control Board.
- * 
+ *
  * This will test the following on the TGA Pro:
- * 
+ *
  * - Audio INPUT and OUTPUT JACKS
  * - Midi INPUT and Midi OUTPUT jacks
  * - MEM0 (if installed)
  * - User LED
- * 
+ *
  * This will also test the Expansion Control Board (if installed):
- * 
+ *
  * - three POT knobs
  * - two pushbutton SWitches
  * - two LEDs
  * - headphone output
- * 
+ *
  * SETUP INSTRUCTIONS:
- * 
+ *
  * 1) Connect an audio source to AUDIO INPUT.
  * 2) Connect AUDIO OUTPUT to amp, stereo, headphone amplifier, etc.
  * 3) if testing the MIDI ports, connect a MIDI cable between MIDI INPUT and MIDI OUTPUT
  * 4) comment out any tests you want to skip
  * 5) Compile and run the demo on your Teensy with TGA Pro.
  * 6) Launch the Arduino Serial Monitor to see results.
- * 
+ *
  * TESTING INSTRUCTIONS:
- * 
+ *
  * 1) Check the Serial Monitor for the results of the MIDI testing, and external memory testing.
  * 2) Confirm that the audio sent to the INPUT is coming out the OUTPUT.
  * 3) Confirm the User LED is blinking every 1 or 2 seconds
- * 
+ *
  * If using the Expansion Control Board:
- * 
+ *
  * 1) Try pushing the pushbuttons. When pushed, they should turn on their corresponding LED.
  * 2) Try turn each of the knobs one at a time. They should adjust the volume.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  */
 
 //#define RUN_MIDI_TEST // Uncomment this line to run a MIDI test. You must connect a MIDI cable as a loopback between the MIDI input and output jacks.
@@ -93,7 +93,6 @@ void setup() {
   gpio.begin();
 
   Serial.begin(57600);
-  //while (!Serial) { yield(); }
   delay(500);
 
   // Disable the audio codec first
@@ -104,20 +103,20 @@ void setup() {
   codec.setHeadphoneVolume(0.8f); // Set headphone volume
 #if defined(RUN_EXP_TEST)
   configPhysicalControls(controls, codec);
-  Serial.println("Now monitoring for input from Expansion Control Board");
+  if (Serial) { Serial.println("Now monitoring for input from Expansion Control Board"); }
 #endif
 
   // Run the initial Midi connectivity and SPI memory tests.
 #if defined(RUN_MIDI_TEST)
-  if (uartTest()) { Serial.println("MIDI Ports testing PASSED!"); }
+  if (uartTest()) { if (Serial) Serial.println("MIDI Ports testing PASSED!"); }
 #endif
 
 #if defined(RUN_MEMO_TEST)
   SPI_MEM0_64M();   // declare the 64Mbit optional PSI memory
   //SPI_MEM0_4M();  // REVB and REVA came with 4M or 1M
-  // SPI_MEM0_1M(); 
+  // SPI_MEM0_1M();
   spiMem0.begin(); delay(10);
-  if (spiTest(&spiMem0, 0)) { Serial.println("SPI0 testing PASSED!");}
+  if (spiTest(&spiMem0, 0)) { if (Serial) Serial.println("SPI0 testing PASSED!");}
 #endif
 }
 
@@ -132,7 +131,7 @@ void loop() {
   #endif
 
   delay(20); // Without some minimal delay here it will be difficult for the pots/switch changes to be detected.
-  
+
   loopCounter++;
   if (timer > 1000) {
     timer = 0;

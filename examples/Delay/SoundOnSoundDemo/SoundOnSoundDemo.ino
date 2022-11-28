@@ -84,13 +84,15 @@ elapsedMillis timer;
 void OnControlChange(byte channel, byte control, byte value) {
   sos.processMidi(channel-1, control, value);
   #ifdef MIDI_DEBUG
-  Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
+  if (Serial) {
+    Serial.print("Control Change, ch=");
+    Serial.print(channel, DEC);
+    Serial.print(", control=");
+    Serial.print(control, DEC);
+    Serial.print(", value=");
+    Serial.print(value, DEC);
+    Serial.println();
+  }
   #endif
 }
 
@@ -109,16 +111,13 @@ void setup() {
 
   // Disable the codec first
   codec.disable();
-  delay(100);
   AudioMemory(128);
-  delay(5);
 
   SPI_MEM0_1M(); // Configure the SPI memory size
 
   // Enable the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
-  delay(100);
 
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, BAHardwareConfig.getSpiMemSizeBytes(MemSelect::MEM0), MemSelect::MEM0, true);
@@ -178,10 +177,12 @@ void loop() {
 
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" SOS: "); Serial.print(sos.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" SOS: "); Serial.print(sos.processorUsage());
+      Serial.println("%");
+    }
   }
 
   MIDI.read();

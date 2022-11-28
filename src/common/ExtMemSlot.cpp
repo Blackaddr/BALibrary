@@ -332,12 +332,12 @@ bool ExtMemSlot::writeAdvance16(int16_t data)
 bool ExtMemSlot::enable() const
 {
 	if (m_spi) {
-		Serial.println("ExtMemSlot::enable()");
+		if (Serial) { Serial.println("ExtMemSlot::enable()"); }
 		m_spi->begin();
 		return true;
 	}
 	else {
-		Serial.println("ExtMemSlot m_spi is nullptr");
+		if (Serial) { Serial.println("ExtMemSlot m_spi is nullptr"); }
 		return false;
 	}
 }
@@ -365,10 +365,11 @@ bool ExtMemSlot::isReadBusy() const
 
 void ExtMemSlot::printStatus(void) const
 {
-	Serial.println(String("valid:") + m_valid + String(" m_start:") + m_start + \
+	if (Serial) { Serial.println(String("valid:") + m_valid + String(" m_start:") + m_start + \
 			       String(" m_end:") + m_end + String(" m_currentWrPosition: ") + m_currentWrPosition + \
 				   String(" m_currentRdPosition: ") + m_currentRdPosition + \
 				   String(" m_size:") + m_size);
+	}
 }
 
 }

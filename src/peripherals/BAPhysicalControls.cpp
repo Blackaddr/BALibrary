@@ -22,11 +22,11 @@
 // These calls must be define in order to get vector to work on arduino
 namespace std {
 void __throw_bad_alloc() {
-  Serial.println("Unable to allocate memory");
+  if (Serial) { Serial.println("Unable to allocate memory"); }
   abort();
 }
 void __throw_length_error( char const*e ) {
-  Serial.print("Length Error :"); Serial.println(e);
+  if (Serial) { Serial.print("Length Error :"); Serial.println(e); }
   abort();
 }
 }
@@ -336,6 +336,8 @@ void Potentiometer::setChangeThreshold(float changeThreshold)
 
 Potentiometer::Calib Potentiometer::calibrate(uint8_t pin) {
 	Calib calib;
+
+    if (!Serial) { return; }  // this function REQUIRES Serial port connection
 
 	// Flush the serial port input buffer
 	while (Serial.available() > 0) {}

@@ -67,7 +67,7 @@ void BAAudioEffectDelayExternal::delay(uint8_t channel, float milliseconds) {
 	unsigned mask = m_activeMask;
 	if (m_activeMask == 0) m_startUsingSPI(m_spiChannel);
 	m_activeMask = mask | (1<<channel);
-	Serial.print("DelayLengthInt: "); Serial.println(m_requestedDelayLength);
+	if (Serial) { Serial.print("DelayLengthInt: "); Serial.println(m_requestedDelayLength); }
 }
 
 void BAAudioEffectDelayExternal::disable(uint8_t channel) {

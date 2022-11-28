@@ -32,13 +32,14 @@ int calcData(int spiAddress, int loopPhase, int maskPhase)
     break;
     case 3:
     data = ~spiAddress ^ mask1;
-    
+
   }
   return (data & 0xffff);
 }
 
 bool spiTest(BASpiMemory *mem, int id)
 {
+  if (!Serial) { return false; }  // Skip test if Serial not connected
   int spiAddress = 0;
   int spiErrorCount = 0;
 
@@ -47,7 +48,7 @@ bool spiTest(BASpiMemory *mem, int id)
   uint16_t memBlock[NUM_BLOCK_WORDS];
   uint16_t goldData[NUM_BLOCK_WORDS];
 
-  SPI_MAX_ADDR = BAHardwareConfig.getSpiMemMaxAddr(0); // assume for this test both memories are the same size so use MEM0
+  SPI_MAX_ADDR = BAHardwareConfig.getSpiMemMaxAddr(MemSelect::MEM0); // assume for this test both memories are the same size so use MEM0
   const size_t SPI_MEM_SIZE_BYTES = BAHardwareConfig.getSpiMemSizeBytes(id);
 
   Serial.println(String("Starting SPI MEM Test of ") + SPI_MEM_SIZE_BYTES + String(" bytes"));
@@ -55,9 +56,9 @@ bool spiTest(BASpiMemory *mem, int id)
   for (int cnt = 0; cnt < NUM_TESTS; cnt++) {
 
     // Zero check
-    mem->zero16(0, SPI_MEM_SIZE_BYTES / sizeof(uint16_t));    
+    mem->zero16(0, SPI_MEM_SIZE_BYTES / sizeof(uint16_t));
     while (mem->isWriteBusy()) {}
-    
+
     for (spiAddress = 0; spiAddress <= SPI_MAX_ADDR; spiAddress += NUM_BLOCK_WORDS*sizeof(uint16_t)) {
       mem->read16(spiAddress, memBlock, NUM_BLOCK_WORDS);
       while (mem->isReadBusy()) {}
@@ -69,15 +70,20 @@ bool spiTest(BASpiMemory *mem, int id)
       }
       if (spiErrorCount >= 10) break;
     }
-  
-    //if (spiErrorCount == 0) { Serial.println(String("SPI MEMORY(") + cnt + String("): Zero test PASSED!")); }
+
+    if (spiErrorCount == 0) { Serial.println(String("SPI MEMORY(") + cnt + String("): Zero test PASSED!")); }
     if (spiErrorCount == 0) { Serial.print("."); Serial.flush(); }
-    if (spiErrorCount > 0) { Serial.println(String("SPI MEMORY(") + cnt + String("): Zero test FAILED, error count = ") + spiErrorCount); return false;}
-    
+    if (spiErrorCount > 0) {
+      //Serial.println(String("SPI MEMORY(") + cnt + String("): Zero test FAILED, error count = ") + spiErrorCount); return false;
+      Serial.printf("SPI MEMORY: test %d  Zero test FAILED, error count:%d, final address:0x%08X\n\r",
+        cnt, spiErrorCount, spiAddress);
+      return false;
+    }
+
 
     // Write all test data to the memory
     maskPhase = 0;
-    for (spiAddress = 0; spiAddress <= SPI_MAX_ADDR; spiAddress += NUM_BLOCK_WORDS*sizeof(uint16_t)) {      
+    for (spiAddress = 0; spiAddress <= SPI_MAX_ADDR; spiAddress += NUM_BLOCK_WORDS*sizeof(uint16_t)) {
       // Calculate the data for a block
       for (int i=0; i<NUM_BLOCK_WORDS; i++) {
         memBlock[i] = calcData(spiAddress+i, loopPhase, maskPhase);
@@ -93,8 +99,8 @@ bool spiTest(BASpiMemory *mem, int id)
     maskPhase = 0;
 
     for (spiAddress = 0; spiAddress <= SPI_MAX_ADDR; spiAddress += NUM_BLOCK_WORDS*sizeof(uint16_t)) {
-            
-      mem->read16(spiAddress, memBlock, NUM_BLOCK_WORDS);        
+
+      mem->read16(spiAddress, memBlock, NUM_BLOCK_WORDS);
       // Calculate the golden data for a block
       for (int i=0; i<NUM_BLOCK_WORDS; i++) {
         goldData[i] = calcData(spiAddress+i, loopPhase, maskPhase);
@@ -107,7 +113,7 @@ bool spiTest(BASpiMemory *mem, int id)
           Serial.println(String("ERROR@ ") + i + String(": ") + goldData[i] + String("!=") + memBlock[i]);
           spiErrorCount++;
           if (spiErrorCount >= 10) break;
-        } 
+        }
         #ifdef SANITY_CHECK
         else {
           if ((spiAddress == 0) && (i<10)  && (cnt == 0) ){

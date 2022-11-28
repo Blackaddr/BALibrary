@@ -24,20 +24,6 @@
 
 namespace BALibrary {
 
-//// MEM0 Settings
-//int SPI_CS_MEM0   = SPI0_CS_PIN;
-//int SPI_MOSI_MEM0 = SPI0_MOSI_PIN;
-//int SPI_MISO_MEM0 = SPI0_MISO_PIN;
-//int SPI_SCK_MEM0  = SPI0_SCK_PIN;
-//
-//#if defined(SPI1_AVAILABLE)
-//// MEM1 Settings
-//int SPI_CS_MEM1   = SPI1_CS_PIN;
-//int SPI_MOSI_MEM1 = SPI1_MOSI_PIN;
-//int SPI_MISO_MEM1 = SPI1_MISO_PIN;
-//int SPI_SCK_MEM1  = SPI1_SCK_PIN;
-//#endif
-
 // SPI Constants
 constexpr int SPI_WRITE_MODE_REG = 0x1;
 constexpr int SPI_WRITE_CMD = 0x2;
