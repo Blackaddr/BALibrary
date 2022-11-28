@@ -337,7 +337,7 @@ void Potentiometer::setChangeThreshold(float changeThreshold)
 Potentiometer::Calib Potentiometer::calibrate(uint8_t pin) {
 	Calib calib;
 
-    if (!Serial) { return; }  // this function REQUIRES Serial port connection
+    if (!Serial) { return calib; }  // this function REQUIRES Serial port connection
 
 	// Flush the serial port input buffer
 	while (Serial.available() > 0) {}

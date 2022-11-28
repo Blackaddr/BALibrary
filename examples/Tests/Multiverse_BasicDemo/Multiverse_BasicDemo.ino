@@ -10,6 +10,16 @@
  * - Control the 128x64 pixel OLED display (connected to SPI0)
  * - Use the 8MB external SRAM (simple memory test)
  * 
+ * REQUIREMENTS:
+ * This demo for Multiverse uses its OLED display which requires several Arduino
+ * libraries be downloaded first. The SH1106 library is modifed to work with Teensy
+ * and must be downloaded from the AlgorhythmTechnologies github.
+ * 
+ * Adafruit_BusIO       : https://github.com/adafruit/Adafruit_BusIO
+ * Adafruit_GFX_Library : https://github.com/adafruit/Adafruit-GFX-Library
+ * Adafruit_SH1106      : https://github.com/AlgorhythmTechnologies/Adafruit_SH1106
+ * 
+ * 
  * USAGE INSTRUCTIONS
  * - Use the 'Gain' knob to control the input gain on the codec. See checkPot().
  * - Use the 'Level' knob to control output volume with an AudioMixer4 object.
@@ -17,7 +27,6 @@
  * - Encoder push-button switches will write status to display when pressed/released
  * - Encoder rotary control will adjust a positive/negative count and update display
  */
-
 #include <Audio.h>
 #include <SPI.h>
 #include "BALibrary.h"
