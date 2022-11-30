@@ -114,7 +114,7 @@ class ActiveLowChipSelect : public AbstractChipSelect
 
 };
 
-#if defined(__MK66FX1M0__) || (defined(__IMXRT1062__) && defined(ARDUINO_TEENSY_MICROMOD))
+#if defined(__MK66FX1M0__) || (defined(__IMXRT1062__) && (defined(ARDUINO_TEENSY_MICROMOD) || defined(ARDUINO_TEENSY41)))
 class ActiveLowChipSelect1 : public AbstractChipSelect
 {
   public:
@@ -789,7 +789,7 @@ private:
 };
 extern DmaSpi0 DMASPI0;
 
-#if (defined(__IMXRT1062__) && defined(ARDUINO_TEENSY_MICROMOD))
+#if (defined(__IMXRT1062__) && (defined(ARDUINO_TEENSY_MICROMOD) || defined (ARDUINO_TEENSY41)))
 // On T4.X, SPI1 is LPSPI3
 
 class DmaSpi1 : public AbstractDmaSpi<DmaSpi1, SPIClass, SPI1>
