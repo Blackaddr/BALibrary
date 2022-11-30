@@ -1,29 +1,29 @@
 /*************************************************************************
  * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * THIS DEMO REQUIRES BOTH THE EXTERNAL SRAM AND EXPANSION BOARD ADD-ONS
- * 
+ *
  * This demo combines the Blackaddr Audio Expansion board with the BAAudioEffectSOS,
- * which provides sound-on-sound. The pushbuttons control the opening of the effect 
+ * which provides sound-on-sound. The pushbuttons control the opening of the effect
  * gate, as well as clearing the sound being held.
- * 
+ *
  * The pots control the feedback, as well as the gate opening and close times.
- * 
+ *
  * Afters startup, the effect will spend about 5 seconds clearing the audio delay buffer to prevent
  * any startup pops or clicks from propagating.
- * 
+ *
  * POT1 - Gate open time. Middle position (detent) is about 2100 ms.
  * POT2 - gate close time. Middle position (detent) is about 2100 ms.
  * POT3 - Effect volume. Controls the volume of the SOS effect separate from the normal volume
  * SW1 - Strum and hold a chord then push this button. Continue holding the button until the LED1 light goes out.
  * SW2 - Push this button to clear out the sound circulating in the delay.
- * 
+ *
  */
-#include <Audio.h> 
+#include <Audio.h>
 #include "BALibrary.h"
 #include "BAEffects.h"
 
@@ -86,7 +86,7 @@ AudioConnection outputRight(mixer, 0, i2sOut, 1);
 // - LED2 (right) will illuminate when pressing SW2.
 //////////////////////////////////////////
 // To get the calibration values for your particular board, first run the
-// BAExpansionCalibrate.ino example and 
+// BAExpansionCalibrate.ino example and
 constexpr int  potCalibMin = 1;
 constexpr int  potCalibMax = 1018;
 constexpr bool potSwapDirection = true;
@@ -114,7 +114,6 @@ void setup() {
   //SPI_MEM0_4M();  // Older REVB / REVA boards offered 1M or 4M
   //SPI_MEM0_1M();
 
-  delay(100);
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100); // wait a bit for serial to be available
@@ -125,8 +124,8 @@ void setup() {
   clearHandle = controls.addSwitch(BA_EXPAND_SW2_PIN); // will be used for stepping through filters
   // pots
   openHandle   = controls.addPot(BA_EXPAND_POT1_PIN, potCalibMin, potCalibMax, potSwapDirection); // control the amount of delay
-  closeHandle  = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection); 
-  volumeHandle = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection); 
+  closeHandle  = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection);
+  volumeHandle = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection);
   // leds
   led1Handle = controls.addOutput(BA_EXPAND_LED1_PIN);
   led2Handle = controls.addOutput(BA_EXPAND_LED2_PIN); // will illuminate when pressing SW2
@@ -136,12 +135,13 @@ void setup() {
   AudioMemory(128);
 
   // Enable the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
   codec.setHeadphoneVolume(1.0f); // Max headphone volume
 
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, BAHardwareConfig.getSpiMemSizeBytes(MemSelect::MEM0), MemSelect::MEM0, true);
+  delaySlot.clear();
 
   // Configure the LED to indicate the gate status, this is controlled directly by SOS effect, not by
   // by BAPhysicalControls
@@ -149,7 +149,7 @@ void setup() {
 
   // Besure to enable the SOS. When disabled, audio is is completely blocked
   // to minimize resources to nearly zero.
-  sos.enable(); 
+  sos.enable();
 
   // Set some default values.
   // These can be changed by sending MIDI CC messages over the USB using
@@ -176,7 +176,7 @@ void setup() {
 
   delay(1000);
   sos.clear();
-  
+
 }
 
 void loop() {
@@ -186,35 +186,35 @@ void loop() {
   // Check if SW1 has been toggled (pushed) and trigger the gate
   // LED1 will be directly control by the SOS effect, not by BAPhysicalControls
   if (controls.isSwitchToggled(gateHandle)) {
-    sos.trigger(); 
-    Serial.println("GATE OPEN is triggered");
+    sos.trigger();
+    if (Serial) { Serial.println("GATE OPEN is triggered"); }
   }
 
   // Use SW2 to clear out the SOS delayline
   controls.setOutput(led2Handle, controls.getSwitchValue(led2Handle));
   if (controls.isSwitchToggled(clearHandle)) {
     sos.clear();
-    Serial.println("GATE CLEAR is triggered");
+    if (Serial) { Serial.println("GATE CLEAR is triggered"); }
   }
 
   // Use POT1 (left) to control the OPEN GATE time
   if (controls.checkPotValue(openHandle, potValue)) {
     // Pot has changed
     sos.gateOpenTime(potValue * MAX_GATE_TIME_MS);
-    Serial.println(String("New OPEN GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS));
+    if (Serial) { Serial.println(String("New OPEN GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS)); }
   }
 
   // Use POT2 (right) to control the CLOSE GATE time
   if (controls.checkPotValue(closeHandle, potValue)) {
     // Pot has changed
     sos.gateCloseTime(potValue * MAX_GATE_TIME_MS);
-    Serial.println(String("New CLOSE GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS));
+    if (Serial) { Serial.println(String("New CLOSE GATE setting (ms): ") + (potValue * MAX_GATE_TIME_MS)); }
   }
 
   // Use POT3 (centre) to control the sos effect volume
   if (controls.checkPotValue(volumeHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New SOS VOLUME setting: ") + potValue);
+    if (Serial) { Serial.println(String("New SOS VOLUME setting: ") + potValue); }
     sos.volume(potValue);
   }
 
@@ -223,11 +223,11 @@ void loop() {
     if (Serial.available() > 0) {
       while (Serial.available()) {
         char key = Serial.read();
-        if (key == 'u') { 
+        if (key == 'u') {
           headphoneVolume = (headphoneVolume + 1) % MAX_HEADPHONE_VOL;
           Serial.println(String("Increasing HEADPHONE volume to ") + headphoneVolume);
         }
-        else if (key == 'd') { 
+        else if (key == 'd') {
           headphoneVolume = (headphoneVolume - 1) % MAX_HEADPHONE_VOL;
           Serial.println(String("Decreasing HEADPHONE volume to ") + headphoneVolume);
         }
@@ -235,14 +235,16 @@ void loop() {
       }
     }
   }
-  
+
   delay(20); // Without some minimal delay here it will be difficult for the pots/switch changes to be detected.
-  
+
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" SOS: "); Serial.print(sos.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" SOS: "); Serial.print(sos.processorUsage());
+      Serial.println("%");
+    }
   }
 }

@@ -12,14 +12,14 @@ BAPhysicalControls *controlPtr = nullptr;
 void configPhysicalControls(BAPhysicalControls &controls, BAAudioControlWM8731 &codec)
 {
   // Setup the controls. The return value is the handle to use when checking for control changes, etc.
-  
+
   // pushbuttons
   sw1Handle = controls.addSwitch(BA_EXPAND_SW1_PIN);
   sw2Handle = controls.addSwitch(BA_EXPAND_SW2_PIN);
   // pots
   pot1Handle = controls.addPot(BA_EXPAND_POT1_PIN, potCalibMin, potCalibMax, potSwapDirection);
-  pot2Handle = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection); 
-  pot3Handle = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection); 
+  pot2Handle = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection);
+  pot3Handle = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection);
   // leds
   led1Handle = controls.addOutput(BA_EXPAND_LED1_PIN);
   led2Handle = controls.addOutput(BA_EXPAND_LED2_PIN); // will illuminate when pressing SW2
@@ -45,12 +45,12 @@ void checkPot(unsigned id)
     default :
       handle = pot1Handle;
   }
-  
+
   if (controlPtr->checkPotValue(handle, potValue)) {
     // Pot has changed
     codecPtr->setHeadphoneVolume(potValue);
-    Serial.println(String("POT") + id + String(" value: ") + potValue);
-  } 
+    if (Serial) { Serial.println(String("POT") + id + String(" value: ") + potValue); }
+  }
 }
 
 void checkSwitch(unsigned id)
@@ -72,7 +72,7 @@ void checkSwitch(unsigned id)
   }
 
   if (controlPtr->isSwitchToggled(swHandle)) {
-    Serial.println(String("Button ") + id + String(" pressed"));
+    if (Serial) { Serial.println(String("Button ") + id + String(" pressed")); }
   }
 
   bool pressed = controlPtr->isSwitchHeld(swHandle);

@@ -136,7 +136,7 @@ BAAudioControlWM8731::~BAAudioControlWM8731()
 // Powerdown and disable the codec
 void BAAudioControlWM8731::disable(void)
 {
-	//Serial.println("Disabling codec");
+	// if (Serial) { Serial.println("Disabling codec"); }
 	if (m_wireStarted == false) {
 	    Wire.begin();
 	    m_wireStarted = true;
@@ -161,7 +161,7 @@ void BAAudioControlWM8731::enable(void)
 
 	disable(); // disable first in case it was already powered up
 
-	//Serial.println("Enabling codec");
+	// if (Serial) { Serial.println("Enabling codec"); }
 	if (m_wireStarted == false) {
 	    Wire.begin();
 	    m_wireStarted = true;
@@ -398,10 +398,9 @@ bool BAAudioControlWM8731::write(unsigned int reg, unsigned int val)
 		Wire.write(val & 0xFF);
 		byte error = Wire.endTransmission();
 		if (error) {
-			Serial.println(String("Wire::Error: ") + error + String(" retrying..."));
+			if (Serial) { Serial.println(String("Wire::Error: ") + error + String(" retrying...")); }
 		} else {
 			done = true;
-			//Serial.println("Wire::SUCCESS!");
 		}
 	}
 
@@ -427,7 +426,7 @@ void BAAudioControlWM8731master::enable(void)
 
     disable(); // disable first in case it was already powered up
 
-    //Serial.println("Enabling codec");
+    // if (Serial) { Serial.println("Enabling codec"); }
     if (m_wireStarted == false) {
         Wire.begin();
         m_wireStarted = true;

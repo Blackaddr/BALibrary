@@ -49,10 +49,10 @@ public:
 	/// returns 0 if success, otherwise error
 	int push_back(T element) {
 
-		//Serial.println(String("RingBuffer::push_back...") + m_head + String(":") + m_tail + String(":") + m_size);
+		//if (Serial) { Serial.println(String("RingBuffer::push_back...") + m_head + String(":") + m_tail + String(":") + m_size); }
 		if ( (m_head == m_tail) && (m_size > 0) ) {
 			// overflow
-			Serial.println("RingBuffer::push_back: overflow");
+			if (Serial) { Serial.println("RingBuffer::push_back: overflow"); }
 			return -1;
 		}
 
@@ -73,7 +73,7 @@ public:
 
 		if (m_size == 0) {
 			// buffer is empty
-			//Serial.println("RingBuffer::pop_front: buffer is empty\n");
+			// if (Serial) { Serial.println("RingBuffer::pop_front: buffer is empty\n"); }
 			return -1;
 		}
 		if (m_tail < m_maxSize-1) {
@@ -82,7 +82,7 @@ public:
 			m_tail = 0;
 		}
 		m_size--;
-		//Serial.println(String("RingBuffer::pop_front: ") + m_head + String(":") + m_tail + String(":") + m_size);
+		// if (Serial) { Serial.println(String("RingBuffer::pop_front: ") + m_head + String(":") + m_tail + String(":") + m_size); }
 		return 0;
 	}
 
@@ -141,8 +141,10 @@ public:
     /// DEBUG: Prints the status of the Ringbuffer. NOte using this much printing will usually cause audio glitches
     void print() const {
     	for (int idx=0; idx<m_maxSize; idx++) {
-    		Serial.print(idx + String(" address: ")); Serial.print((uint32_t)m_buffer[idx], HEX);
-    		Serial.print(" data: "); Serial.println((uint32_t)m_buffer[idx]->data, HEX);
+    		if (Serial) {
+				Serial.print(idx + String(" address: ")); Serial.print((uint32_t)m_buffer[idx], HEX);
+    		    Serial.print(" data: "); Serial.println((uint32_t)m_buffer[idx]->data, HEX);
+			}
     	}
     }
 private:

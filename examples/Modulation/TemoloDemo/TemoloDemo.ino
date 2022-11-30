@@ -1,17 +1,17 @@
 /*************************************************************************
  * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * This example demonstrates teh AudioEffectsTremolo effect. It can
  * be controlled using USB MIDI. You can get a free USB MIDI Controller
- * appliation at 
+ * appliation at
  * http://www.blackaddr.com/downloads/BAMidiTester/
  * or the source code at
  * https://github.com/Blackaddr/BAMidiTester
- * 
+ *
  * Even if you don't control the guitar effect with USB MIDI, you must set
  * the Arduino IDE USB-Type under Tools to "Serial + MIDI"
  */
@@ -57,14 +57,16 @@ elapsedMillis timer;
 void OnControlChange(byte channel, byte control, byte value) {
   tremolo.processMidi(channel-1, control, value);
   #ifdef MIDI_DEBUG
-  Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
-  #endif  
+  if (Serial) {
+    Serial.print("Control Change, ch=");
+    Serial.print(channel, DEC);
+    Serial.print(", control=");
+    Serial.print(control, DEC);
+    Serial.print(", value=");
+    Serial.print(value, DEC);
+    Serial.println();
+  }
+  #endif
 }
 
 void setup() {
@@ -72,26 +74,24 @@ void setup() {
   TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
   //TGA_PRO_REVB(x);
   //TGA_PRO_REVA(x);
-  
+
   delay(100);
   Serial.begin(57600); // Start the serial port
 
   // Disable the codec first
   codec.disable();
-  delay(100);
   AudioMemory(128);
   delay(5);
 
   // Enable the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
-  delay(100);
 
   // Setup MIDI
   MIDI.begin(MIDI_CHANNEL_OMNI);
   MIDI.setHandleControlChange(OnControlChange);
   usbMIDI.setHandleControlChange(OnControlChange);
-  
+
   // Configure which MIDI CC's will control the effect parameters
   tremolo.mapMidiControl(AudioEffectTremolo::BYPASS,16);
   tremolo.mapMidiControl(AudioEffectTremolo::RATE,20);
@@ -100,7 +100,7 @@ void setup() {
 
   // Besure to enable the tremolo. When disabled, audio is is completely blocked
   // to minimize resources to nearly zero.
-  tremolo.enable(); 
+  tremolo.enable();
 
   // Set some default values.
   // These can be changed by sending MIDI CC messages over the USB using
@@ -121,10 +121,12 @@ void loop() {
 
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" tremolo: "); Serial.print(tremolo.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" tremolo: "); Serial.print(tremolo.processorUsage());
+      Serial.println("%");
+    }
   }
 
   MIDI.read();

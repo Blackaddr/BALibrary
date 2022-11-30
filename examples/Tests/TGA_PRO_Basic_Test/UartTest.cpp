@@ -4,7 +4,7 @@
 using namespace BALibrary;
 
 constexpr unsigned MIDI_RATE = 31250;
-constexpr unsigned HIGH_RATE = 230400; 
+constexpr unsigned HIGH_RATE = 230400;
 constexpr unsigned TEST_TIME = 5; // 5 second test each
 
 static unsigned baudRate = MIDI_RATE; // start with low speed
@@ -19,14 +19,15 @@ bool uartTest(void)
 {
   Serial1.begin(baudRate, SERIAL_8N1);
   delay(100);
-  while(!Serial) {}
+  if (!Serial) { return false; }  // skip uart test if Serial not connected
+
   Serial.println(String("\nRunning MIDI Port speed test at ") + baudRate);
 
   // write the first data
   Serial1.write(writeData);
 
   while(!testFailed && !testDone) {
-    
+
     if (loopCounter >= (baudRate/4)) { // the divisor determines how long the test runs for
       // next test
       switch (testPhase) {
@@ -38,13 +39,13 @@ bool uartTest(void)
       }
 
       if (errorCount == 0) { Serial.println("TEST PASSED!"); }
-      else { 
+      else {
         Serial.println("MIDI PORT TEST FAILED!");
       }
       errorCount = 0;
       testPhase++;
       loopCounter = 0;
-      
+
       if (!testDone) {
         Serial.println(String("\nRunning MIDI Port speed test at ") + baudRate);
         Serial1.begin(baudRate, SERIAL_8N1);
@@ -53,24 +54,24 @@ bool uartTest(void)
         Serial.println("MIDI PORT TEST DONE!\n");
       }
     }
-    
+
     // Wait for read data
-    if (Serial1.available()) {  
+    if (Serial1.available()) {
       uint8_t readData= Serial1.read();
       if (readData != writeData) {
         Serial.println(String("MIDI ERROR: readData = ") + readData + String(" writeData = ") + writeData);
         errorCount++;
       }
-    
+
       if ((loopCounter % (baudRate/64)) == 0) { // the divisor determines how often the period is printed
         Serial.print("."); Serial.flush();
       }
-    
+
       if (errorCount > 16) {
         Serial.println("Halting test");
         testFailed = true;
       }
-    
+
       loopCounter++;
       writeData++;
       Serial1.write(writeData);

@@ -1,21 +1,21 @@
 /*************************************************************************
  * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * This example demonstrates teh BAAudioEffectsTremolo effect. It can
  * be controlled using the Blackaddr Audio "Expansion Control Board".
- * 
+ *
  * POT1 (left) controls the tremolo RATE
  * POT2 (right) controls the tremolo DEPTH
  * POT3 (center) controls the output VOLUME
  * SW1 will enable/bypass the audio effect. LED1 will be on when effect is enabled.
  * SW2 will cycle through the 3 pre-programmed waveforms. NOTE: any waveform other than Sine will cause
  *     pops/clicks since the waveforms are not bandlimited.
- * 
- * 
+ *
+ *
  * Using the Serial Montitor, send 'u' and 'd' characters to increase or decrease
  * the headphone volume between values of 0 and 9.
  */
@@ -60,7 +60,7 @@ AudioConnection rightOut(tremolo,0, i2sOut, 1);
 // - LED2 (right) will illuminate when pressing SW2.
 //////////////////////////////////////////
 // To get the calibration values for your particular board, first run the
-// BAExpansionCalibrate.ino example and 
+// BAExpansionCalibrate.ino example and
 constexpr int  potCalibMin = 1;
 constexpr int  potCalibMax = 1018;
 constexpr bool potSwapDirection = true;
@@ -82,7 +82,7 @@ void setup() {
   TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
   //TGA_PRO_REVB(x);
   //TGA_PRO_REVA(x);
-  
+
   delay(100); // wait a bit for serial to be available
   Serial.begin(57600); // Start the serial port
   delay(100);
@@ -93,8 +93,8 @@ void setup() {
   waveformHandle = controls.addSwitch(BA_EXPAND_SW2_PIN); // will be used for stepping through filters
   // pots
   rateHandle   = controls.addPot(BA_EXPAND_POT1_PIN, potCalibMin, potCalibMax, potSwapDirection); // control the amount of delay
-  depthHandle  = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection); 
-  volumeHandle = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection); 
+  depthHandle  = controls.addPot(BA_EXPAND_POT2_PIN, potCalibMin, potCalibMax, potSwapDirection);
+  volumeHandle = controls.addPot(BA_EXPAND_POT3_PIN, potCalibMin, potCalibMax, potSwapDirection);
   // leds
   led1Handle = controls.addOutput(BA_EXPAND_LED1_PIN);
   led2Handle = controls.addOutput(BA_EXPAND_LED2_PIN); // will illuminate when pressing SW2
@@ -104,18 +104,18 @@ void setup() {
   AudioMemory(128);
 
   // Enable and configure the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
   codec.setHeadphoneVolume(1.0f); // Max headphone volume
-  
+
   // Besure to enable the tremolo. When disabled, audio is is completely blocked by the effect
   // to minimize resource usage to nearly to nearly zero.
-  tremolo.enable(); 
+  tremolo.enable();
 
   // Set some default values.
   // These can be changed using the controls on the Blackaddr Audio Expansion Board
   tremolo.bypass(false);
-  controls.setOutput(led1Handle, !tremolo.isBypass()); // Set the LED when NOT bypassed  
+  controls.setOutput(led1Handle, !tremolo.isBypass()); // Set the LED when NOT bypassed
   tremolo.rate(0.0f);
   tremolo.depth(1.0f);
 
@@ -140,8 +140,8 @@ void loop() {
     bool bypass = tremolo.isBypass(); // get the current state
     bypass = !bypass; // change it
     tremolo.bypass(bypass); // set the new state
-    controls.setOutput(led1Handle, !bypass); // Set the LED when NOT bypassed  
-    Serial.println(String("BYPASS is ") + bypass);
+    controls.setOutput(led1Handle, !bypass); // Set the LED when NOT bypassed
+    if (Serial) { Serial.println(String("BYPASS is ") + bypass); }
   }
 
   // Use SW2 to cycle through the waveforms
@@ -150,27 +150,27 @@ void loop() {
     waveformIndex = (waveformIndex + 1) % static_cast<unsigned>(Waveform::NUM_WAVEFORMS);
     // cast the index
     tremolo.setWaveform(static_cast<Waveform>(waveformIndex));
-    Serial.println(String("Waveform set to ") + waveformIndex);
+    if (Serial) { Serial.println(String("Waveform set to ") + waveformIndex); }
   }
 
   // Use POT1 (left) to control the rate setting
   if (controls.checkPotValue(rateHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New RATE setting: ") + potValue);
+    if (Serial) { Serial.println(String("New RATE setting: ") + potValue); }
     tremolo.rate(potValue);
   }
 
   // Use POT2 (right) to control the depth setting
   if (controls.checkPotValue(depthHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New DEPTH setting: ") + potValue);
+    if (Serial) { Serial.println(String("New DEPTH setting: ") + potValue); }
     tremolo.depth(potValue);
   }
 
   // Use POT3 (centre) to control the volume setting
   if (controls.checkPotValue(volumeHandle, potValue)) {
     // Pot has changed
-    Serial.println(String("New VOLUME setting: ") + potValue);
+    if (Serial) { Serial.println(String("New VOLUME setting: ") + potValue); }
     tremolo.volume(potValue);
   }
 
@@ -179,11 +179,11 @@ void loop() {
     if (Serial.available() > 0) {
       while (Serial.available()) {
         char key = Serial.read();
-        if (key == 'u') { 
+        if (key == 'u') {
           headphoneVolume = (headphoneVolume + 1) % MAX_HEADPHONE_VOL;
           Serial.println(String("Increasing HEADPHONE volume to ") + headphoneVolume);
         }
-        else if (key == 'd') { 
+        else if (key == 'd') {
           headphoneVolume = (headphoneVolume - 1) % MAX_HEADPHONE_VOL;
           Serial.println(String("Decreasing HEADPHONE volume to ") + headphoneVolume);
         }
@@ -193,13 +193,15 @@ void loop() {
   }
 
   delay(20); // Without some minimal delay here it will be difficult for the pots/switch changes to be detected.
-  
+
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" tremolo: "); Serial.print(tremolo.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" tremolo: "); Serial.print(tremolo.processorUsage());
+      Serial.println("%");
+    }
   }
 
 }

@@ -72,7 +72,7 @@ void setup() {
   SPI_MEM0_1M();
   SPI_MAX_ADDR = BAHardwareConfig.getSpiMemMaxAddr(MemSelect::MEM0);
 
-  Serial.println("Enabling SPI, testing MEM0");
+  Serial.printf("Enabling SPI, testing MEM0 up to addres %08X\n\r", SPI_MAX_ADDR);
   spiMem0.begin();
 }
 

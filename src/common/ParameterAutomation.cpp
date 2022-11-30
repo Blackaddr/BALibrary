@@ -134,9 +134,9 @@ T ParameterAutomation<T>::getNextValue()
     } else {
         returnValue = m_startValue - (m_scaleY*value);
     }
-//    Serial.println(String("Start/End values: ") + m_startValue + String(":") + m_endValue);
-    //Serial.print("Parameter m_currentValueX is "); Serial.println(m_currentValueX, 6);
-    //Serial.print("Parameter returnValue is "); Serial.println(returnValue, 6);
+    // if (Serial) { Serial.println(String("Start/End values: ") + m_startValue + String(":") + m_endValue); }
+    // if (Serial) { Serial.print("Parameter m_currentValueX is "); Serial.println(m_currentValueX, 6); }
+    // if (Serial) { Serial.print("Parameter returnValue is "); Serial.println(returnValue, 6); }
     return returnValue;
 }
 
@@ -175,7 +175,7 @@ ParameterAutomationSequence<T>::~ParameterAutomationSequence()
 template <class T>
 void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, size_t durationSamples, typename ParameterAutomation<T>::Function function)
 {
-    Serial.println(String("setupParameter() called with samples: ") + durationSamples);
+    if (Serial) { Serial.println(String("setupParameter() called with samples: ") + durationSamples); }
     m_paramArray[index]->reconfigure(startValue, endValue, durationSamples, function);
     m_currentIndex = 0;
 }
@@ -183,7 +183,7 @@ void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T e
 template <class T>
 void ParameterAutomationSequence<T>::setupParameter(int index, T startValue, T endValue, float durationMilliseconds, typename ParameterAutomation<T>::Function function)
 {
-    Serial.print(String("setupParameter() called with time: ")); Serial.println(durationMilliseconds, 6);
+    if (Serial) { Serial.print(String("setupParameter() called with time: ")); Serial.println(durationMilliseconds, 6); }
     m_paramArray[index]->reconfigure(startValue, endValue, durationMilliseconds, function);
     m_currentIndex = 0;
 }
@@ -194,7 +194,7 @@ void ParameterAutomationSequence<T>::trigger(void)
     m_currentIndex = 0;
     m_paramArray[0]->trigger();
     m_running = true;
-    //Serial.println("ParameterAutomationSequence<T>::trigger() called");
+    // if (Serial) { Serial.println("ParameterAutomationSequence<T>::trigger() called"); }
 }
 
 template <class T>
@@ -204,17 +204,17 @@ T ParameterAutomationSequence<T>::getNextValue()
     T nextValue = m_paramArray[m_currentIndex]->getNextValue();
 
     if (m_running) {
-        //Serial.println(String("ParameterAutomationSequence<T>::getNextValue() is ") + nextValue
-        //        + String(" from stage ") + m_currentIndex);
+        // if (Serial) { Serial.println(String("ParameterAutomationSequence<T>::getNextValue() is ") + nextValue
+        //        + String(" from stage ") + m_currentIndex); }
 
         // If current stage is done, trigger the next
         if (m_paramArray[m_currentIndex]->isFinished()) {
-            Serial.println(String("Finished stage ") + m_currentIndex);
+            if (Serial) { Serial.println(String("Finished stage ") + m_currentIndex); }
             m_currentIndex++;
 
             if (m_currentIndex >= m_numStages) {
                 // Last stage already finished
-                Serial.println("Last stage finished");
+                if (Serial) { Serial.println("Last stage finished"); }
                 m_running = false;
                 m_currentIndex = 0;
             } else {

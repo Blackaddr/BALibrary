@@ -1,21 +1,21 @@
 /*************************************************************************
  * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * THIS DEMO REQUIRES THE EXTERNAL SRAM MEM0
- * 
+ *
  * This demo combines MIDI control with the BAAudioEffectSoundOnSound. You can use
  * the BAMidiTester to control the effect but it's best to use external MIDI footswitch
  * or the Blackaddr Audio Expansion Control Board.
- * 
+ *
  * User must set the Arduino IDE USB-Type to "Serial + MIDI" in the Tools menu.
- * 
+ *
  * Afters startup, the effect will spend about 5 seconds clearing the audio delay buffer to prevent
  * any startup pops or clicks from propagating.
- * 
+ *
  */
 #include <Audio.h>
 #include <MIDI.h>
@@ -84,14 +84,16 @@ elapsedMillis timer;
 void OnControlChange(byte channel, byte control, byte value) {
   sos.processMidi(channel-1, control, value);
   #ifdef MIDI_DEBUG
-  Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
-  #endif  
+  if (Serial) {
+    Serial.print("Control Change, ch=");
+    Serial.print(channel, DEC);
+    Serial.print(", control=");
+    Serial.print(control, DEC);
+    Serial.print(", value=");
+    Serial.print(value, DEC);
+    Serial.println();
+  }
+  #endif
 }
 
 void setup() {
@@ -109,20 +111,17 @@ void setup() {
 
   // Disable the codec first
   codec.disable();
-  delay(100);
   AudioMemory(128);
-  delay(5);
 
   SPI_MEM0_1M(); // Configure the SPI memory size
 
   // Enable the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
-  delay(100);
 
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, BAHardwareConfig.getSpiMemSizeBytes(MemSelect::MEM0), MemSelect::MEM0, true);
-  //externalSram.requestMemory(&delaySlot, 50.0f, MemSelect::MEM0, true);
+  delaySlot.clear();
 
   // Setup MIDI
   MIDI.begin(MIDI_CHANNEL_OMNI);
@@ -131,7 +130,7 @@ void setup() {
 
   // Configure the LED to indicate the gate status
   sos.setGateLedGpio(USR_LED_ID);
-  
+
   // Configure which MIDI CC's will control the effect parameters
   //sos.mapMidiControl(AudioEffectSOS::BYPASS,16);
   sos.mapMidiControl(AudioEffectSOS::GATE_TRIGGER,16);
@@ -143,7 +142,7 @@ void setup() {
 
   // Besure to enable the delay. When disabled, audio is is completely blocked
   // to minimize resources to nearly zero.
-  sos.enable(); 
+  sos.enable();
 
   // Set some default values.
   // These can be changed by sending MIDI CC messages over the USB using
@@ -170,7 +169,7 @@ void setup() {
 
   delay(1000);
   sos.clear();
-  
+
 }
 
 void loop() {
@@ -178,10 +177,12 @@ void loop() {
 
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" SOS: "); Serial.print(sos.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" SOS: "); Serial.print(sos.processorUsage());
+      Serial.println("%");
+    }
   }
 
   MIDI.read();

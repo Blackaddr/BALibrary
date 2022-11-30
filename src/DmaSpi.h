@@ -58,8 +58,8 @@ class DummyChipSelect : public AbstractChipSelect
 **/
 class DebugChipSelect : public AbstractChipSelect
 {
-  void select(TransferType transferType = TransferType::NORMAL) override {Serial.println("Debug CS: select()");}
-  void deselect(TransferType transferType = TransferType::NORMAL) override {Serial.println("Debug CS: deselect()");}
+  void select(TransferType transferType = TransferType::NORMAL) override { if (Serial) Serial.println("Debug CS: select()");}
+  void deselect(TransferType transferType = TransferType::NORMAL) override { if (Serial) Serial.println("Debug CS: deselect()");}
 };
 
 /** \brief An active low chip select class. This also configures the given pin.
@@ -114,7 +114,7 @@ class ActiveLowChipSelect : public AbstractChipSelect
 
 };
 
-#if defined(__MK66FX1M0__)
+#if defined(__MK66FX1M0__) || (defined(__IMXRT1062__) && (defined(ARDUINO_TEENSY_MICROMOD) || defined(ARDUINO_TEENSY41)))
 class ActiveLowChipSelect1 : public AbstractChipSelect
 {
   public:
@@ -154,12 +154,12 @@ class ActiveLowChipSelect1 : public AbstractChipSelect
     const SPISettings settings_;
 
 };
-#endif
+#endif // defined(__MK66FX1M0__) || (defined(__IMXRT1062__) && defined(ARDUINO_TEENSY_MICROMOD))
 
 
 
 #if defined(DEBUG_DMASPI)
-  #define DMASPI_PRINT(x) do {Serial.printf x ; Serial.flush();} while (0);
+  #define DMASPI_PRINT(x) do { if (Serial) { Serial.printf x ; Serial.flush();} } while (0);
 #else
   #define DMASPI_PRINT(x) do {} while (0);
 #endif
@@ -712,15 +712,17 @@ typename AbstractDmaSpi<DMASPI_INSTANCE, SPICLASS, m_Spi>::Transfer* volatile Ab
 template<typename DMASPI_INSTANCE, typename SPICLASS, SPICLASS& m_Spi>
 volatile uint8_t AbstractDmaSpi<DMASPI_INSTANCE, SPICLASS, m_Spi>::m_devNull = 0;
 
-//void dump_dma(DMAChannel *dmabc)
-//{
-//    Serial.printf("%x %x:", (uint32_t)dmabc, (uint32_t)dmabc->TCD);
-//
-//    Serial.printf("SA:%x SO:%d AT:%x NB:%x SL:%d DA:%x DO: %d CI:%x DL:%x CS:%x BI:%x\n", (uint32_t)dmabc->TCD->SADDR,
-//        dmabc->TCD->SOFF, dmabc->TCD->ATTR, dmabc->TCD->NBYTES, dmabc->TCD->SLAST, (uint32_t)dmabc->TCD->DADDR,
-//        dmabc->TCD->DOFF, dmabc->TCD->CITER, dmabc->TCD->DLASTSGA, dmabc->TCD->CSR, dmabc->TCD->BITER);
-//    Serial.flush();
-//}
+// void dump_dma(DMAChannel *dmabc)
+// {
+//   if (Serial) {
+//     Serial.printf("%x %x:", (uint32_t)dmabc, (uint32_t)dmabc->TCD);
+
+//     Serial.printf("SA:%x SO:%d AT:%x NB:%x SL:%d DA:%x DO: %d CI:%x DL:%x CS:%x BI:%x\n", (uint32_t)dmabc->TCD->SADDR,
+//         dmabc->TCD->SOFF, dmabc->TCD->ATTR, dmabc->TCD->NBYTES, dmabc->TCD->SLAST, (uint32_t)dmabc->TCD->DADDR,
+//         dmabc->TCD->DOFF, dmabc->TCD->CITER, dmabc->TCD->DLASTSGA, dmabc->TCD->CSR, dmabc->TCD->BITER);
+//     Serial.flush();
+//   }
+// }
 
 #if defined(__IMXRT1062__) // T4.0
 
@@ -764,36 +766,7 @@ public:
     IMXRT_LPSPI4_S.DER = LPSPI_DER_TDDE | LPSPI_DER_RDDE; //enable DMA on both TX and RX
     IMXRT_LPSPI4_S.SR = 0x3f00; // clear out all of the other status...
 
-//    if (m_pCurrentTransfer->m_pSource) {
-//        arm_dcache_flush((void *)m_pCurrentTransfer->m_pSource, m_pCurrentTransfer->m_transferCount);
-//    }
-
   }
-
-//  static void pre_cs_impl()
-//  {
-//
-//      //LPSPI4_PARAM = LPSPI4_PARAM;
-//      //LPSPI4_PARAM = 0x0404;
-//      //DMASPI_PRINT(("!!!!!!!!!!!!!!!!!!!!!PARAM reg is %08X\n", LPSPI4_PARAM));
-//      txChannel_()->TCD->ATTR_SRC = 0;      //Make sure set for 8 bit mode...
-//      txChannel_()->TCD->SLAST = 0;   // Finish with it pointing to next location
-//      rxChannel_()->TCD->ATTR_DST = 0;      //Make sure set for 8 bit mode...
-//      rxChannel_()->TCD->DLASTSGA = 0;
-//
-//      //DMASPI_PRINT(("STATUS SR reg is %08X\n", LPSPI4_SR));
-//      if (LPSPI4_SR & 0x1800) {
-//          DMASPI_PRINT(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!ERROR SR reg is %08X\n", LPSPI4_SR));
-//      }
-//      LPSPI4_SR = 0x3f00; // clear various error and status flags
-//      DMASPI_PRINT(("********************************************CHECK SR reg is %08X\n", LPSPI4_SR));
-//
-//      LPSPI4_TCR = (LPSPI4_TCR & ~(LPSPI_TCR_FRAMESZ(31))) | LPSPI_TCR_FRAMESZ(7); // Set the FRAMESZ to 7 for 8-bit frame size
-//      LPSPI4_FCR = 0; // set watermarks to zero, this ensures ready flag is set whenever fifo is not empty
-//
-//      LPSPI4_CR = LPSPI_CR_MEN | LPSPI_CR_RRF | LPSPI_CR_RTF; //enable module and reset both FIFOs
-//      LPSPI4_DER = LPSPI_DER_TDDE | LPSPI_DER_RDDE; // enable DMA on both TX and RX
-//  }
 
   static void post_cs_impl()
   {
@@ -810,23 +783,76 @@ public:
     IMXRT_LPSPI4_S.CR = LPSPI_CR_MEN | LPSPI_CR_RRF | LPSPI_CR_RTF;   // actually clear both...
     IMXRT_LPSPI4_S.SR = 0x3f00; // clear out all of the other status...
 
-//    if (m_pCurrentTransfer->m_pDest) {
-//        arm_dcache_delete((void *)m_pCurrentTransfer->m_pDest, m_pCurrentTransfer->m_transferCount);
-//    }
   }
-
-//  static void post_finishCurrentTransfer_impl()
-//  {
-//    //LPSPI4_FCR = LPSPI_FCR_TXWATER(15); // restore FSR status
-//    LPSPI4_DER = 0; // DMA no longer doing TX or RX
-//    LPSPI4_CR = LPSPI_CR_MEN | LPSPI_CR_RRF | LPSPI_CR_RTF; //enable module and reset both FIFOs
-//    LPSPI4_SR = 0x3f00; // clear out all the other statuses
-//  }
 
 private:
 };
-
 extern DmaSpi0 DMASPI0;
+
+#if (defined(__IMXRT1062__) && (defined(ARDUINO_TEENSY_MICROMOD) || defined (ARDUINO_TEENSY41)))
+// On T4.X, SPI1 is LPSPI3
+
+class DmaSpi1 : public AbstractDmaSpi<DmaSpi1, SPIClass, SPI1>
+{
+public:
+  static void begin_setup_txChannel_impl()
+  {
+    txChannel_()->disable();
+    txChannel_()->destination((volatile uint8_t&)IMXRT_LPSPI3_S.TDR);
+    txChannel_()->disableOnCompletion();
+    txChannel_()->triggerAtHardwareEvent(DMAMUX_SOURCE_LPSPI3_TX);
+  }
+
+  static void begin_setup_rxChannel_impl()
+  {
+    rxChannel_()->disable();
+    rxChannel_()->source((volatile uint8_t&)IMXRT_LPSPI3_S.RDR); // POPR is the receive fifo register for the SPI
+    rxChannel_()->disableOnCompletion();
+    rxChannel_()->triggerAtHardwareEvent(DMAMUX_SOURCE_LPSPI3_RX); // The DMA RX id for MT66 is 14
+    rxChannel_()->attachInterrupt(rxIsr_);
+    rxChannel_()->interruptAtCompletion();
+
+  }
+
+  static void pre_cs_impl()
+  {
+    if (LPSPI3_SR & 0x1800) {
+        DMASPI_PRINT(("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!ERROR SR reg is %08X\n\r", LPSPI3_SR));
+    }
+    DMASPI_PRINT(("********************************************CHECK SR reg is %08X\n\r", LPSPI3_SR));
+
+    IMXRT_LPSPI3_S.TCR = (IMXRT_LPSPI3_S.TCR & ~(LPSPI_TCR_FRAMESZ(31))) | LPSPI_TCR_FRAMESZ(7);
+    IMXRT_LPSPI3_S.FCR = 0;
+
+    IMXRT_LPSPI3_S.CR = LPSPI_CR_MEN; // I had to add the enable otherwise it wont' work
+
+    // Lets try to output the first byte to make sure that we are in 8 bit mode...
+    IMXRT_LPSPI3_S.DER = LPSPI_DER_TDDE | LPSPI_DER_RDDE; //enable DMA on both TX and RX
+    IMXRT_LPSPI3_S.SR = 0x3f00; // clear out all of the other status...
+
+  }
+
+  static void post_cs_impl()
+  {
+    rxChannel_()->enable();
+    txChannel_()->enable();
+    DMASPI_PRINT(("Done post_cs_impl()\n\r"));
+  }
+
+  static void post_finishCurrentTransfer_impl()
+  {
+    IMXRT_LPSPI3_S.FCR = LPSPI_FCR_TXWATER(15); // _spi_fcr_save; // restore the FSR status...
+    IMXRT_LPSPI3_S.DER = 0;   // DMA no longer doing TX (or RX)
+
+    IMXRT_LPSPI3_S.CR = LPSPI_CR_MEN | LPSPI_CR_RRF | LPSPI_CR_RTF;   // actually clear both...
+    IMXRT_LPSPI3_S.SR = 0x3f00; // clear out all of the other status...
+  }
+
+private:
+};
+extern DmaSpi1 DMASPI1;
+
+#endif // (defined(__IMXRT1062__) && defined(ARDUINO_TEENSY_MICROMOD))
 
 #elif defined(KINETISK)
 
@@ -1050,7 +1076,7 @@ public:
 //  {
 //    DMASPI_PRINT(("%s: %x %x %x %x \n", sz, p[0], p[1], p[2], p[3]));
 //  }
-  
+
   static void post_cs_impl()
   {
     DMASPI_PRINT(("post_cs S C1 C2: %x %x %x\n", SPI1_S, SPI1_C1, SPI1_C2));

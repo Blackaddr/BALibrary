@@ -3,7 +3,20 @@
  *
  *  Created on: Apr 14, 2018
  *      Author: blackaddr
- */
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.*
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "AudioEffectSOS.h"
 #include "LibBasicFunctions.h"
@@ -63,7 +76,7 @@ void AudioEffectSOS::enable(void)
         // Because we hold the previous output buffer for an update cycle, the maximum delay is actually
         // 1 audio block mess then the max delay returnable from the memory.
         m_maxDelaySamples = m_memory->getMaxDelaySamples() - AUDIO_BLOCK_SAMPLES;
-        Serial.println(String("SOS Enabled with delay length ") + m_maxDelaySamples + String(" samples"));
+        if (Serial) { Serial.println(String("SOS Enabled with delay length ") + m_maxDelaySamples + String(" samples")); }
     }
     m_delaySamples = m_maxDelaySamples;
     m_inputGateAuto.setupParameter(GATE_OPEN_STAGE, 0.0f, 1.0f, 1000.0f, ParameterAutomation<float>::Function::EXPONENTIAL);
@@ -126,8 +139,8 @@ void AudioEffectSOS::update(void)
     // get the data. If using external memory with DMA, this won't be filled until
     // later.
     m_memory->getSamples(blockToOutput, m_delaySamples);
-    //Serial.println(String("Delay samples:") + m_delaySamples);
-    //Serial.println(String("Use dma: ") + m_memory->getSlot()->isUseDma());
+    // if (Serial) { Serial.println(String("Delay samples:") + m_delaySamples); }
+    // if (Serial) { Serial.println(String("Use dma: ") + m_memory->getSlot()->isUseDma()); }
 
     // If using DMA, we need something else to do while that read executes, so
     // move on to input preprocessing
@@ -157,7 +170,7 @@ void AudioEffectSOS::update(void)
     m_previousBlock = blockToOutput;
 
     if (m_blockToRelease == m_previousBlock) {
-        Serial.println("ERROR: POINTER COLLISION");
+        if (Serial) { Serial.println("ERROR: POINTER COLLISION"); }
     }
 
     if (m_blockToRelease) { release(m_blockToRelease); }
@@ -190,7 +203,7 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
         (m_midiConfig[GATE_OPEN_TIME][MIDI_CONTROL] == control)) {
         // Gate Open Time
         gateOpenTime(val * MAX_GATE_OPEN_TIME_MS);
-        Serial.println(String("AudioEffectSOS::gate open time (ms): ") + m_openTimeMs);
+        if (Serial) { Serial.println(String("AudioEffectSOS::gate open time (ms): ") + m_openTimeMs); }
         return;
     }
 
@@ -198,14 +211,14 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
         (m_midiConfig[GATE_CLOSE_TIME][MIDI_CONTROL] == control)) {
         // Gate Close Time
         gateCloseTime(val * MAX_GATE_CLOSE_TIME_MS);
-        Serial.println(String("AudioEffectSOS::gate close time (ms): ") + m_closeTimeMs);
+        if (Serial) { Serial.println(String("AudioEffectSOS::gate close time (ms): ") + m_closeTimeMs); }
         return;
     }
 
     if ((m_midiConfig[FEEDBACK][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[FEEDBACK][MIDI_CONTROL] == control)) {
         // Feedback
-        Serial.println(String("AudioEffectSOS::feedback: ") + 100*val + String("%"));
+        if (Serial) { Serial.println(String("AudioEffectSOS::feedback: ") + 100*val + String("%")); }
         feedback(val);
         return;
     }
@@ -213,7 +226,7 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
     if ((m_midiConfig[VOLUME][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[VOLUME][MIDI_CONTROL] == control)) {
         // Volume
-        Serial.println(String("AudioEffectSOS::volume: ") + 100*val + String("%"));
+        if (Serial) { Serial.println(String("AudioEffectSOS::volume: ") + 100*val + String("%")); }
         volume(val);
         return;
     }
@@ -221,15 +234,15 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
     if ((m_midiConfig[BYPASS][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[BYPASS][MIDI_CONTROL] == control)) {
         // Bypass
-        if (value >= 65) { bypass(false); Serial.println(String("AudioEffectSOS::not bypassed -> ON") + value); }
-        else { bypass(true); Serial.println(String("AudioEffectSOS::bypassed -> OFF") + value); }
+        if (value >= 65) { bypass(false); if (Serial) Serial.println(String("AudioEffectSOS::not bypassed -> ON") + value); }
+        else { bypass(true); if (Serial) Serial.println(String("AudioEffectSOS::bypassed -> OFF") + value); }
         return;
     }
 
     if ((m_midiConfig[GATE_TRIGGER][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[GATE_TRIGGER][MIDI_CONTROL] == control)) {
         // The gate is triggered by any value
-        Serial.println(String("AudioEffectSOS::Gate Triggered!"));
+        if (Serial) { Serial.println(String("AudioEffectSOS::Gate Triggered!")); }
         m_inputGateAuto.trigger();
         return;
     }
@@ -237,7 +250,7 @@ void AudioEffectSOS::processMidi(int channel, int control, int value)
     if ((m_midiConfig[CLEAR_FEEDBACK_TRIGGER][MIDI_CHANNEL] == channel) &&
         (m_midiConfig[CLEAR_FEEDBACK_TRIGGER][MIDI_CONTROL] == control)) {
         // The gate is triggered by any value
-        Serial.println(String("AudioEffectSOS::Clear feedback Triggered!"));
+        if (Serial) { Serial.println(String("AudioEffectSOS::Clear feedback Triggered!")); }
         m_clearFeedbackAuto.trigger();
         return;
     }

@@ -1,16 +1,16 @@
 /*************************************************************************
  * This demo uses the BALibrary to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BALibrary can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * This demo will perform a DMA memory test on MEM1 attached
  * to SPI1.
- * 
+ *
  * NOTE: SPI MEM1 can be used by a Teensy 3.5/3.6.
  * pins.
- * 
+ *
  */
 #include <Wire.h>
 #include "BALibrary.h"
@@ -30,7 +30,6 @@ using namespace BALibrary;
 SPISettings memSettings(20000000, MSBFIRST, SPI_MODE0);
 const int cs0pin = SPI1_CS_PIN;
 
-BAGpio           gpio;  // access to User LED
 BASpiMemoryDMA   spiMem1(SpiDeviceId::SPI_DEVICE1);
 
 bool compareBuffers(uint8_t *a, uint8_t *b, size_t numBytes)
@@ -61,37 +60,35 @@ void setup() {
   TGA_PRO_MKII_REV1(); // Declare the version of the TGA Pro you are using.
   //TGA_PRO_REVB(x);
   //TGA_PRO_REVA(x);
-  
-  gpio.begin();
 
   Serial.begin(57600);
   while (!Serial) { yield(); }
   delay(5);
 
-  SPI_MEM1_1M();
+  SPI_MEM1_64M();
   SPI_MAX_ADDR = BAHardwareConfig.getSpiMemMaxAddr(MemSelect::MEM1);
 
-  Serial.println("Enabling SPI, testing MEM1");
+  Serial.printf("Enabling SPI, testing MEM1, max address %08X\n\r", SPI_MAX_ADDR); Serial.flush();
   spiMem1.begin();
 }
 
 
 bool spi8BitTest(void) {
-  
+
   size_t spiAddress = 0;
   int spiPhase = 0;
   constexpr uint8_t MASK80 = 0xaa;
   constexpr uint8_t MASK81 = 0x55;
-  
+
   uint8_t src8[DMA_SIZE];
   uint8_t dest8[DMA_SIZE];
-  
+
   // Write to the memory using 8-bit transfers
-  Serial.println("\nStarting 8-bit test Write/Read");
+  Serial.println("\nStarting 8-bit test Write/Read"); Serial.flush();
   while (spiPhase < 4) {
     spiAddress = 0;
     while (spiAddress <= SPI_MAX_ADDR) {
-      
+
       // fill the write data buffer
       switch (spiPhase) {
         case 0 :
@@ -114,15 +111,15 @@ bool spi8BitTest(void) {
             src8[i] = ((spiAddress+i) & 0xff) ^ (!MASK81);
           }
           break;
-      }      
-  
+      }
+
       // Send the DMA transfer
       spiMem1.write(spiAddress, src8, DMA_SIZE);
       // wait until write is done
       while (spiMem1.isWriteBusy()) {}
-      spiAddress += DMA_SIZE;    
+      spiAddress += DMA_SIZE;
     }
-  
+
     // Read back the data using 8-bit transfers
     spiAddress = 0;
     while (spiAddress <= SPI_MAX_ADDR) {
@@ -149,15 +146,15 @@ bool spi8BitTest(void) {
         }
         break;
       }
-  
+
       // Read back the DMA data
       spiMem1.read(spiAddress, dest8, DMA_SIZE);
       // wait until read is done
       while (spiMem1.isReadBusy()) {}
-      if (!compareBuffers(src8, dest8, DMA_SIZE)) { 
+      if (!compareBuffers(src8, dest8, DMA_SIZE)) {
         Serial.println(String("ERROR @") + spiAddress);
-        return false; } // stop the test    
-      spiAddress += DMA_SIZE; 
+        return false; } // stop the test
+      spiAddress += DMA_SIZE;
     }
     Serial.println(String("Phase ") + spiPhase + String(": 8-bit Write/Read test passed!"));
     spiPhase++;
@@ -169,7 +166,7 @@ bool spi8BitTest(void) {
   }
 #endif
 
-  Serial.println("\nStarting 8-bit test Zero/Read");
+  Serial.println("\nStarting 8-bit test Zero/Read");  Serial.flush();
   // Clear the memory
   spiAddress = 0;
   memset(src8, 0, DMA_SIZE);
@@ -178,7 +175,7 @@ bool spi8BitTest(void) {
       spiMem1.zero(spiAddress, DMA_SIZE);
       // wait until write is done
       while (spiMem1.isWriteBusy()) {}
-      spiAddress += DMA_SIZE;     
+      spiAddress += DMA_SIZE;
   }
 
   // Check the memory is clear
@@ -188,8 +185,8 @@ bool spi8BitTest(void) {
     spiMem1.read(spiAddress, dest8, DMA_SIZE);
     // wait until read is done
     while (spiMem1.isReadBusy()) {}
-    if (!compareBuffers(src8, dest8, DMA_SIZE)) { return false; } // stop the test    
-    spiAddress += DMA_SIZE; 
+    if (!compareBuffers(src8, dest8, DMA_SIZE)) { return false; } // stop the test
+    spiAddress += DMA_SIZE;
   }
   Serial.println(String(": 8-bit Zero/Read test passed!"));
   return true;
@@ -201,16 +198,16 @@ bool spi16BitTest(void) {
   constexpr uint16_t MASK160 = 0xaaaa;
   constexpr uint16_t MASK161 = 0x5555;
   constexpr int NUM_DATA = DMA_SIZE / sizeof(uint16_t);
-  
+
   uint16_t src16[NUM_DATA];
   uint16_t dest16[NUM_DATA];
 
   // Write to the memory using 16-bit transfers
-  Serial.println("\nStarting 16-bit test");
+  Serial.println("\nStarting 16-bit test");  Serial.flush();
   while (spiPhase < 4) {
     spiAddress = 0;
     while (spiAddress <= SPI_MAX_ADDR) {
-      
+
       // fill the write data buffer
       switch (spiPhase) {
         case 0 :
@@ -234,14 +231,14 @@ bool spi16BitTest(void) {
           }
           break;
       }
-  
+
       // Send the DMA transfer
       spiMem1.write16(spiAddress, src16, NUM_DATA);
       // wait until write is done
       while (spiMem1.isWriteBusy()) {}
-      spiAddress += DMA_SIZE;    
+      spiAddress += DMA_SIZE;
     }
-  
+
     // Read back the data using 8-bit transfers
     spiAddress = 0;
     while (spiAddress <= SPI_MAX_ADDR) {
@@ -268,15 +265,15 @@ bool spi16BitTest(void) {
         }
         break;
       }
-  
+
       // Read back the DMA data
       spiMem1.read16(spiAddress, dest16, NUM_DATA);
       // wait until read is done
       while (spiMem1.isReadBusy()) {}
-      if (!compareBuffers16(src16, dest16, NUM_DATA)) { 
+      if (!compareBuffers16(src16, dest16, NUM_DATA)) {
         Serial.print("ERROR @"); Serial.println(spiAddress, HEX);
-        return false; } // stop the test    
-      spiAddress += DMA_SIZE; 
+        return false; } // stop the test
+      spiAddress += DMA_SIZE;
     }
     Serial.println(String("Phase ") + spiPhase + String(": 16-bit test passed!"));
     spiPhase++;
@@ -287,7 +284,7 @@ bool spi16BitTest(void) {
   }
 #endif
 
-  Serial.println("\nStarting 16-bit test Zero/Read");
+  Serial.println("\nStarting 16-bit test Zero/Read");  Serial.flush();
   // Clear the memory
   spiAddress = 0;
   memset(src16, 0, DMA_SIZE);
@@ -296,7 +293,7 @@ bool spi16BitTest(void) {
       spiMem1.zero16(spiAddress, NUM_DATA);
       // wait until write is done
       while (spiMem1.isWriteBusy()) {}
-      spiAddress += DMA_SIZE;     
+      spiAddress += DMA_SIZE;
   }
 
   // Check the memory is clear
@@ -306,8 +303,8 @@ bool spi16BitTest(void) {
     spiMem1.read16(spiAddress, dest16, NUM_DATA);
     // wait until read is done
     while (spiMem1.isReadBusy()) {}
-    if (!compareBuffers16(src16, dest16, NUM_DATA)) { return false; } // stop the test    
-    spiAddress += DMA_SIZE; 
+    if (!compareBuffers16(src16, dest16, NUM_DATA)) { return false; } // stop the test
+    spiAddress += DMA_SIZE;
   }
   Serial.println(String(": 16-bit Zero/Read test passed!"));
   return true;

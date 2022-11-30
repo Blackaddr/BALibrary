@@ -68,7 +68,7 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALi
     if (!m_configured) { m_configure(); }
 
 	if (m_memConfig[mem].totalAvailable >= sizeBytes) {
-		Serial.println(String("Configuring a slot for mem ") + mem);
+		if (Serial) Serial.printf("Configuring mem %d, for size %d, available %d\n\r", (unsigned)mem, sizeBytes, m_memConfig[mem].totalAvailable);
 		// there is enough available memory for this request
 		slot->m_start = m_memConfig[mem].nextAvailable;
 		slot->m_end   = slot->m_start + sizeBytes -1;
@@ -78,15 +78,18 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALi
 
 		if (!m_memConfig[mem].m_spi) {
 		    if (useDma) {
+				if (Serial) { Serial.printf("Creating S for id %d\n\r", (int)mem);}
 		        m_memConfig[mem].m_spi = new BALibrary::BASpiMemoryDMA(static_cast<BALibrary::SpiDeviceId>(mem));
 		        slot->m_useDma = true;
 		    } else {
+				if (Serial) { Serial.printf("Creating BASpiMemory for id %d\n\r", (int)mem);}
 		        m_memConfig[mem].m_spi = new BALibrary::BASpiMemory(static_cast<BALibrary::SpiDeviceId>(mem));
 		        slot->m_useDma = false;
 		    }
 			if (!m_memConfig[mem].m_spi) {
+				if (Serial) { Serial.printf("Failed to create SPI for id %d\n\r", (int)mem);}
 			} else {
-				Serial.println("Calling spi begin()");
+				if (Serial) { Serial.println("Calling spi begin()"); }
 				m_memConfig[mem].m_spi->begin();
 			}
 		}
@@ -97,15 +100,14 @@ bool ExternalSramManager::requestMemory(ExtMemSlot *slot, size_t sizeBytes, BALi
 		m_memConfig[mem].totalAvailable -= sizeBytes;
 		slot->m_valid = true;
 		if (!slot->isEnabled()) { slot->enable(); }
-		Serial.println("Clear the memory\n"); Serial.flush();
-		slot->clear();
-		Serial.println("Done Request memory\n"); Serial.flush();
+		// Note: we no longer auto-clear the slot (on purpose)
+		if (Serial) { Serial.println("Done Request memory\n"); Serial.flush(); }
 		return true;
 	} else {
 		// there is not enough memory available for the request
-	    Serial.println(String("ExternalSramManager::requestMemory(): Insufficient memory in slot, request/available: ")
+	    if (Serial) { Serial.println(String("ExternalSramManager::requestMemory(): Insufficient memory in slot, request/available: ")
 	            + sizeBytes + String(" : ")
-	            + m_memConfig[mem].totalAvailable);
+	            + m_memConfig[mem].totalAvailable); }
 		return false;
 	}
 }

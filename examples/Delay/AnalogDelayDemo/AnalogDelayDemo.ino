@@ -1,17 +1,17 @@
 /*************************************************************************
  * This demo uses the BALibrary library to provide enhanced control of
  * the TGA Pro board.
- * 
+ *
  * The latest copy of the BA Guitar library can be obtained from
  * https://github.com/Blackaddr/BALibrary
- * 
+ *
  * This example demonstrates teh BAAudioEffectsAnalogDelay effect. It can
  * be controlled using USB MIDI. You can get a free USB MIDI Controller
- * appliation at 
+ * appliation at
  * http://www.blackaddr.com/downloads/BAMidiTester/
  * or the source code at
  * https://github.com/Blackaddr/BAMidiTester
- * 
+ *
  * Even if you don't control the guitar effect with USB MIDI, you must set
  * the Arduino IDE USB-Type under Tools to "Serial + MIDI"
  */
@@ -76,14 +76,16 @@ elapsedMillis timer;
 void OnControlChange(byte channel, byte control, byte value) {
   analogDelay.processMidi(channel-1, control, value);
   #ifdef MIDI_DEBUG
-  Serial.print("Control Change, ch=");
-  Serial.print(channel, DEC);
-  Serial.print(", control=");
-  Serial.print(control, DEC);
-  Serial.print(", value=");
-  Serial.print(value, DEC);
-  Serial.println();
-  #endif  
+  if (Serial) {
+    Serial.print("Control Change, ch=");
+    Serial.print(channel, DEC);
+    Serial.print(", control=");
+    Serial.print(control, DEC);
+    Serial.print(", value=");
+    Serial.print(value, DEC);
+    Serial.println();
+  }
+  #endif
 }
 
 void setup() {
@@ -96,7 +98,7 @@ void setup() {
   //SPI_MEM0_4M();  // Older REVA and REVB boards came with 4M or 1M
   //SPI_MEM0_1M();
   #endif
-  
+
   delay(100);
   Serial.begin(57600); // Start the serial port
 
@@ -107,18 +109,19 @@ void setup() {
   delay(5);
 
   // Enable the codec
-  Serial.println("Enabling codec...\n");
+  if (Serial) { Serial.println("Enabling codec...\n"); }
   codec.enable();
   delay(100);
 
   // If using external memory request request memory from the manager
   // for the slot
   #ifdef USE_EXT
-  Serial.println("Using EXTERNAL memory");
+  if (Serial) { Serial.println("Using EXTERNAL memory"); }
   // We have to request memory be allocated to our slot.
   externalSram.requestMemory(&delaySlot, 500.0f, MemSelect::MEM0, true);
+  delaySlot.clear();
   #else
-  Serial.println("Using INTERNAL memory");
+  if (Serial) { Serial.println("Using INTERNAL memory"); }
   #endif
 
   // Setup MIDI
@@ -126,7 +129,7 @@ void setup() {
   MIDI.setHandleControlChange(OnControlChange);
 
   usbMIDI.setHandleControlChange(OnControlChange);
-  
+
   // Configure which MIDI CC's will control the effect parameters
   analogDelay.mapMidiControl(AudioEffectAnalogDelay::BYPASS,16);
   analogDelay.mapMidiControl(AudioEffectAnalogDelay::DELAY,20);
@@ -136,7 +139,7 @@ void setup() {
 
   // Besure to enable the delay. When disabled, audio is is completely blocked
   // to minimize resources to nearly zero.
-  analogDelay.enable(); 
+  analogDelay.enable();
 
   // Set some default values.
   // These can be changed by sending MIDI CC messages over the USB using
@@ -162,13 +165,15 @@ void setup() {
 
 void loop() {
   // usbMIDI.read() needs to be called rapidly from loop().
-  
+
   if (timer > 1000) {
     timer = 0;
-    Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
-    Serial.print("% ");
-    Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
-    Serial.println("%");
+    if (Serial) {
+      Serial.print("Processor Usage, Total: "); Serial.print(AudioProcessorUsage());
+      Serial.print("% ");
+      Serial.print(" analogDelay: "); Serial.print(analogDelay.processorUsage());
+      Serial.println("%");
+    }
   }
 
   MIDI.read();
