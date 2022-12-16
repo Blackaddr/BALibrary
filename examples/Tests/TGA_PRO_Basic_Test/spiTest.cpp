@@ -71,7 +71,6 @@ bool spiTest(BASpiMemory *mem, int id)
       if (spiErrorCount >= 10) break;
     }
 
-    if (spiErrorCount == 0) { Serial.println(String("SPI MEMORY(") + cnt + String("): Zero test PASSED!")); }
     if (spiErrorCount == 0) { Serial.print("."); Serial.flush(); }
     if (spiErrorCount > 0) {
       //Serial.println(String("SPI MEMORY(") + cnt + String("): Zero test FAILED, error count = ") + spiErrorCount); return false;
