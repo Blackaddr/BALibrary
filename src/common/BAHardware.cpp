@@ -109,8 +109,8 @@ void BAHardware::set(TgaBoard tgaBoard)
 #if defined(ARDUINO_TEENSY41) || defined(ARDUINO_TEENSY40) // T4.X
     if (tgaBoard == TgaBoard::MKII_REV1) {
         // No change from defaults
+        return;
     }
-    return;
 #endif
 
 #if defined(__MK66FX1M0__) || defined(__MK64FX512__) || defined(__MK20DX256__) // T3.6 or T3.5 or T3.2
@@ -148,8 +148,8 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_CS_PIN   = 31;
         SPI1_MISO_PIN = 5;
         SPI1_MOSI_PIN = 21;
+        return;
     }
-    return;
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
@@ -185,8 +185,8 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI0_CS_PIN   = 10;
         SPI0_MISO_PIN = 12;
         SPI0_MOSI_PIN = 11;
+        return;
     }
-    return;
 #endif
 
 #if defined(__MK66FX1M0__) || defined(__MK64FX512__) || defined(__MK20DX256__) // T3.6 or T3.5 or T3.2
@@ -223,8 +223,8 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_CS_PIN   = 31;
         SPI1_MISO_PIN = 5;
         SPI1_MOSI_PIN = 21;
+        return;
     }
-    return;
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
@@ -251,8 +251,8 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI0_CS_PIN   = 10;
         SPI0_MISO_PIN = 12;
         SPI0_MOSI_PIN = 11;
+        return;
     }
-    return;
 #endif
 
 #if defined(__MK66FX1M0__) || defined(__MK64FX512__) || defined(__MK20DX256__) // T3.6 or T3.5 or T3.2
@@ -281,8 +281,8 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_CS_PIN   = 31;
         SPI1_MISO_PIN = 5;
         SPI1_MOSI_PIN = 21;
-    }
-    return;
+        return;
+    }    
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
@@ -331,8 +331,8 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_CS_PIN   = 43;
         SPI1_MISO_PIN = 1;
         SPI1_MOSI_PIN = 26;
-    }
-    return;
+        return;
+    }    
 #endif
 }
 
