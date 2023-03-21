@@ -40,7 +40,7 @@ enum class TgaBoard : unsigned {
     REV_A = 0, ///< indicates using REV A of the TGA Pro
     REV_B,     ///< indicates using REV B of the TGA Pro
     MKII_REV1, ///< indicates using MKII, Rev 1 of the TGA Pro
-    MULTIVERSE ///< indicates using the Aviate Audio Multiverse
+    MULTIVERSE_REV1 ///< indicates using the Aviate Audio MULTIVERSE_REV1
 };
 
 /// enum to specify the TGA Board revision
@@ -55,7 +55,7 @@ enum class ExpansionBoard : unsigned {
     REV_1,            ///< indicates using REV 1 of the Expansion Board
     REV_2,            ///< indicates using REV 2 of the Expansion Board
     REV_3,            ///< indicates using REV 3 of the Expansion Board (MKII Series)
-    MULTIVERSE        ///< indicates using the Aviate Audio Multiverse for controls
+    MULTIVERSE_REV1   ///< indicates using the Aviate Audio Multiverse for controls
 };
 
 /// enum to specify SPI memory dize
@@ -205,11 +205,11 @@ extern BAHardware BAHardwareConfig; ///< external definition of global configura
 #define TGA_PRO_REVA(x)        BALibrary::BAHardwareConfig.set(TgaBoard::REV_A)     ///< Macro for specifying REV A of the TGA Pro
 #define TGA_PRO_REVB(x)        BALibrary::BAHardwareConfig.set(TgaBoard::REV_B)     ///< Macro for specifying REV B of the TGA Pro
 #define TGA_PRO_MKII_REV1(x)   BALibrary::BAHardwareConfig.set(TgaBoard::MKII_REV1) ///< Macro for specifying REV B of the TGA Pro
-#define MULTIVERSE(x)          BALibrary::BAHardwareConfig.set(TgaBoard::MULTIVERSE) ///< Macro for specifying REV B of the TGA Pro
+#define MULTIVERSE_REV1(x)          BALibrary::BAHardwareConfig.set(TgaBoard::MULTIVERSE_REV1) ///< Macro for specifying REV B of the TGA Pro
 
 #define TGA_PRO_EXPAND_REV2(x) BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::REV_2) ///< Macro for specifying REV 2 of the Expansion Board
 #define TGA_PRO_EXPAND_REV3(x) BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::REV_3) ///< Macro for specifying REV 2 of the Expansion Board
-#define MULTIVERSE_EXPAND(x)   BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::MULTIVERSE) ///< Macro for specifying Multiverse
+#define MULTIVERSE_REV1_EXPAND(x)   BALibrary::BAHardwareConfig.setExpansionBoard(ExpansionBoard::MULTIVERSE_REV1) ///< Macro for specifying Multiverse
 
 
 #define SPI_MEM0_1M(x)         BALibrary::BAHardwareConfig.set(MEM0, SPI_MEMORY_1M)   ///< Macro for specifying MEM0 is 1Mbit

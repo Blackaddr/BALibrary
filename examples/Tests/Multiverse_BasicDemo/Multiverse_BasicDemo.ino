@@ -5,7 +5,7 @@
  * features of the Aviate Audio Multiverse effects processor.
  * 
  * The following are demonstrated in this programming using BALibrary:
- * - WM8731 stereo audio codec in master mode (NOTE: not slave mode like TGA Pro
+ * - WM8731 stereo audio codec in master mode (NOTE: not slave mode like TGA Pro)
  * - Interact with all physical controls
  * - Control the 128x64 pixel OLED display (connected to SPI0)
  * - Use the 8MB external SRAM (simple memory test)
@@ -13,11 +13,11 @@
  * REQUIREMENTS:
  * This demo for Multiverse uses its OLED display which requires several Arduino
  * libraries be downloaded first. The SH1106 library is modifed to work with Teensy
- * and must be downloaded from the AlgorhythmTechnologies github.
+ * and must be downloaded from the AviateAudio github.
  * 
  * Adafruit_BusIO       : https://github.com/adafruit/Adafruit_BusIO
  * Adafruit_GFX_Library : https://github.com/adafruit/Adafruit-GFX-Library
- * Adafruit_SH1106      : https://github.com/AlgorhythmTechnologies/Adafruit_SH1106
+ * Adafruit_SH1106      : https://github.com/AviateAudio/Adafruit_SH1106
  * 
  * 
  * USAGE INSTRUCTIONS
@@ -86,7 +86,7 @@ void setup() {
 
   codec.disable(); // this will reset the codec
 
-  // wait up for the serial to appear for up to 1 second
+  // wait up for the serial to appear for up to 1 second, then continue
   Serial.begin(57600);
   unsigned serialLoopCount = 10;
   while (!Serial && (serialLoopCount > 0)) {
@@ -94,7 +94,7 @@ void setup() {
     serialLoopCount--;
   }
 
-  MULTIVERSE(); // constants defined in BALibrary become valid only after this call
+  MULTIVERSE_REV1(); // constants defined in BALibrary become valid only after this call
   SPI_MEM1_64M(); // Declare the correct memory size
 
   // Init the display

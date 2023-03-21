@@ -1,13 +1,12 @@
 ## BALibrary
-This library is under active development as of 2022.
+This library is under active development as of 2023.
 
 Last tested with:
-Arduino IDE: v1.8.10
-Teensyduino: v1.48*
+Arduino IDE: v2.0.4
+Teensyduino: v1.57
 
-![](TGA_PRO_revb.jpg)
+![](TGA_PRO_MKII_rev1.jpg)
 
-*The Arduino MIDI library has recently undergone changes to it's interface. You must have Teensyduino v1.48 or higher for the library and it's examples to work correctly.
 
 **INTRODUCTION**
 This open-source library is designed to extend the capabilities of Teensyduino, a collection of Arudino libraries  ported to the Teensy microcontroller platform by Paul at PJRC.com.
@@ -19,20 +18,26 @@ BALibrary adds to this by providing features and building blocks that are of par
 **INSTALLATION**
 In order to use BALibrary, you should:
 
- 1. Install the Arduino IDE. This is where you write and compile your software, called 'sketches'. See [here](https://www.arduino.cc/en/Main/Software).
+ 1. Install the Arduino IDE. This is where you write and compile your software, called 'sketches'. See [here](https://www.arduino.cc/en/software).
  2. Install the Teensyduino plugin for the Arduino IDE. This provides support for programming Teensy boards over USB, as well as access to the plethora of helpful libraries and examples it provides. See [here](https://www.pjrc.com/teensy/td_download.html).
  3. Download the BALibrary library, and use the Library Manager in the Arduino IDE to install it. See [here](https://www.arduino.cc/en/Guide/Libraries) for details..
- 4. Include "BALibrary.h" for access to general purpose classes.
- 5. Include "BAEffects.h" for access to Blackaddr Audio custom audio effect classes.
+ 4. In your .ino sketch, include "BALibrary.h" for access to general purpose classes.
+ 5. In your .ino sketch, include "BAEffects.h" for access to Blackaddr Audio custom audio effect classes.
+ 6. In your the begining of your setup() functions, call the macro set your hardware model. E.g. TGA_PRO_MKII_REV1(), MULTIVERSE_REV1(), etc.
 
 **HARDWARE**
-The audio primitives and effects provided in the BALibrary library require no special hardware other than a Teensy 3.x and Teensy 4.0 series board. However, in order to use the external RAM features provided in some effects, the SPI pins used must be the same as those used on the Blackaddr [TGA-Pro audio shield](http://blackaddr.com/products/).
+The audio primitives and effects provided in the BALibrary library require no special hardware other than a Teensy 3.x or Teensy 4.x series board. However, in order to use the external RAM features provided in some effects, the SPI pins used must be the same as those used on the Blackaddr [TGA-Pro audio shield](http://blackaddr.com/products/).
+
+*** TGA PRO ***
+This library was originally designed as a companion to the TGA Pro series of hardware boards. These boards expand Teensy by adding the necessary analog audio, preamp and MIDI circuitry needed to make guitar effects, MIDI synths, etc.
+
+*** Aviate Audio Multiverse ***
+This library also supports the Aviate Audio Multiverse (based upon the Teensy MicroMod) which means in addition to the amazing guitar effects ecosystem it provides, you can also program it yourself just like any other Teensy! So, this library also includes pinout support this device. A simple demo is provided that exercises all the hardware features of this platform. See examples/Tests/Multiverse_BasicDemo.
 
 **BALibrary CONTENTS**
  - WM871 advanced codec control
- - analog delay modelling effect
- - digital delay effect
- - Sound-on-Sound effect
- - external SRAM manager
+ - external SPI SRAM manager with DMA support
+ - pinout support for all TGA Pro models, plus Aviate Audio Multiverse
+ - some example effects using the library
  - more on the way!
 

@@ -282,14 +282,14 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_MISO_PIN = 5;
         SPI1_MOSI_PIN = 21;
         return;
-    }    
+    }
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
-    // MULTIVERSE                                                             //
+    // MULTIVERSE_REV1                                                             //
     ////////////////////////////////////////////////////////////////////////////
 #if defined(ARDUINO_TEENSY_MICROMOD)
-    if (tgaBoard == TgaBoard::MULTIVERSE) {
+    if (tgaBoard == TgaBoard::MULTIVERSE_REV1) {
         BA_EXPAND_NUM_POT  = 4;
         BA_EXPAND_NUM_SW   = 6;
         BA_EXPAND_NUM_LED  = 2;
@@ -332,7 +332,7 @@ void BAHardware::set(TgaBoard tgaBoard)
         SPI1_MISO_PIN = 1;
         SPI1_MOSI_PIN = 26;
         return;
-    }    
+    }
 #endif
 }
 
