@@ -5,7 +5,12 @@ Last tested with:
 Arduino IDE: v2.0.4
 Teensyduino: v1.57
 
-![](TGA_PRO_MKII_rev1.jpg)
+*TGA PRO MKII by Blackaddr Audio*
+![](TGA_Pro_MKII_rev1.jpg)
+
+
+*Aviate Audio Multiverse - Developer Edition*
+![](Multiverse_Developer_rev1.jpg)
 
 
 **INTRODUCTION**
