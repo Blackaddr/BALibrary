@@ -1,0 +1,158 @@
+{
+  "efxFileVersion": "1.4.0",
+  "company": "Blackaddr Audio",
+  "effectName": "Tuner",
+  "effectVersion": "0.1.0",
+  "coreVersion": "1.5.0",
+  "effectShortName": "NOISE",
+  "effectCategory": "Unspecified",
+  "effectDescription": "A noise gate wtih controllable threshold, opening and closing times and DC removal filter. Basic tuner included. ",
+  "numInputs": 1,
+  "numOutputs": 1,
+  "numControls": 5,
+  "effectFilename": "BlackaddrAudio_Tuner.efx",
+  "libraryName": "BlackaddrAudio_Tuner",
+  "cppClass": "BlackaddrAudio_Tuner::Tuner",
+  "cppInstBase": "_BlackaddrAudio_Tuner",
+  "constructorParams": "",
+  "isSingleton": false,
+  "controls": [
+    {
+      "name": "Bypass",
+      "shortName": "BYP",
+      "description": "Bypasses the effect when enabled",
+      "config": [
+        0,
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "iconOn": "gfx/StompUpLedOffGold.png",
+      "iconOnHeight": 232,
+      "iconOff": "gfx/StompDownLedOnGold.png",
+      "iconOffHeight": 232,
+      "position": [
+        187,
+        460
+      ],
+      "scalingRatio": 0.75,
+      "userData": 1
+    },
+    {
+      "name": "Volume",
+      "shortName": "VOL",
+      "description": "Sets the effect output volume from -40dB to +10dB",
+      "config": [
+        3,
+        0.0,
+        10.0,
+        8.0,
+        0.1000000014901161
+      ],
+      "iconPot": "gfx/Gold_Marshall_Knob_192x192.png",
+      "iconPotHeight": 192,
+      "supressValueLabel": 1,
+      "userData": 0
+    },
+    {
+      "name": "Tuner Silent",
+      "shortName": "T-SIL",
+      "description": "Mutes the output when tuner is enabled.",
+      "config": [
+        0,
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "iconOn": "gfx/SwitchSlideUpWhite.png",
+      "iconOnHeight": 128,
+      "iconOff": "gfx/SwitchSlideDownWhite.png",
+      "iconOffHeight": 128,
+      "position": [
+        300,
+        450
+      ],
+      "scalingRatio": 0.6000000238418579,
+      "userData": 0
+    },
+    {
+      "name": "Tuner Cents",
+      "shortName": "Cents",
+      "description": "Indicates the tuning pitch of the current note.",
+      "config": [
+        7,
+        -50.0,
+        50.0,
+        0.0,
+        1.0
+      ],
+      "iconPot": "gfx/tuner_cents_158h.png",
+      "iconPotHeight": 158,
+      "position": [
+        186,
+        150
+      ],
+      "scalingRatio": 0.800000011920929,
+      "supressValueLabel": 1,
+      "userData": 0
+    },
+    {
+      "name": "Tuner Note",
+      "shortName": "Note",
+      "description": "Indicates the note being tuned.",
+      "config": [
+        8,
+        0.0,
+        12.0,
+        0.0,
+        1.0
+      ],
+      "iconEncoder": "gfx/tuner_notes_158h.png",
+      "iconEncoderHeight": 158,
+      "enums": [
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B",
+        "--"
+      ],
+      "position": [
+        186,
+        150
+      ],
+      "scalingRatio": 0.800000011920929,
+      "supressValueLabel": 1,
+      "userData": 0
+    }
+  ],
+  "projectFileVersion": "1.0.0",
+  "companyLogo": "gfx/BlackaddrLogo.png",
+  "pedalIcon": "gfx/Tuner_icon.png",
+  "basePedal": "gfx/Tuner_base.png",
+  "publicHeaderFiles": [
+    "inc/Tuner.h"
+  ],
+  "privateSourceFiles": [
+    "src/TunerBase.cpp",
+    "src/Tuner.cpp"
+  ],
+  "modules": null,
+  "settings": {
+    "showModules": false,
+    "isSingleton": false,
+    "cppDefines": "",
+    "noWarnings": "",
+    "enableFastMath": false,
+    "enableO3": false
+  }
+}
