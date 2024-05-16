@@ -4,9 +4,9 @@
   "effectName": "Tuner",
   "effectVersion": "0.1.0",
   "coreVersion": "1.5.0",
-  "effectShortName": "NOISE",
+  "effectShortName": "TUNER",
   "effectCategory": "Unspecified",
-  "effectDescription": "A noise gate wtih controllable threshold, opening and closing times and DC removal filter. Basic tuner included. ",
+  "effectDescription": "A basic chromatic tuner with silent-tuning option. Best used alone in a dedicated tuner preset for quick access.",
   "numInputs": 1,
   "numOutputs": 1,
   "numControls": 5,
@@ -20,7 +20,7 @@
     {
       "name": "Bypass",
       "shortName": "BYP",
-      "description": "Bypasses the effect when enabled",
+      "description": "Enables and disables the tuner and muting fuctions.",
       "config": [
         0,
         0.0,
@@ -52,13 +52,12 @@
       ],
       "iconPot": "gfx/Gold_Marshall_Knob_192x192.png",
       "iconPotHeight": 192,
-      "supressValueLabel": 1,
       "userData": 0
     },
     {
       "name": "Tuner Silent",
       "shortName": "T-SIL",
-      "description": "Mutes the output when tuner is enabled.",
+      "description": "Mutes the output when tuner is enabled to enable silent tuning.",
       "config": [
         0,
         0.0,
@@ -80,7 +79,7 @@
     {
       "name": "Tuner Cents",
       "shortName": "Cents",
-      "description": "Indicates the tuning pitch of the current note.",
+      "description": "Indicates the tuning pitch of the current note in cents compared to the nearest note.",
       "config": [
         7,
         -50.0,
@@ -101,7 +100,7 @@
     {
       "name": "Tuner Note",
       "shortName": "Note",
-      "description": "Indicates the note being tuned.",
+      "description": "Indicates the detected note being tuned.",
       "config": [
         8,
         0.0,
