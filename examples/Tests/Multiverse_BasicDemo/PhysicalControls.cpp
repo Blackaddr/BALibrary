@@ -2,11 +2,14 @@
 #include "Adafruit_SH1106.h"
 #include "BALibrary.h"
 #include "DebugPrintf.h"
+#include "PhysicalControls.h"
 
 using namespace BALibrary;
 
 // Declare the externally shared variables from the main .ino
+#ifdef USE_OLED
 extern Adafruit_SH1106            display;
+#endif
 extern BAAudioControlWM8731master codec;
 extern AudioMixer4                volumeOut;
 extern elapsedMillis              timer;
@@ -90,12 +93,16 @@ void checkPot(unsigned id)
     DEBUG_PRINT(Serial.println(String("POT") + id + String(" value: ") + potValue));
 
     timer = 0;
+  #ifdef USE_OLED
     display.clearDisplay();
     display.setCursor(0,displayRow);
+  #endif
     switch(id) {
       case 0 :
       {
-        display.printf("Gain: %0.f\n", potValue * 100.0f);
+      #ifdef USE_OLED
+      display.printf("Gain: %0.f\n", potValue * 100.0f);
+      #endif
         int gain = static_cast<int>(std::roundf(31.0f * potValue));
         codecPtr->setLeftInputGain(gain);
         codecPtr->setRightInputGain(gain);
@@ -104,20 +111,26 @@ void checkPot(unsigned id)
       }
       case 1 : 
       {
+      #ifdef USE_OLED
         display.printf("Level: %0.f\n", potValue * 100.0f);
+      #endif
         volumeOut.gain(0, potValue);
         volumeOut.gain(1, potValue);
         break;
       }
+    #ifdef USE_OLED
       case 2 : display.printf("Exp T: %0.f\n", potValue * 100.0f); break;
       case 3 : display.printf("Exp R: %0.f\n", potValue * 100.0f); break;
+    #endif
     }
-    display.display();
+  #ifdef USE_OLED
+      display.display();
+  #endif
   }
 
 }
 
-int checkSwitch(unsigned id, bool getValueOnly=false)
+int checkSwitch(unsigned id, bool getValueOnly)
 {
   unsigned swHandle  = -1;
   unsigned ledHandle = -1;
@@ -159,6 +172,7 @@ int checkSwitch(unsigned id, bool getValueOnly=false)
   if (changed) {
     DEBUG_PRINT(Serial.println(String("Button ") + id + String(" pressed")));
     timer = 0;
+  #ifdef USE_OLED
     display.clearDisplay();
     display.setCursor(0, displayRow);
     switch(id) {
@@ -170,6 +184,7 @@ int checkSwitch(unsigned id, bool getValueOnly=false)
       case 5 : display.printf("EncSw D: %d\n", switchValue); break;
     }
     display.display();
+  #endif  // USE_OLED
   }
 
   if (swHandle < 2) { // these SWs map to LEDs
@@ -207,7 +222,8 @@ void checkEncoder(unsigned id)
 
   int adj= controlPtr->getRotaryAdjustUnit(encHandle);
   if (adj != 0) {    
-    DEBUG_PRINT(Serial.printf("Enc %d: %d\n\r", id, adj); Serial.flush());    
+    DEBUG_PRINT(Serial.printf("Enc %d: %d\n\r", id, adj); Serial.flush());
+  #ifdef USE_OLED
     display.clearDisplay();
     display.setCursor(0, displayRow);
     switch(id) {
@@ -217,6 +233,7 @@ void checkEncoder(unsigned id)
       case 3 : enc4 += adj; display.printf("Enc D: %d", enc4); break;
     }
     display.display();
+  #endif // USE_OLED
     timer = 0;
   }
 }

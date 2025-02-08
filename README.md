@@ -1,9 +1,9 @@
 ## BALibrary
-This library is under active development as of 2023.
+This library was lasted tested and updated in Feb. 2025.
 
 Last tested with:
-Arduino IDE: v2.0.4
-Teensyduino: v1.57
+Arduino IDE: v2.3.4
+Teensyduino: v1.59
 
 *TGA PRO MKII by Blackaddr Audio*
 ![](TGA_Pro_MKII_rev1.jpg)
@@ -37,7 +37,8 @@ The audio primitives and effects provided in the BALibrary library require no sp
 This library was originally designed as a companion to the TGA Pro series of hardware boards. These boards expand Teensy by adding the necessary analog audio, preamp and MIDI circuitry needed to make guitar effects, MIDI synths, etc.
 
 *** Aviate Audio Multiverse ***
-This library also supports the Aviate Audio Multiverse (based upon the Teensy MicroMod) which means in addition to the amazing guitar effects ecosystem it provides, you can also program it yourself just like any other Teensy! So, this library also includes pinout support this device. A simple demo is provided that exercises all the hardware features of this platform. See examples/Tests/Multiverse_BasicDemo.
+This library also supports the Aviate Audio Multiverse (based upon the Teensy MicroMod) which means in addition to the amazing guitar effects ecosystem it provides, you can also program it yourself just like any other Teensy! So, this library also includes pinout support this device. A simple demo is provided that exercises all the hardware features of this platform. See examples/Tests/Multiverse_BasicDemo. Please note this demo requires the installation of a few additional
+libraries. See the demo source code for more details.
 
 **BALibrary CONTENTS**
  - WM871 advanced codec control

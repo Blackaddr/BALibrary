@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include <cmath>
 #include "LibBasicFunctions.h"
 
 namespace BALibrary {
@@ -71,7 +71,7 @@ void ParameterAutomation<T>::reconfigure(T startValue, T endValue, size_t durati
 
     float duration = m_duration / static_cast<float>(AUDIO_BLOCK_SAMPLES);
     m_slopeX = (1.0f / static_cast<float>(duration));
-    m_scaleY = abs(endValue - startValue);
+    m_scaleY = std::abs(endValue - startValue);
     if (endValue >= startValue) {
         // value is increasing
         m_positiveSlope = true;
@@ -143,7 +143,6 @@ T ParameterAutomation<T>::getNextValue()
 // Template instantiation
 template class ParameterAutomation<float>;
 template class ParameterAutomation<int>;
-template class ParameterAutomation<unsigned>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ParameterAutomationSequence
@@ -236,6 +235,5 @@ bool ParameterAutomationSequence<T>::isFinished()
 // Template instantiation
 template class ParameterAutomationSequence<float>;
 template class ParameterAutomationSequence<int>;
-template class ParameterAutomationSequence<unsigned>;
 
 }

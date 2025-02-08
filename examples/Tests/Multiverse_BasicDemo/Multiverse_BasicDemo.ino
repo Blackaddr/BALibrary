@@ -13,10 +13,14 @@
  * REQUIREMENTS:
  * This demo for Multiverse uses its OLED display which requires several Arduino
  * libraries be downloaded first. The SH1106 library is modifed to work with Teensy
- * and must be downloaded from the AviateAudio github.
+ * and must be downloaded from the AviateAudio github link below.
  * 
- * Adafruit_BusIO       : https://github.com/adafruit/Adafruit_BusIO
- * Adafruit_GFX_Library : https://github.com/adafruit/Adafruit-GFX-Library
+ * If you do not wish to use the OLED display, or run into difficulties you can
+ * comment out the #define USE_OLED line in PhysicalControls.h to avoid the need for
+ * the Adafruit/Aviate dependencies.
+ *
+ * Adafruit_BusIO       : https://github.com/adafruit/Adafruit_BusIO (tested with v1.17)
+ * Adafruit_GFX_Library : https://github.com/adafruit/Adafruit-GFX-Library (tested with v1.11.11)
  * Adafruit_SH1106      : https://github.com/AviateAudio/Adafruit_SH1106
  * 
  * 
@@ -37,12 +41,14 @@
 using namespace BALibrary;
 
 // OLED display stuff
+#ifdef USE_OLED
 #include "Adafruit_SH1106.h"
 #include "Adafruit_GFX.h"
 #include "Fonts/FreeSansBold9pt7b.h"
 constexpr unsigned SCREEN_WIDTH = 128; // OLED display width, in pixels
 constexpr unsigned SCREEN_HEIGHT = 64; // OLED display height, in pixels
 Adafruit_SH1106 display(37, 35, 10);
+#endif // USE_OLED
 
 // External SPI RAM
 ExternalSramManager sramManager;
@@ -75,12 +81,15 @@ unsigned loopCounter = 0;
 
 void drawProgressBar(float completion);  // declaration
 
+#ifdef USE_OLED
 void drawBlackaddrAudio() {
+
   display.setCursor(0, 24); // (x,y)
   display.printf("    Blackaddr");
   display.setCursor(0, 40); // (x,y)
   display.printf("        Audio");
 }
+#endif
 
 void setup() {
 
@@ -97,6 +106,7 @@ void setup() {
   MULTIVERSE_REV1(); // constants defined in BALibrary become valid only after this call
   SPI_MEM1_64M(); // Declare the correct memory size
 
+#ifdef USE_OLED
   // Init the display
   display.begin(SH1106_SWITCHCAPVCC, SH1106_I2C_ADDRESS, true);
   display.clearDisplay();
@@ -105,6 +115,7 @@ void setup() {
   display.setFont(&FreeSansBold9pt7b);
   drawBlackaddrAudio();
   display.display();
+#endif
 
   configPhysicalControls(&controls, &codec);  
 
@@ -163,16 +174,19 @@ void loop() {
   // Adjusting one of the knobs/switches will result in its value being display for
   // 2 seconds in the check*() functions.
   if (timer > 2000) {
-    loopCounter++; 
+    loopCounter++;
+#ifdef USE_OLED
     display.clearDisplay();
     drawBlackaddrAudio();
     drawSramProgress(sramCompletion);  
     display.display(); 
+#endif
   }
 }
 
 // This function will draw on the display which stage the memory test is in, and
 // the percentage complete for that stage.
+#ifdef USE_OLED
 void drawSramProgress(float completion)
 {
   if (errorCount > 0) { // If errors, print the error count
@@ -194,6 +208,7 @@ void drawSramProgress(float completion)
   display.setCursor(SCREEN_WIDTH*0.63f, SCREEN_HEIGHT-1);  // position to lower right corner
   display.printf("%0.f%%", 100.0f * completion);
 }
+#endif
 
 // Create a predictable data pattern based on address.
 constexpr int mask0 = 0x5555;
