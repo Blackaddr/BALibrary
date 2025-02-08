@@ -12,16 +12,16 @@
  * 
  * REQUIREMENTS:
  * This demo for Multiverse uses its OLED display which requires several Arduino
- * libraries be downloaded first. The SH1106 library is modifed to work with Teensy
- * and must be downloaded from the AviateAudio github link below.
+ * libraries be downloaded first. These can also be installed from the Arduino Libraries
+ * Manager in the Arduino IDE.
  * 
  * If you do not wish to use the OLED display, or run into difficulties you can
  * comment out the #define USE_OLED line in PhysicalControls.h to avoid the need for
- * the Adafruit/Aviate dependencies.
+ * the Adafruit dependencies. 
  *
  * Adafruit_BusIO       : https://github.com/adafruit/Adafruit_BusIO (tested with v1.17)
  * Adafruit_GFX_Library : https://github.com/adafruit/Adafruit-GFX-Library (tested with v1.11.11)
- * Adafruit_SH1106      : https://github.com/AviateAudio/Adafruit_SH1106
+ * Adafruit_SH110X      : https://github.com/adafruit/Adafruit_SH110x (tested with 2.1.11)
  * 
  * 
  * USAGE INSTRUCTIONS
@@ -42,12 +42,12 @@ using namespace BALibrary;
 
 // OLED display stuff
 #ifdef USE_OLED
-#include "Adafruit_SH1106.h"
+#include "Adafruit_SH110X.h"
 #include "Adafruit_GFX.h"
 #include "Fonts/FreeSansBold9pt7b.h"
 constexpr unsigned SCREEN_WIDTH = 128; // OLED display width, in pixels
 constexpr unsigned SCREEN_HEIGHT = 64; // OLED display height, in pixels
-Adafruit_SH1106 display(37, 35, 10);
+Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, 37 /*DC*/, 35 /*RST*/, 10 /*CS*/);
 #endif // USE_OLED
 
 // External SPI RAM
@@ -108,10 +108,10 @@ void setup() {
 
 #ifdef USE_OLED
   // Init the display
-  display.begin(SH1106_SWITCHCAPVCC, SH1106_I2C_ADDRESS, true);
+  display.begin(0x3C /* SH1106_I2C_ADDRESS */, true);
   display.clearDisplay();
   display.display();
-  display.setTextColor(WHITE); // Draw white text
+  display.setTextColor(SH110X_WHITE); // Draw white text
   display.setFont(&FreeSansBold9pt7b);
   drawBlackaddrAudio();
   display.display();

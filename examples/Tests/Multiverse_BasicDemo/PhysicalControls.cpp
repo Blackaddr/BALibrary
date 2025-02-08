@@ -1,5 +1,5 @@
 #include <cmath>
-#include "Adafruit_SH1106.h"
+#include "Adafruit_SH110X.h"
 #include "BALibrary.h"
 #include "DebugPrintf.h"
 #include "PhysicalControls.h"
@@ -8,7 +8,7 @@ using namespace BALibrary;
 
 // Declare the externally shared variables from the main .ino
 #ifdef USE_OLED
-extern Adafruit_SH1106            display;
+extern Adafruit_SH1106G           display;
 #endif
 extern BAAudioControlWM8731master codec;
 extern AudioMixer4                volumeOut;
