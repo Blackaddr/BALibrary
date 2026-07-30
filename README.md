@@ -28,7 +28,7 @@ In order to use BALibrary, you should:
  3. Download the BALibrary library, and use the Library Manager in the Arduino IDE to install it. See [here](https://www.arduino.cc/en/Guide/Libraries) for details..
  4. In your .ino sketch, include "BALibrary.h" for access to general purpose classes.
  5. In your .ino sketch, include "BAEffects.h" for access to Blackaddr Audio custom audio effect classes.
- 6. In your the begining of your setup() functions, call the macro set your hardware model. E.g. TGA_PRO_MKII_REV1(), MULTIVERSE_REV1(), etc.
+ 6. In your the beginning of your setup() functions, call the macro set your hardware model. E.g. TGA_PRO_MKII_REV1(), MULTIVERSE_REV1(), etc.
 
 **HARDWARE**
 The audio primitives and effects provided in the BALibrary library require no special hardware other than a Teensy 3.x or Teensy 4.x series board. However, in order to use the external RAM features provided in some effects, the SPI pins used must be the same as those used on the Blackaddr [TGA-Pro audio shield](http://blackaddr.com/products/).
